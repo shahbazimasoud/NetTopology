@@ -266,6 +266,38 @@
   border-right-color: #38bdf8 !important;
 }
 
+.theme-light .sidebar-nav-item.active {
+  background-color: rgba(99, 102, 241, 0.12) !important;
+  color: #4338ca !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  font-weight: 700 !important;
+}
+.theme-light .sidebar-nav-item:not(.active):hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Sleek subtle scrollbar for sidebar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+.theme-light .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.14);
+}
+.theme-light .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
 .theme-light .spatial-glass {
   background: #ffffff !important;
   border-color: #cbd5e1 !important;

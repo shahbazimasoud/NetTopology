@@ -393,7 +393,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-65px)] bg-transparent text-right overflow-hidden text-slate-100">
+    <div className="flex flex-col h-full min-h-[500px] bg-transparent text-right overflow-hidden text-slate-100">
       {/* Top Toolbar */}
       <div className="p-2 sm:px-4 spatial-glass border-b border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs z-20 shadow-xl backdrop-blur-xl">
         {/* View Switcher */}

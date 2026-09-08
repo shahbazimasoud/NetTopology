@@ -85,11 +85,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         key={item.id}
         onClick={() => setActiveTab(item.id)}
         title={isCollapsed ? item.label : undefined}
-        className={`w-full flex items-center ${
+        className={`sidebar-nav-item w-full flex items-center ${
           isCollapsed ? 'justify-center px-2' : 'justify-between px-3'
-        } py-2.5 rounded-xl text-right text-xs transition-all duration-200 group relative ${
+        } py-2.5 rounded-xl text-right text-xs transition-all duration-200 group relative shrink-0 ${
           isActive
-            ? 'bg-indigo-600/25 text-white font-semibold border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+            ? 'active bg-indigo-600/25 text-white font-semibold border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
             : 'text-slate-300 hover:bg-white/5 hover:text-white border border-transparent'
         }`}
       >
@@ -135,7 +135,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`spatial-glass text-slate-300 flex flex-col p-2.5 shrink-0 border-b lg:border-b-0 lg:border-l border-white/10 backdrop-blur-2xl transition-all duration-300 relative z-20 ${
+      className={`spatial-glass text-slate-300 flex flex-col p-2.5 shrink-0 border-b lg:border-b-0 lg:border-l border-white/10 backdrop-blur-2xl transition-all duration-300 z-20 sticky top-14 lg:sticky lg:top-14 lg:self-start h-auto lg:h-full lg:max-h-full overflow-hidden ${
         isCollapsed ? 'w-full lg:w-16' : 'w-full lg:w-60'
       }`}
     >
@@ -143,7 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div
         className={`flex items-center ${
           isCollapsed ? 'justify-center' : 'justify-between'
-        } pb-2 mb-2 border-b border-white/10`}
+        } pb-2 mb-2 border-b border-white/10 shrink-0`}
       >
         {!isCollapsed && (
           <div className="flex items-center gap-2">
@@ -171,50 +171,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* Infrastructure Section */}
-      {!isCollapsed && (
-        <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-          <span>زیرساخت شبکه</span>
-          <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-            INFRA
-          </span>
-        </div>
-      )}
-      <div className="space-y-1">{infraItems.map(renderItem)}</div>
-
-      {/* Monitoring Section */}
-      {!isCollapsed && (
-        <div className="px-2 py-1 mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-          <span>پایش و آنالیز</span>
-          <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-            MONITOR
-          </span>
-        </div>
-      )}
-      <div className={`space-y-1 ${isCollapsed ? 'mt-2' : ''}`}>{monitorItems.map(renderItem)}</div>
-
-      {/* Critical Offline Alert Box */}
-      {offlineCount > 0 && (
-        <div
-          className={`mt-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs shadow-[0_0_15px_rgba(244,63,94,0.2)] backdrop-blur-md transition-all ${
-            isCollapsed ? 'p-2 flex justify-center' : 'p-2.5 mx-0.5'
-          }`}
-          title={isCollapsed ? `هشدار قطعی (${offlineCount} تجهیز)` : undefined}
-        >
-          <div className="flex items-center gap-2 font-bold text-[11px] text-rose-300">
-            <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
-            {!isCollapsed && <span>هشدار قطعی ({offlineCount} تجهیز)</span>}
+      {/* Scrollable Navigation Items Area */}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-1 py-1 custom-scrollbar">
+        {/* Infrastructure Section */}
+        {!isCollapsed && (
+          <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+            <span>زیرساخت شبکه</span>
+            <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              INFRA
+            </span>
           </div>
-          {!isCollapsed && (
-            <p className="mt-1 text-[10px] text-rose-200/70 leading-relaxed">
-              تجهیزات بدون پاسخ به ICMP در وضعیت Critical هستند.
-            </p>
-          )}
-        </div>
-      )}
+        )}
+        <div className="space-y-1">{infraItems.map(renderItem)}</div>
+
+        {/* Monitoring Section */}
+        {!isCollapsed && (
+          <div className="px-2 py-1 mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+            <span>پایش و آنالیز</span>
+            <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              MONITOR
+            </span>
+          </div>
+        )}
+        <div className={`space-y-1 ${isCollapsed ? 'mt-2' : ''}`}>{monitorItems.map(renderItem)}</div>
+
+        {/* Critical Offline Alert Box */}
+        {offlineCount > 0 && (
+          <div
+            className={`mt-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs shadow-[0_0_15px_rgba(244,63,94,0.2)] backdrop-blur-md transition-all ${
+              isCollapsed ? 'p-2 flex justify-center' : 'p-2.5 mx-0.5'
+            }`}
+            title={isCollapsed ? `هشدار قطعی (${offlineCount} تجهیز)` : undefined}
+          >
+            <div className="flex items-center gap-2 font-bold text-[11px] text-rose-300">
+              <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
+              {!isCollapsed && <span>هشدار قطعی ({offlineCount} تجهیز)</span>}
+            </div>
+            {!isCollapsed && (
+              <p className="mt-1 text-[10px] text-rose-200/70 leading-relaxed">
+                تجهیزات بدون پاسخ به ICMP در وضعیت Critical هستند.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* System Status / Version Widget in Footer */}
-      <div className="mt-auto pt-2">
+      <div className="shrink-0 mt-auto pt-2 border-t border-white/5">
         {!isCollapsed ? (
           <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 space-y-1.5 backdrop-blur-md shadow-xs">
             <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">

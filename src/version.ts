@@ -8,9 +8,21 @@ export interface ReleaseNote {
   changes: string[];
 }
 
-export const APP_VERSION = '1.3.1';
+export const APP_VERSION = '1.3.2';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.3.2',
+    releaseDate: '2026-09-08',
+    type: 'patch',
+    title: 'تثبیت و رفع اسکرول منوی دسترسی سایدبار راست (Sticky Sidebar Navigation)',
+    changes: [
+      'تثبیت کامل منوی دسترسی سایدبار راست حین اسکرول محتوای صفحات (مانند لیست بلند تجهیزات، داشبورد و مدیریت پورت‌ها)',
+      'جداسازی اسکرول محتوای صفحه از سایدبار با ساختار دوگانه کانتینر در App.tsx (افزودن overflow-hidden به ریشه و overflow-y-auto به کانتینر اصلی محتوا)',
+      'افزودن موقعیت‌یابی چسبنده (sticky top-14) و ارتفاع کامل به همراه اسکرول‌بار اختصاصی و ظریف (custom-scrollbar) برای منوی سایدبار در صفحات کوچک و بزرگ',
+      'بهبود استایل و کنتراست آیتم‌های سایدبار در تم روشن (Light Theme) جهت نمایش شفاف وضعیت انتخاب و هاور'
+    ]
+  },
   {
     version: '1.3.1',
     releaseDate: '2026-09-08',

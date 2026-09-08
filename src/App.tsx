@@ -208,7 +208,7 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-screen relative flex flex-col justify-between theme-${panelTheme} dir-rtl font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-300`}
+      className={`h-screen min-h-screen max-h-screen relative flex flex-col justify-between theme-${panelTheme} dir-rtl font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-300 overflow-hidden`}
       dir="rtl"
     >
       {/* Dynamic Ambient Glow Background */}
@@ -229,7 +229,7 @@ export default function App() {
       />
 
       {/* Main Layout (Sidebar + Content View) */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative z-10">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative z-10 min-h-0">
         {/* Sidebar */}
         <Sidebar
           activeTab={activeTab}
@@ -242,7 +242,7 @@ export default function App() {
         />
 
         {/* View Port */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto min-h-0 min-w-0">
           {activeTab === 'dashboard' && (
             <DashboardView
               devices={devices}

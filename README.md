@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.3.2-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۳.۱
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.3.1
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۳.۲
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.3.2
 
 ---
 
@@ -92,6 +92,12 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 - **حذف داده‌های ناپایدار (Strip Ephemeral Data):** پاکسازی خطوط تاریخ/ساعت استخراج و کامنت‌های موقت برای دستیابی به یک تمپلیت کاملاً تکرارپذیر.
 - **پشتیبانی تخصصی از میکروتیک و سیسکو:** استخراج با دستورات بهینه Cisco IOS (`show running-config`) و دستور فشرده میکروتیک (`/export compact`) برای خروجی گرفتن تمیز تنها از تغییرات کاربری.
 - **پیش‌نمایش دو مرحله‌ای و تنظیم نام الگو:** بررسی سطر به سطر کانفیگ، لیست متغیرهای پویای کشف‌شده، امکان درج کلیکی تگ‌های متغیر، تعیین نام دلخواه تمپلیت و ذخیره در دیتابیس یا اعمال مستقیم بر روی تجهیز دیگر.
+
+### ۹. تثبیت منوی دسترسی سایدبار راست هنگام اسکرول صفحات (Sticky Sidebar Navigation)
+- **تثبیت کامل موقعیت سایدبار:** رفع جابجایی ناخواسته منوی ناوبری راست هنگام اسکرول صفحات طولانی (نظیر لیست بلند تجهیزات، ویجت‌های داشبورد، مدیریت پورت‌ها و کاتالوگ الگوها).
+- **جداسازی کامل کانتینر اسکرول:** استفاده از ساختار کانتینر مستقل در `App.tsx` با کنترل سرریز و اسکرول داخلی (`overflow-y-auto`) در محدوده محتوا (`<main>`) و پین شدن سایدبار در ارتفاع کامل نما (`h-full sticky top-14`).
+- **اسکرول‌بار اختصاصی و ظریف (`custom-scrollbar`):** اسکرول روان و مینی‌مال در منوی سایدبار برای نمایش بدون نقص در مانیتورها و تبلت‌های با ابعاد عمودی فشرده.
+- **کنتراست استاندارد در تم لایت:** استایل‌دهی شفاف به آیتم‌های فعال و هاور سایدبار در تم روشن با رنگ‌بندی دقیق و خوانا.
 
 ---
 
@@ -246,6 +252,12 @@ npm start
 - **Ephemeral Cleanup:** Strips volatile timestamps and session comments to ensure clean, reproducible templates.
 - **MikroTik & Cisco Native Optimization:** Utilizes `/export compact` for RouterOS appliances and `show running-config` for Cisco IOS/IOS-XE.
 - **Two-Phase Review & Save Flow:** Review raw vs. parameterized outputs, edit detected variable definitions, click to insert variable tokens into the editor, and save to the templates library with one-click deployment options.
+
+### 9. Sticky Right Sidebar Navigation & Decoupled Viewport Scrolling
+- **Complete Sticky Fixation:** Permanently anchors the right navigation sidebar while users scroll through long page contents (such as large device inventory tables, extended dashboard metrics, port inspectors, and template catalogs).
+- **Decoupled Scroll Architecture:** Re-architected viewport scrolling inside `App.tsx` by isolating vertical scroll (`overflow-y-auto`) exclusively to the main content container (`<main>`) while pinning the sidebar at full view height (`h-full sticky top-14`).
+- **Sleek Custom Scrollbar (`custom-scrollbar`):** Provides a minimal, non-intrusive scrollbar for the sidebar navigation items to fit seamlessly across smaller laptop and tablet viewports.
+- **Light Theme High-Contrast Consistency:** Ensures crystal-clear selection, hover, and active states for sidebar navigation buttons in light mode.
 
 ---
 
