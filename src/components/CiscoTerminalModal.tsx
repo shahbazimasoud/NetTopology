@@ -665,8 +665,12 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                   SSH-2.0
                 </span>
               </div>
-              <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                {device.model} • {device.firmware || 'Cisco IOS-XE'}
+              <div className="text-[11px] text-slate-400 font-mono mt-0.5 flex items-center gap-1.5">
+                <span>{device.model}</span>
+                <span>•</span>
+                <span className="vendor-badge-cisco px-1.5 py-0.5 rounded text-[10px] font-bold">
+                  {device.firmware || 'Cisco IOS-XE'}
+                </span>
               </div>
             </div>
           </div>

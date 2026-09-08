@@ -482,7 +482,9 @@ write memory`);
                 <div className="bg-slate-950 border border-cyan-500/30 rounded-xl p-3.5 max-h-[360px] overflow-y-auto dir-ltr text-left">
                   <div className="text-[10px] font-mono text-cyan-400 mb-2 border-b border-white/10 pb-1 flex items-center justify-between">
                     <span># LIVE DRY-RUN PREVIEW</span>
-                    <span>{vendor.toUpperCase()}</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${vendor === 'mikrotik' ? 'vendor-badge-mikrotik' : vendor === 'cisco' ? 'vendor-badge-cisco' : 'vendor-badge-generic'}`}>
+                      {vendor === 'mikrotik' ? 'MikroTik RouterOS' : vendor === 'cisco' ? 'Cisco IOS-XE' : vendor.toUpperCase()}
+                    </span>
                   </div>
                   <pre className="text-xs font-mono text-emerald-400/90 whitespace-pre leading-relaxed">
                     {previewScript()}

@@ -195,7 +195,15 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
                 <span>الگوی مبدا:</span>
                 <span className="font-semibold text-slate-200">«{sourceTemplate.name}»</span>
                 <span className="text-slate-500">|</span>
-                <span className="text-cyan-400 font-mono">
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-md font-bold transition-all shadow-sm ${
+                    sourceTemplate.vendor === 'mikrotik'
+                      ? 'vendor-badge-mikrotik'
+                      : sourceTemplate.vendor === 'cisco'
+                      ? 'vendor-badge-cisco'
+                      : 'vendor-badge-generic'
+                  }`}
+                >
                   {sourceTemplate.vendor === 'mikrotik' ? 'MikroTik RouterOS' : 'Cisco IOS-XE'}
                 </span>
               </p>

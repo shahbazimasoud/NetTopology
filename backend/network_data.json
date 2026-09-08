@@ -13,7 +13,7 @@
       "unit": "اتاق سرور اصلی (Main Server Room)",
       "rack": "Rack-A01",
       "is_online": true,
-      "latency_ms": 2.6,
+      "latency_ms": 2.4,
       "packet_loss": 0,
       "uptime": "142 days, 6 hours",
       "cdp_enabled": true,
@@ -36,7 +36,7 @@
       "unit": "اتاق سرور اصلی (Main Server Room)",
       "rack": "Rack-A02",
       "is_online": true,
-      "latency_ms": 2.7,
+      "latency_ms": 1.7,
       "packet_loss": 0,
       "uptime": "210 days, 14 hours",
       "cdp_enabled": true,
@@ -59,7 +59,7 @@
       "unit": "رک شبکه اداری (Network Closet A2)",
       "rack": "Rack-B01",
       "is_online": true,
-      "latency_ms": 2.9,
+      "latency_ms": 3.2,
       "packet_loss": 0,
       "uptime": "89 days, 2 hours",
       "cdp_enabled": true,
@@ -82,7 +82,7 @@
       "unit": "واحد توسعه نرم‌افزار (Dev Unit 302)",
       "rack": "Wall-Rack-302",
       "is_online": true,
-      "latency_ms": 3.1,
+      "latency_ms": 0.9,
       "packet_loss": 0,
       "uptime": "45 days, 11 hours",
       "cdp_enabled": true,
@@ -105,7 +105,7 @@
       "unit": "مرکز داده فرعی (MDF Room)",
       "rack": "Rack-MDF-B1",
       "is_online": true,
-      "latency_ms": 1.4,
+      "latency_ms": 3.4,
       "packet_loss": 0,
       "uptime": "73 days, 19 hours",
       "cdp_enabled": true,
@@ -151,7 +151,7 @@
       "unit": "لابی و سالن همایش (Main Lobby)",
       "rack": "سقف کاذب لابی",
       "is_online": true,
-      "latency_ms": 2.4,
+      "latency_ms": 2.8,
       "packet_loss": 0,
       "uptime": "142 days, 5 hours",
       "cdp_enabled": true,
@@ -174,7 +174,7 @@
       "unit": "واحد توسعه نرم‌افزار (Dev Unit 302)",
       "rack": "سقف راهرو شرقی",
       "is_online": true,
-      "latency_ms": 2.0,
+      "latency_ms": 1.9,
       "packet_loss": 0,
       "uptime": "45 days, 8 hours",
       "cdp_enabled": true,
@@ -197,7 +197,7 @@
       "unit": "مرکز داده فرعی (MDF Room)",
       "rack": "دیواری ورودی مهندسی",
       "is_online": true,
-      "latency_ms": 1.4,
+      "latency_ms": 1.6,
       "packet_loss": 0,
       "uptime": "73 days, 16 hours",
       "cdp_enabled": true,
@@ -1942,6 +1942,118 @@
           "type": "ip"
         }
       ]
+    },
+    {
+      "id": "tmpl-cisco-57a8b5",
+      "name": "کانفیگ استاندارد سوئیچ لایه دسترسی ssssss",
+      "vendor": "cisco",
+      "target_type": "switch",
+      "role": "Access Switch",
+      "description": "پیکربندی پایه سوئیچ‌های اکسس سیسکو شامل Hostname، SVI مدیریتی، Spanning-Tree، SSH v2، CDP/LLDP، NTP و خطوط VTY (نسخه سفارشی‌شده)",
+      "default_cli_mode": "GLOBAL_CONFIG",
+      "commands": "enable\nconfigure terminal\nhostname {{DEVICE_NAME}}\nip domain-name {{DOMAIN_NAME}}\ncrypto key generate rsa modulus 2048\nip ssh version 2\nusername admin privilege 15 secret {{ADMIN_PASSWORD}}\nline vty 0 4\n transport input ssh\n login local\n exec-timeout 15 0\nexit\n! Management SVI\nvlan {{MANAGEMENT_VLAN}}\n name MGT_VLAN\nexit\ninterface vlan {{MANAGEMENT_VLAN}}\n description SVI - {{BUILDING}} {{FLOOR}} {{UNIT}}\n ip address {{IP_ADDRESS}} {{SUBNET_MASK}}\n no shutdown\nexit\nip default-gateway {{DEFAULT_GATEWAY}}\n! STP & Discovery Protocols\nspanning-tree mode rapid-pvst\ncdp run\nlldp run\n! Network Services\nntp server {{NTP_SERVER}}\nlogging host {{DEFAULT_GATEWAY}}\nservice timestamps log datetime msec\nsnmp-server community public RO\nsnmp-server location \"{{BUILDING}}, {{FLOOR}}, {{UNIT}}, {{RACK}}\"\nend\nwrite memory",
+      "variables": [
+        {
+          "name": "DEVICE_NAME",
+          "label": "نام تجهیز (Hostname)",
+          "description": "نام هاست دیوایس در شبکه",
+          "default_value": "SW-ACCESS-01",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "IP_ADDRESS",
+          "label": "آدرس آی‌پی مدیریتی (Management IP)",
+          "description": "آدرس IP جهت دسترسی و مدیریت سوئیچ",
+          "default_value": "192.168.1.50",
+          "required": true,
+          "type": "ip"
+        },
+        {
+          "name": "SUBNET_MASK",
+          "label": "ماسک شبکه (Subnet Mask)",
+          "description": "ماسک زیرشبکه آی‌پی",
+          "default_value": "255.255.255.0",
+          "required": true,
+          "type": "subnet"
+        },
+        {
+          "name": "DEFAULT_GATEWAY",
+          "label": "گیت‌وی پیش‌فرض (Default Gateway)",
+          "description": "آدرس روتر یا گیت‌وی خروجی",
+          "default_value": "192.168.1.254",
+          "required": true,
+          "type": "gateway"
+        },
+        {
+          "name": "MANAGEMENT_VLAN",
+          "label": "شماره ویلن مدیریت (Management VLAN)",
+          "description": "شناسه VLAN جهت ارتباط لایه ۳ SVI",
+          "default_value": "1",
+          "required": true,
+          "type": "vlan"
+        },
+        {
+          "name": "BUILDING",
+          "label": "ساختمان استقرار",
+          "description": "نام ساختمان محل نصب",
+          "default_value": "ساختمان مرکزی",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "FLOOR",
+          "label": "طبقه",
+          "description": "شماره یا نام طبقه",
+          "default_value": "طبقه ۱",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "UNIT",
+          "label": "واحد / اتاق",
+          "description": "واحد یا اتاق سرور",
+          "default_value": "اتاق رک",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "RACK",
+          "label": "شماره رک",
+          "description": "نام یا کد رک مستقر",
+          "default_value": "Rack-01",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "DOMAIN_NAME",
+          "label": "دامنه شبکه (Domain Name)",
+          "description": "دامنه مورد استفاده در SSH",
+          "default_value": "corp.local",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "ADMIN_PASSWORD",
+          "label": "رمز عبور SSH کاربر admin",
+          "description": "رمز عبور رمزنگاری شده کلاینت",
+          "default_value": "Cisco@2026!",
+          "required": true,
+          "type": "password"
+        },
+        {
+          "name": "NTP_SERVER",
+          "label": "سرور زمان (NTP Server)",
+          "description": "سرور هماهنگ‌سازی زمان شبکه",
+          "default_value": "192.168.1.254",
+          "required": false,
+          "type": "ip"
+        }
+      ],
+      "author": "Network Administrator",
+      "created_at": "2026-09-08 08:48:41",
+      "updated_at": "2026-09-08 08:48:41",
+      "is_builtin": false
     }
   ]
 }

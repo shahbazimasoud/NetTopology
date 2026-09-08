@@ -239,8 +239,20 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                 <h3 className="font-bold text-base text-white glow-text-cyan">
                   اعمال تعاملی تمپلیت کانفیگ (Apply Template)
                 </h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  {currentTemplate?.vendor === 'mikrotik' ? 'MikroTik RouterOS' : 'Cisco IOS-XE'}
+                <span
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-md font-bold transition-all shadow-sm ${
+                    currentTemplate?.vendor === 'mikrotik'
+                      ? 'vendor-badge-mikrotik'
+                      : currentTemplate?.vendor === 'cisco'
+                      ? 'vendor-badge-cisco'
+                      : 'vendor-badge-generic'
+                  }`}
+                >
+                  {currentTemplate?.vendor === 'mikrotik'
+                    ? 'MikroTik RouterOS'
+                    : currentTemplate?.vendor === 'cisco'
+                    ? 'Cisco IOS-XE'
+                    : 'Generic CLI'}
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">

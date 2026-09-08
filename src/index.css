@@ -313,11 +313,24 @@
 .theme-light .text-slate-400 { color: #475569 !important; }
 .theme-light .text-slate-500 { color: #64748b !important; }
 .theme-light .text-gray-400 { color: #475569 !important; }
+.theme-light .text-indigo-300 { color: #4338ca !important; }
 .theme-light .text-indigo-400 { color: #4f46e5 !important; }
 .theme-light .text-purple-400 { color: #7c3aed !important; }
-.theme-light .text-amber-400 { color: #b45309 !important; }
+.theme-light .text-cyan-300,
+.theme-light .text-cyan-400,
+.theme-light .text-cyan-500,
+.theme-light .text-sky-300,
+.theme-light .text-sky-400,
+.theme-light .text-sky-500 {
+  color: #0284c7 !important;
+}
+.theme-light .text-emerald-300,
 .theme-light .text-emerald-400 { color: #047857 !important; }
-.theme-light .text-red-400 { color: #b91c1c !important; }
+.theme-light .text-amber-300,
+.theme-light .text-amber-400 { color: #b45309 !important; }
+.theme-light .text-red-400,
+.theme-light .text-rose-300,
+.theme-light .text-rose-400 { color: #b91c1c !important; }
 
 /* Custom Glow Texts in Light Mode */
 .theme-light .glow-text-cyan,
@@ -389,17 +402,28 @@
 .theme-light .bg-slate-900\/70,
 .theme-light .bg-slate-900\/80,
 .theme-light .bg-slate-900\/90,
+.theme-light .bg-slate-900\/95,
 .theme-light .bg-slate-950,
 .theme-light .bg-slate-950\/50,
 .theme-light .bg-slate-950\/60,
 .theme-light .bg-slate-950\/70,
 .theme-light .bg-slate-950\/80,
 .theme-light .bg-slate-950\/90,
+.theme-light .bg-slate-950\/95,
 .theme-light .bg-slate-800,
 .theme-light .bg-slate-700 {
-  background-color: #f1f5f9 !important;
+  background-color: #f8fafc !important;
   color: #1e293b !important;
   border-color: #cbd5e1 !important;
+}
+
+/* Modal containers in light theme */
+.theme-light .bg-slate-900\/95,
+.theme-light .bg-slate-950\/95 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
 }
 
 /* Specifically for badges, pills, and spans with dark slate in light theme */
@@ -448,14 +472,20 @@
 }
 
 .theme-light input[class*="bg-slate-900"],
+.theme-light input[class*="bg-slate-950"],
 .theme-light select[class*="bg-slate-900"],
-.theme-light textarea[class*="bg-slate-900"] {
+.theme-light select[class*="bg-slate-950"],
+.theme-light textarea[class*="bg-slate-900"],
+.theme-light textarea[class*="bg-slate-950"] {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
 }
 
-.theme-light input[class*="bg-slate-900"]::placeholder {
+.theme-light input[class*="bg-slate-900"]::placeholder,
+.theme-light input[class*="bg-slate-950"]::placeholder,
+.theme-light textarea[class*="bg-slate-900"]::placeholder,
+.theme-light textarea[class*="bg-slate-950"]::placeholder {
   color: #94a3b8 !important;
 }
 
@@ -533,6 +563,101 @@
 .theme-light .bg-indigo-500\/20 *,
 .theme-light .bg-indigo-500\/5 * {
   color: #3730a3 !important;
+}
+
+/* Subtle / Soft Cyan (Cisco Sky/Blue) & Emerald (MikroTik) Badges in Light Mode */
+.theme-light .bg-cyan-500\/5,
+.theme-light .bg-cyan-500\/10,
+.theme-light .bg-cyan-500\/15,
+.theme-light .bg-cyan-500\/20,
+.theme-light .bg-cyan-500\/25,
+.theme-light .bg-cyan-500\/30,
+.theme-light .bg-sky-500\/10,
+.theme-light .bg-sky-500\/15,
+.theme-light .bg-sky-500\/20 {
+  background-color: #e0f2fe !important;
+  border-color: #7dd3fc !important;
+  color: #0369a1 !important;
+}
+
+.theme-light .bg-cyan-500\/5 *,
+.theme-light .bg-cyan-500\/10 *,
+.theme-light .bg-cyan-500\/15 *,
+.theme-light .bg-cyan-500\/20 *,
+.theme-light .bg-cyan-500\/25 *,
+.theme-light .bg-cyan-500\/30 *,
+.theme-light .bg-sky-500\/10 *,
+.theme-light .bg-sky-500\/15 *,
+.theme-light .bg-sky-500\/20 * {
+  color: #0369a1 !important;
+}
+
+.theme-light .bg-emerald-500\/5,
+.theme-light .bg-emerald-500\/10,
+.theme-light .bg-emerald-500\/15,
+.theme-light .bg-emerald-500\/20 {
+  background-color: #dcfce7 !important;
+  border-color: #86efac !important;
+  color: #15803d !important;
+}
+
+.theme-light .bg-emerald-500\/5 *,
+.theme-light .bg-emerald-500\/10 *,
+.theme-light .bg-emerald-500\/15 *,
+.theme-light .bg-emerald-500\/20 * {
+  color: #15803d !important;
+}
+
+.theme-light .border-cyan-500\/20,
+.theme-light .border-cyan-500\/30,
+.theme-light .border-cyan-500\/40 {
+  border-color: #7dd3fc !important;
+}
+
+.theme-light .border-emerald-500\/20,
+.theme-light .border-emerald-500\/30,
+.theme-light .border-emerald-500\/40 {
+  border-color: #86efac !important;
+}
+
+/* ==========================================================================
+   Vendor Badges (Cisco IOS-XE, MikroTik RouterOS & Generic)
+   Harmonized for both Dark and Light Themes across all modals and views
+   ========================================================================== */
+.vendor-badge-cisco {
+  background-color: rgba(6, 182, 212, 0.15) !important;
+  color: #67e8f9 !important;
+  border: 1px solid rgba(6, 182, 212, 0.35) !important;
+}
+
+.theme-light .vendor-badge-cisco {
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+  border-color: #7dd3fc !important;
+}
+
+.vendor-badge-mikrotik {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #6ee7b7 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+}
+
+.theme-light .vendor-badge-mikrotik {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+  border-color: #86efac !important;
+}
+
+.vendor-badge-generic {
+  background-color: rgba(99, 102, 241, 0.15) !important;
+  color: #a5b4fc !important;
+  border: 1px solid rgba(99, 102, 241, 0.35) !important;
+}
+
+.theme-light .vendor-badge-generic {
+  background-color: #e0e7ff !important;
+  color: #4338ca !important;
+  border-color: #c7d2fe !important;
 }
 
 .theme-light input::placeholder {

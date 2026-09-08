@@ -8,9 +8,22 @@ export interface ReleaseNote {
   changes: string[];
 }
 
-export const APP_VERSION = '1.2.1';
+export const APP_VERSION = '1.2.2';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.2.2',
+    releaseDate: '2026-09-08',
+    type: 'patch',
+    title: 'هماهنگ‌سازی و اصلاح استایل بج Cisco IOS-XE و کادرهای مودال در تم روشن (Light Theme Harmonization)',
+    changes: [
+      'ایجاد کلاس اختصاصی و بهینه‌سازی شده vendor-badge-cisco و vendor-badge-mikrotik با کنتراست استاندارد و وضوح عالی در تم روشن و تاریک',
+      'اصلاح رنگ و پس‌زمینه بج Cisco IOS-XE در سربرگ مودال اعمال تعاملی تمپلیت (Apply Template Modal)',
+      'هماهنگ‌سازی استایل بج و تگ‌های سیسکو در تمامی مودال‌ها (کلون‌گیری، ویرایشگر تمپلیت، ترمینال و بازرسی پورت)',
+      'اصلاح پس‌زمینه کادر مودال‌ها، فیلدهای ورودی و سلکت‌باکس‌ها در تم روشن جهت یکپارچگی بصری کامل',
+      'حفظ خوانایی کنتراست بالای خروجی‌ها و بلوک‌های کد ترمینال در کلیه حالت‌های تم',
+    ],
+  },
   {
     version: '1.2.1',
     releaseDate: '2026-09-08',

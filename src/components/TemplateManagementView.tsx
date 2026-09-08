@@ -427,13 +427,15 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
-                        className={`text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-lg border ${
+                        className={`text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-lg border transition-all shadow-sm ${
                           tmpl.vendor === 'mikrotik'
-                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                            : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+                            ? 'vendor-badge-mikrotik'
+                            : tmpl.vendor === 'cisco'
+                            ? 'vendor-badge-cisco'
+                            : 'vendor-badge-generic'
                         }`}
                       >
-                        {tmpl.vendor === 'mikrotik' ? 'MikroTik RouterOS' : 'Cisco IOS-XE'}
+                        {tmpl.vendor === 'mikrotik' ? 'MikroTik RouterOS' : tmpl.vendor === 'cisco' ? 'Cisco IOS-XE' : 'Generic CLI'}
                       </span>
 
                       <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/5 text-slate-300 border border-white/10">

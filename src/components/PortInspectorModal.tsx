@@ -1215,7 +1215,7 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium">
                     <span>دستورات معادل در سیسکو IOS (Running-Config):</span>
-                    <span className="text-[10px] font-mono text-slate-400">Cisco IOS-XE Script</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded vendor-badge-cisco font-bold">Cisco IOS-XE Script</span>
                   </div>
                   <pre className="p-3 rounded-lg bg-slate-950 text-emerald-400 font-mono text-xs overflow-x-auto text-left leading-relaxed select-all" dir="ltr">
                     {generateCiscoCommands()}
