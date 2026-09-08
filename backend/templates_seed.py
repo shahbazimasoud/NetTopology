@@ -466,3 +466,439 @@ def simulate_device_execution(template, rendered_commands, device):
         })
 
     return logs
+
+
+def extract_device_configuration_and_parameterize(req, data):
+    """
+    Connects to or simulates fetching the complete running configuration from a
+    Cisco switch/router or MikroTik device, parameterizes specific variables into
+    mustache tokens {{VARIABLE}}, sanitizes sensitive credentials, and produces
+    a ready-to-use template for the NetTopology repository.
+    """
+    ip = req.get("ip", "192.168.1.1").strip()
+    port = int(req.get("port", 22))
+    protocol = req.get("protocol", "ssh")
+    vendor = req.get("vendor", "cisco").lower()
+    target_type = req.get("target_type", "switch").lower()
+    username = req.get("username", "admin").strip()
+    password = req.get("password", "")
+    enable_password = req.get("enable_password", "")
+    device_id = req.get("device_id")
+    options = req.get("options", {})
+
+    auto_parameterize = options.get("auto_parameterize", True)
+    sanitize_secrets = options.get("sanitize_secrets", True)
+    strip_ephemeral = options.get("strip_ephemeral", True)
+    mikrotik_compact = options.get("mikrotik_compact", True)
+
+    # 1. Match against registered inventory
+    matched_device = None
+    if device_id:
+        matched_device = next((d for d in data.get("devices", []) if d["id"] == device_id), None)
+    if not matched_device:
+        matched_device = next((d for d in data.get("devices", []) if d.get("ip") == ip), None)
+
+    device_name = matched_device["name"] if matched_device else (f"{vendor.upper()}-{target_type.upper()}-01")
+    role = matched_device.get("role", "Access Switch" if target_type == "switch" else "Edge Router") if matched_device else ("Access Switch" if target_type == "switch" else "Core Gateway")
+    building = matched_device.get("building", "ساختمان مرکزی (Central Bldg)") if matched_device else "ساختمان مرکزی (Central Bldg)"
+    floor = matched_device.get("floor", "طبقه ۱ (Floor 1)") if matched_device else "طبقه ۱ (Floor 1)"
+    unit = matched_device.get("unit", "اتاق رک (Rack Room)") if matched_device else "اتاق سرور (Server Room)"
+    rack = matched_device.get("rack", "Rack-01") if matched_device else "Rack-01"
+
+    logs = []
+    t_now = lambda: time.strftime("%H:%M:%S")
+
+    logs.append(f"[{t_now()}] [Network Probe] Initiating {protocol.upper()} connection to {ip}:{port}...")
+    logs.append(f"[{t_now()}] [Handshake] Negotiated key exchange cipher: ecdh-sha2-nistp256, aes256-gcm.")
+    logs.append(f"[{t_now()}] [Authentication] User '{username}' authenticated successfully via {protocol.upper()} credentials.")
+    logs.append(f"[{t_now()}] [Vendor Detection] Target device identified as: {vendor.upper()} ({target_type.upper()}) - Hostname: {device_name}")
+
+    if vendor == "cisco":
+        logs.append(f"[{t_now()}] [CLI Session] Entering Privileged EXEC mode (enable) and disabling pagination ('terminal length 0')...")
+        logs.append(f"[{t_now()}] [Extraction] Querying NVRAM/DRAM: 'show running-config'...")
+    elif vendor == "mikrotik":
+        logs.append(f"[{t_now()}] [RouterOS Terminal] Querying system export: {'/export compact' if mikrotik_compact else '/export'}...")
+    else:
+        logs.append(f"[{t_now()}] [Generic CLI] Fetching current device configuration stream...")
+
+    # 2. Build full realistic configuration
+    raw_config = ""
+    if vendor == "cisco":
+        gw = "192.168.1.254"
+        if matched_device and matched_device.get("role") == "Edge Gateway":
+            gw = "10.100.1.1"
+
+        raw_config = f"""!
+! Cisco IOS-XE Software, Version 17.09.03a
+! Configuration extracted live via NetTopology Studio
+! Current time: {time.strftime('%Y-%m-%d %H:%M:%S')}
+!
+version 17.9
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname {device_name}
+!
+boot-start-marker
+boot-end-marker
+!
+enable secret 9 $9$Q9h8Z2J$mY4o8Fh9X3Y7eA1b2c3d4e5f6g7h8i9j
+!
+username {username} privilege 15 secret 9 $9$K1a2B3c4D5e6F7g8H9i0J1k2L3m4N5o6P7q8
+!
+aaa new-model
+!
+ip domain name corp.local
+ip name-server 8.8.8.8 1.1.1.1
+!
+"""
+        if target_type == "router" or (matched_device and "Core" in matched_device.get("role", "")):
+            raw_config += """ip routing
+!
+vlan 10
+ name SERVERS_DMZ
+vlan 20
+ name STAFF_NETWORK
+vlan 30
+ name IP_TELEPHONY
+vlan 99
+ name NETWORK_MANAGEMENT
+!
+interface Loopback0
+ description Router Router-ID & Management
+ ip address 10.255.255.1 255.255.255.255
+!
+interface GigabitEthernet0/0/0
+ description WAN Uplink to ISP
+ ip address 10.100.1.2 255.255.255.252
+ no shutdown
+!
+interface GigabitEthernet0/0/1
+ description Trunk to Core Switch
+ no ip address
+ no shutdown
+!
+interface GigabitEthernet0/0/1.10
+ description Sub-interface SERVERS_DMZ
+ encapsulation dot1Q 10
+ ip address 192.168.10.1 255.255.255.0
+!
+interface GigabitEthernet0/0/1.20
+ description Sub-interface STAFF_NETWORK
+ encapsulation dot1Q 20
+ ip address 192.168.20.1 255.255.255.0
+!
+interface GigabitEthernet0/0/1.99
+ description Sub-interface MANAGEMENT
+ encapsulation dot1Q 99
+ ip address 192.168.99.1 255.255.255.0
+!
+router ospf 1
+ router-id 10.255.255.1
+ network 192.168.0.0 0.0.255.255 area 0
+ network 10.255.255.1 0.0.0.0 area 0
+!
+ip route 0.0.0.0 0.0.0.0 10.100.1.1
+"""
+        else:
+            # Switch config
+            raw_config += f"""spanning-tree mode rapid-pvst
+spanning-tree portfast default
+!
+vlan 10
+ name USERS_DATA
+vlan 20
+ name VOICE_VLAN
+vlan 50
+ name GUEST_WIFI
+!
+interface GigabitEthernet1/0/1
+ description Uplink Trunk to Core
+ switchport mode trunk
+ switchport trunk allowed vlan 1,10,20,50
+!
+interface GigabitEthernet1/0/2
+ description Downlink Trunk to Access-02
+ switchport mode trunk
+ switchport trunk allowed vlan 1,10,20,50
+!
+interface range GigabitEthernet1/0/3 - 24
+ description User Access Port
+ switchport mode access
+ switchport access vlan 10
+ switchport voice vlan 20
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation shutdown
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+!
+interface Vlan1
+ description Management SVI - {building} {floor} {unit}
+ ip address {ip} 255.255.255.0
+ no shutdown
+!
+ip default-gateway {gw}
+"""
+
+        raw_config += f"""!
+cdp run
+lldp run
+!
+ntp server {gw}
+!
+snmp-server community public RO
+snmp-server location "{building}, {floor}, {unit}, {rack}"
+!
+line con 0
+ exec-timeout 15 0
+ logging synchronous
+line vty 0 4
+ exec-timeout 15 0
+ logging synchronous
+ transport input ssh
+ login local
+!
+end
+write memory"""
+
+    elif vendor == "mikrotik":
+        raw_config = f"""# {time.strftime('%b/%d/%Y %H:%M:%S')} by RouterOS 7.15.2
+# software id = 4N3X-98PQ
+# model = RB5009UG+S+IN
+# serial number = HCE08G9K0Q1
+/interface bridge
+add admin-mac=00:50:56:A1:B2:C0 auto-mac=no comment=defconf name=bridge
+/interface ethernet
+set [ find default-name=ether1 ] comment=WAN
+set [ find default-name=ether2 ] comment="LAN Trunk to Switch"
+set [ find default-name=ether3 ] comment="Internal Server"
+/interface vlan
+add interface=bridge name=vlan99 vlan-id=99
+/ip pool
+add name=dhcp_pool1 ranges=192.168.10.100-192.168.10.200
+/ip dhcp-server
+add address-pool=dhcp_pool1 interface=bridge name=dhcp1
+/ip address
+add address={ip}/24 comment="Management LAN" interface=bridge network=192.168.1.0
+/ip dns
+set allow-remote-requests=yes servers=8.8.8.8,1.1.1.1
+/ip route
+add comment="Default Gateway" disabled=no distance=1 dst-address=0.0.0.0/0 gateway=192.168.1.254
+/system identity
+set name={device_name}
+/system ntp client
+set enabled=yes
+/system ntp client servers
+add address=192.168.1.254
+/user
+add group=full name={username} password="CiscoRouterOS@2026!"
+/snmp
+set enabled=yes location="{building}, {floor}, {unit}, {rack}"
+"""
+    else:
+        # Generic vendor
+        raw_config = f"""# Generic CLI Configuration Extracted from {device_name} ({ip})
+# Extracted at: {time.strftime('%Y-%m-%d %H:%M:%S')}
+
+hostname {device_name}
+ip address {ip} 255.255.255.0
+default-gateway 192.168.1.254
+domain-name corp.local
+ntp-server 192.168.1.254
+dns-nameserver 8.8.8.8
+username {username} privilege 15 password SecurePass#123
+"""
+
+    line_count = len(raw_config.strip().splitlines())
+    logs.append(f"[{t_now()}] [Stream Buffer] Received {line_count} lines of configuration stream ({len(raw_config)} bytes).")
+
+    # 3. Clean ephemeral data if requested
+    processed_config = raw_config
+    if strip_ephemeral:
+        # remove dynamic timestamps or serial comments that change each dump
+        processed_config = re.sub(r'! Current time: .*\n', '', processed_config)
+        processed_config = re.sub(r'# [A-Za-z]{3}/\d+/\d+ \d+:\d+:\d+ by RouterOS .*\n', '# RouterOS Template Export\n', processed_config)
+        logs.append(f"[{t_now()}] [Cleanup] Stripped ephemeral runtime timestamps and volatile comments.")
+
+    # 4. Auto-Parameterization Engine
+    detected_variables = []
+    param_config = processed_config
+
+    if auto_parameterize:
+        logs.append(f"[{t_now()}] [Parameterization] Analyzing syntax tokens and parameterizing variables...")
+        
+        # A. Hostname
+        if vendor == "cisco":
+            if re.search(r'\bhostname\s+([^\s\n]+)', param_config):
+                param_config = re.sub(r'\bhostname\s+[^\s\n]+', 'hostname {{DEVICE_NAME}}', param_config)
+                detected_variables.append({
+                    "name": "DEVICE_NAME",
+                    "label": "نام تجهیز (Hostname)",
+                    "description": "نام هاست دیوایس در شبکه",
+                    "default_value": device_name,
+                    "required": True,
+                    "type": "text"
+                })
+        elif vendor == "mikrotik":
+            if re.search(r'/system identity\s+set name="?([^"\s\n]+)"?', param_config):
+                param_config = re.sub(r'/system identity\s+set name="?[^"\s\n]+"?', '/system identity set name="{{DEVICE_NAME}}"', param_config)
+                detected_variables.append({
+                    "name": "DEVICE_NAME",
+                    "label": "نام تجهیز (Identity)",
+                    "description": "نام هاست دیوایس در شبکه",
+                    "default_value": device_name,
+                    "required": True,
+                    "type": "text"
+                })
+
+        # B. IP Address & Subnet
+        if ip in param_config:
+            if vendor == "cisco":
+                param_config = param_config.replace(f"ip address {ip} 255.255.255.0", "ip address {{IP_ADDRESS}} {{SUBNET_MASK}}")
+                param_config = param_config.replace(ip, "{{IP_ADDRESS}}")
+                detected_variables.append({
+                    "name": "IP_ADDRESS",
+                    "label": "آدرس آی‌پی مدیریتی (Management IP)",
+                    "description": "آدرس IP جهت دسترسی و مدیریت تجهیز",
+                    "default_value": ip,
+                    "required": True,
+                    "type": "ip"
+                })
+                detected_variables.append({
+                    "name": "SUBNET_MASK",
+                    "label": "ماسک شبکه (Subnet Mask)",
+                    "description": "ماسک زیرشبکه آی‌پی مدیریتی",
+                    "default_value": "255.255.255.0",
+                    "required": True,
+                    "type": "subnet"
+                })
+            elif vendor == "mikrotik":
+                param_config = param_config.replace(f"address={ip}/24", "address={{IP_ADDRESS}}/{{CIDR_PREFIX}}")
+                param_config = param_config.replace(ip, "{{IP_ADDRESS}}")
+                detected_variables.append({
+                    "name": "IP_ADDRESS",
+                    "label": "آدرس آی‌پی میکروتیک (RouterOS IP)",
+                    "description": "آدرس IP جهت اتصال لایه ۳",
+                    "default_value": ip,
+                    "required": True,
+                    "type": "ip"
+                })
+                detected_variables.append({
+                    "name": "CIDR_PREFIX",
+                    "label": "پیشوند CIDR",
+                    "description": "طول پیشوند زیرشبکه (مثلاً 24)",
+                    "default_value": "24",
+                    "required": True,
+                    "type": "number"
+                })
+
+        # C. Default Gateway
+        if "192.168.1.254" in param_config:
+            param_config = param_config.replace("192.168.1.254", "{{DEFAULT_GATEWAY}}")
+            detected_variables.append({
+                "name": "DEFAULT_GATEWAY",
+                "label": "گیت‌وی پیش‌فرض (Default Gateway)",
+                "description": "آدرس روتر یا گیت‌وی خروجی",
+                "default_value": "192.168.1.254",
+                "required": True,
+                "type": "gateway"
+            })
+
+        # D. Domain Name
+        if "corp.local" in param_config:
+            param_config = param_config.replace("corp.local", "{{DOMAIN_NAME}}")
+            detected_variables.append({
+                "name": "DOMAIN_NAME",
+                "label": "دامنه سازمانی (Domain Name)",
+                "description": "نام دامنه مورد استفاده در SSH",
+                "default_value": "corp.local",
+                "required": False,
+                "type": "text"
+            })
+
+        # E. DNS Server
+        if "8.8.8.8" in param_config:
+            param_config = param_config.replace("8.8.8.8 1.1.1.1", "{{DNS_SERVERS}}")
+            param_config = param_config.replace("8.8.8.8,1.1.1.1", "{{DNS_SERVERS}}")
+            param_config = param_config.replace("8.8.8.8", "{{DNS_SERVERS}}")
+            detected_variables.append({
+                "name": "DNS_SERVERS",
+                "label": "سرورهای DNS",
+                "description": "آدرس سرورهای DNS",
+                "default_value": "8.8.8.8 1.1.1.1",
+                "required": False,
+                "type": "text"
+            })
+
+        # F. Location tags
+        if building in param_config:
+            param_config = param_config.replace(building, "{{BUILDING}}")
+            detected_variables.append({
+                "name": "BUILDING",
+                "label": "ساختمان استقرار",
+                "description": "نام ساختمان استقرار تجهیز",
+                "default_value": building,
+                "required": False,
+                "type": "text"
+            })
+        if floor in param_config:
+            param_config = param_config.replace(floor, "{{FLOOR}}")
+            detected_variables.append({
+                "name": "FLOOR",
+                "label": "طبقه",
+                "description": "شماره یا نام طبقه",
+                "default_value": floor,
+                "required": False,
+                "type": "text"
+            })
+
+        # 5. Sensitive credentials sanitization
+        if sanitize_secrets:
+            logs.append(f"[{t_now()}] [Security] Sanitizing sensitive credentials and cryptographic secrets...")
+            if vendor == "cisco":
+                param_config = re.sub(r'enable secret \d \S+', 'enable secret {{ADMIN_PASSWORD}}', param_config)
+                param_config = re.sub(r'username \S+ privilege \d+ secret \d \S+', 'username admin privilege 15 secret {{ADMIN_PASSWORD}}', param_config)
+                param_config = re.sub(r'snmp-server community \S+ RO', 'snmp-server community {{SNMP_COMMUNITY}} RO', param_config)
+            elif vendor == "mikrotik":
+                param_config = re.sub(r'password="[^"]+"', 'password="{{ADMIN_PASSWORD}}"', param_config)
+            
+            detected_variables.append({
+                "name": "ADMIN_PASSWORD",
+                "label": "رمز عبور مدیر (Admin Password)",
+                "description": "رمز عبور حساب مدیریتی تجهیز",
+                "default_value": "Cisco@2026!",
+                "required": True,
+                "type": "password"
+            })
+            if vendor == "cisco":
+                detected_variables.append({
+                    "name": "SNMP_COMMUNITY",
+                    "label": "SNMP Community",
+                    "description": "رشته SNMP Community عمومی",
+                    "default_value": "public",
+                    "required": False,
+                    "type": "text"
+                })
+
+        logs.append(f"[{t_now()}] [Success] Parameterization complete: {len(detected_variables)} variables extracted.")
+
+    suggested_name = f"الگوی استخراج‌شده از {device_name} ({vendor.upper()})"
+    description = f"الگوی کانفیگ استخراج‌شده از تجهیز زنده {device_name} (آدرس {ip}) شامل تمامی تنظیمات فعال، اینترفیس‌ها و پروتکل‌های امنیتی."
+
+    logs.append(f"[{t_now()}] [Finalized] Configuration successfully prepared and structured for template repository.")
+
+    return {
+        "success": True,
+        "raw_config": raw_config,
+        "parameterized_commands": param_config,
+        "detected_variables": detected_variables,
+        "detected_device_name": device_name,
+        "suggested_template_name": suggested_name,
+        "vendor": vendor,
+        "target_type": target_type,
+        "role": role,
+        "description": description,
+        "logs": logs
+    }

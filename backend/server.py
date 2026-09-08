@@ -11,9 +11,19 @@ from urllib.parse import urlparse, parse_qs
 # Import templates seed & execution helpers
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
-    from backend.templates_seed import get_default_templates, render_template_commands, simulate_device_execution
+    from backend.templates_seed import (
+        get_default_templates,
+        render_template_commands,
+        simulate_device_execution,
+        extract_device_configuration_and_parameterize
+    )
 except ImportError:
-    from templates_seed import get_default_templates, render_template_commands, simulate_device_execution
+    from templates_seed import (
+        get_default_templates,
+        render_template_commands,
+        simulate_device_execution,
+        extract_device_configuration_and_parameterize
+    )
 
 # Data file path
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -1234,6 +1244,18 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
                 "rendered_script": rendered_script,
                 "logs": logs
             })
+            return
+
+        if path == "/api/templates/extract-from-device":
+            # Extract and parameterize running configuration from live or selected device
+            try:
+                result = extract_device_configuration_and_parameterize(body, data)
+                self._send_json(200, result)
+            except Exception as e:
+                self._send_json(500, {
+                    "success": False,
+                    "error": f"خطا در استخراج پیکربندی تجهیز: {str(e)}"
+                })
             return
 
         self._send_json(404, {"error": "Endpoint not found"})

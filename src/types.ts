@@ -145,3 +145,38 @@ export interface TemplateApplyResult {
   rendered_script: string;
   logs: TemplateExecutionLog[];
 }
+
+export interface DeviceConfigExtractOptions {
+  auto_parameterize?: boolean;
+  sanitize_secrets?: boolean;
+  strip_ephemeral?: boolean;
+  mikrotik_compact?: boolean;
+}
+
+export interface DeviceConfigExtractRequest {
+  device_id?: string;
+  ip: string;
+  port?: number;
+  protocol?: 'ssh' | 'telnet';
+  vendor: TemplateVendor;
+  target_type: TemplateTargetType;
+  username?: string;
+  password?: string;
+  enable_password?: string;
+  options?: DeviceConfigExtractOptions;
+}
+
+export interface DeviceConfigExtractResult {
+  success: boolean;
+  message?: string;
+  raw_config: string;
+  parameterized_commands: string;
+  detected_variables: TemplateVariable[];
+  detected_device_name: string;
+  suggested_template_name: string;
+  vendor: TemplateVendor;
+  target_type: TemplateTargetType;
+  role: string;
+  description: string;
+  logs: string[];
+}

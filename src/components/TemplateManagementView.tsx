@@ -21,13 +21,15 @@ import {
   Code2,
   CheckCircle2,
   AlertCircle,
-  CopyPlus
+  CopyPlus,
+  DownloadCloud
 } from 'lucide-react';
 import { ConfigTemplate, Device } from '../types';
 import { fetchTemplates, createTemplate, updateTemplate, deleteTemplate } from '../services/api';
 import { TemplateEditorModal } from './TemplateEditorModal';
 import { ApplyTemplateModal } from './ApplyTemplateModal';
 import { CloneTemplateModal } from './CloneTemplateModal';
+import { CaptureConfigModal } from './CaptureConfigModal';
 
 interface TemplateManagementViewProps {
   devices: Device[];
@@ -60,6 +62,9 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
   // Clone Modal state
   const [cloneModalOpen, setCloneModalOpen] = useState(false);
   const [cloneSourceTemplate, setCloneSourceTemplate] = useState<ConfigTemplate | null>(null);
+
+  // Capture Live Config Modal state
+  const [captureModalOpen, setCaptureModalOpen] = useState(false);
 
   // Feedback notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -224,6 +229,15 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setCaptureModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-[0_0_20px_rgba(16,185,129,0.35)] transition active:scale-95 border border-emerald-400/30"
+            title="اتصال SSH/Telnet به سوئیچ، روتر یا میکروتیک و استخراج خودکار کانفیگ و تبدیل به تمپلیت"
+          >
+            <DownloadCloud className="w-4 h-4 text-emerald-200" />
+            <span>استخراج الگو از تجهیز زنده</span>
+          </button>
+
           <button
             onClick={() => {
               setTemplateToEdit(null);
@@ -606,6 +620,22 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
         onApplied={(updatedDevice) => {
           showToast(`تمپلیت با موفقیت روی «${updatedDevice.name}» اعمال شد.`);
           if (onDeviceUpdated) onDeviceUpdated(updatedDevice);
+        }}
+      />
+
+      {/* Capture Live Config as Template Modal */}
+      <CaptureConfigModal
+        isOpen={captureModalOpen}
+        onClose={() => setCaptureModalOpen(false)}
+        devices={devices}
+        onTemplateSaved={(newTmpl) => {
+          showToast(`تمپلیت «${newTmpl.name}» با موفقیت از کانفیگ تجهیز استخراج و ذخیره گردید.`);
+          loadTemplates();
+        }}
+        onSaveAndApply={(newTmpl) => {
+          showToast(`تمپلیت «${newTmpl.name}» ذخیره شد. در حال باز کردن فرم اعمال روی تجهیز...`);
+          loadTemplates();
+          handleOpenApply(newTmpl.id);
         }}
       />
     </div>

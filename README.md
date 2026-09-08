@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۱.۰
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.1.0
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۳.۰
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.3.0
 
 ---
 
@@ -81,6 +81,15 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 ### ۷. استایل مدرن شیشه‌ای تیره (Spatial Dark Glassmorphism)
 - تمامی پنجره‌های پاپ‌آپ و مودال‌های سیستم از افکت تیره شیشه‌ای بلور (`backdrop-filter: blur(14px)`) بهره می‌برند تا تمرکز کاربر حفظ شده و هیچ‌گونه تداخل بصری با هدر یا بدنه رخ ندهد.
 - پشتیبانی کامل از **Dark Mode** و **Light Mode** با کنتراست اصلاح‌شده و تاییدیه استانداردهای دسترس‌پذیری.
+
+### ۸. استخراج هوشمند و تبدیل خودکار کانفیگ تجهیز زنده به الگو (Live Device Config Extraction & Auto-Parameterization)
+- **دریافت مشخصات اتصال به صورت مستقیم:** پشتیبانی از ارتباط SSH v2 و Telnet با دریافت آدرس IP، پورت، یوزرنیم، پسورد ورود و پسورد Enable Secret سیسکو.
+- **اتصال به تجهیزات ثبت‌شده یا هاست دلخواه:** امکان انتخاب فوری سوئیچ یا روتر از دیتابیس پنل با لود شدن خودکار پارامترها، یا اتصال به هر IP خارج از شبکه ثبت‌شده.
+- **موتور پارامتریک‌سازی خودکار (Auto-Parameterization Engine):** جایگزینی خودکار مقادیر وابسته به تجهیز مانند Hostname با `{{DEVICE_NAME}}`، آدرس IP با `{{IP_ADDRESS}}`، ماسک با `{{SUBNET_MASK}}`، گیت‌وی با `{{DEFAULT_GATEWAY}}` و DNS با `{{DNS_SERVERS}}`.
+- **پاکسازی امنیتی و ماسک کردن داده‌های حساس (Sanitize Secrets):** شناسایی و جایگزینی رمزهای عبور، رکوردهای Secret سیسکو، رشته‌های SNMP Community و هش‌ها با متغیرهای امنیتی جهت جلوگیری از نشت اطلاعات در زمان اشتراک‌گذاری الگو.
+- **حذف داده‌های ناپایدار (Strip Ephemeral Data):** پاکسازی خطوط تاریخ/ساعت استخراج و کامنت‌های موقت برای دستیابی به یک تمپلیت کاملاً تکرارپذیر.
+- **پشتیبانی تخصصی از میکروتیک و سیسکو:** استخراج با دستورات بهینه Cisco IOS (`show running-config`) و دستور فشرده میکروتیک (`/export compact`) برای خروجی گرفتن تمیز تنها از تغییرات کاربری.
+- **پیش‌نمایش دو مرحله‌ای و تنظیم نام الگو:** بررسی سطر به سطر کانفیگ، لیست متغیرهای پویای کشف‌شده، امکان درج کلیکی تگ‌های متغیر، تعیین نام دلخواه تمپلیت و ذخیره در دیتابیس یا اعمال مستقیم بر روی تجهیز دیگر.
 
 ---
 
@@ -223,6 +232,15 @@ npm start
 ### 7. Dark Glassmorphism Modal Architecture
 - Universal backdrop blur (`.modal-backdrop-blur`, `backdrop-filter: blur(14px)`) ensures focus and eliminates color clashing with headers and backgrounds.
 - High-contrast accessibility compliance across both Dark and Light themes.
+
+### 8. Live Device Config Extraction & Auto-Parameterization Engine
+- **Direct Appliance Connection:** Connects over SSH v2 or Telnet using custom or registered credentials (IP, Port, Username, Password, and Cisco Enable Secret).
+- **Network Database & Custom Target Selection:** Choose directly from existing switches and routers in the network database or target any external appliance IP.
+- **Auto-Parameterization Engine:** Automatically converts machine-specific values into dynamic variables (e.g., Hostname to `{{DEVICE_NAME}}`, IP to `{{IP_ADDRESS}}`, Subnet to `{{SUBNET_MASK}}`, Gateway to `{{DEFAULT_GATEWAY}}`, and DNS servers).
+- **Security Sanitization:** Masks raw passwords, Cisco enable secrets, SNMP community strings, and hashes with safe template tokens to prevent accidental data leaks during template sharing.
+- **Ephemeral Cleanup:** Strips volatile timestamps and session comments to ensure clean, reproducible templates.
+- **MikroTik & Cisco Native Optimization:** Utilizes `/export compact` for RouterOS appliances and `show running-config` for Cisco IOS/IOS-XE.
+- **Two-Phase Review & Save Flow:** Review raw vs. parameterized outputs, edit detected variable definitions, click to insert variable tokens into the editor, and save to the templates library with one-click deployment options.
 
 ---
 

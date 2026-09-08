@@ -1,4 +1,14 @@
-import { Device, SwitchPort, CdpLldpNeighbor, TopologyData, VlanInfo, ConfigTemplate, TemplateApplyResult } from '../types';
+import {
+  Device,
+  SwitchPort,
+  CdpLldpNeighbor,
+  TopologyData,
+  VlanInfo,
+  ConfigTemplate,
+  TemplateApplyResult,
+  DeviceConfigExtractRequest,
+  DeviceConfigExtractResult
+} from '../types';
 
 const API_BASE = '/api';
 
@@ -198,6 +208,21 @@ export async function applyTemplateToDevice(params: {
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
     throw new Error(errData.error || 'Failed to apply template to device');
+  }
+  return res.json();
+}
+
+export async function extractConfigFromDevice(
+  params: DeviceConfigExtractRequest
+): Promise<DeviceConfigExtractResult> {
+  const res = await fetch(`${API_BASE}/templates/extract-from-device`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || 'خطا در اتصال به تجهیز و استخراج کانفیگ');
   }
   return res.json();
 }
