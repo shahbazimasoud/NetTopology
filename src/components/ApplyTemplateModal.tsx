@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Device, ConfigTemplate, TemplateApplyResult, TemplateExecutionLog } from '../types';
 import { fetchTemplates, applyTemplateToDevice } from '../services/api';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface ApplyTemplateModalProps {
   isOpen: boolean;
@@ -39,6 +40,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
   preselectedTemplateId,
   onApplied,
 }) => {
+  const { t, isEn } = useLanguage();
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(initialTargetDevice);
   const [templates, setTemplates] = useState<ConfigTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
@@ -226,9 +228,13 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop-blur animate-fadeIn" data-modal-backdrop="true">
-      <div className="w-full max-w-4xl max-h-[92vh] flex flex-col bg-slate-900/95 border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden text-slate-100 backdrop-blur-2xl">
-        {/* Modal Header */}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 modal-backdrop-blur animate-fadeIn overflow-y-auto"
+      data-modal-backdrop="true"
+      dir={isEn ? 'ltr' : 'rtl'}
+    >
+      <div className="w-full max-w-4xl max-h-[92vh] sm:max-h-[88vh] my-auto flex flex-col bg-slate-900/95 border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden text-slate-100 backdrop-blur-2xl">
+        {/* Modal Header (Pinned) */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-white/10 bg-slate-950/60 shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 text-cyan-400 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.25)]">
@@ -236,8 +242,8 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base text-white glow-text-cyan">
-                  اعمال تعاملی تمپلیت کانفیگ (Apply Template)
+                <h3 className="font-bold text-sm sm:text-base text-white glow-text-cyan">
+                  {t('apply_modal_title')}
                 </h3>
                 <span
                   className={`text-[10px] font-mono px-2 py-0.5 rounded-md font-bold transition-all shadow-sm ${
@@ -256,20 +262,21 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                بررسی پارامترها، تایید تعاملی آدرس‌های IP و تزریق هوشمند دستورات در مد مناسب تجهیز
+                {t('apply_modal_subtitle')}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition"
+            aria-label={t('action_close')}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Workflow Steps Indicator */}
-        <div className="flex items-center justify-between px-6 py-2.5 bg-slate-950/40 border-b border-white/5 text-xs">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-slate-950/40 border-b border-white/5 text-xs shrink-0">
           <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto py-1">
             <button
               onClick={() => setActiveStep('variables')}
@@ -281,9 +288,9 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
               }`}
             >
               <span className="w-4 h-4 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-[10px] font-bold">
-                ۱
+                1
               </span>
-              <span>انتخاب تمپلیت و تایید آدرس IP</span>
+              <span>{t('apply_step1')}</span>
             </button>
 
             <span className="text-slate-600">→</span>
@@ -298,9 +305,9 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
               }`}
             >
               <span className="w-4 h-4 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-[10px] font-bold">
-                ۲
+                2
               </span>
-              <span>پیش‌نمایش دستورات آماده اجرا</span>
+              <span>{t('apply_step2')}</span>
             </button>
 
             <span className="text-slate-600">→</span>
@@ -313,14 +320,14 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
               }`}
             >
               <span className="w-4 h-4 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-[10px] font-bold">
-                ۳
+                3
               </span>
-              <span>اجرای ترمینال و ذخیره دائم</span>
+              <span>{t('apply_step3')}</span>
             </div>
           </div>
         </div>
 
-        {/* Modal Body */}
+        {/* Modal Body (Scrollable) */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           {/* Target Device & Template Selector Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
@@ -328,7 +335,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
                 <Server className="w-3.5 h-3.5 text-indigo-400" />
-                <span>تجهیز مقصد (Target Device):</span>
+                <span>{t('apply_target_device')}</span>
               </label>
               {allDevices.length > 0 ? (
                 <select
@@ -352,7 +359,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                   <span className="text-slate-400">{selectedDevice.ip}</span>
                 </div>
               ) : (
-                <div className="text-xs text-rose-400">هیچ تجهیزی انتخاب نشده است.</div>
+                <div className="text-xs text-rose-400">{isEn ? 'No device selected.' : 'هیچ تجهیزی انتخاب نشده است.'}</div>
               )}
             </div>
 
@@ -360,7 +367,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
                 <FileCode2 className="w-3.5 h-3.5 text-cyan-400" />
-                <span>تمپلیت مورد نظر (Config Template):</span>
+                <span>{t('apply_template_label')}</span>
               </label>
               <select
                 value={selectedTemplateId}
@@ -409,23 +416,19 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                        <span>بررسی و تایید تعاملی آدرس IP تجهیز</span>
+                        <span>{t('apply_ip_check_title')}</span>
                         {isIpValid ? (
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                            IPv4 معتبر
+                            {t('apply_ip_valid')}
                           </span>
                         ) : (
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                            فرمت نامعتبر IP
+                            {t('apply_ip_invalid')}
                           </span>
                         )}
                       </h4>
                       <p className="text-xs text-slate-300 mt-1">
-                        آدرس آی‌پی استخراج شده برای این تجهیز{' '}
-                        <strong className="text-cyan-300 font-mono font-bold">
-                          {selectedDevice?.ip || variableValues['IP_ADDRESS']}
-                        </strong>{' '}
-                        است. آیا همین آدرس جهت اعمال دستورات تایید می‌شود، یا مایلید آدرس دیگری جایگزین شود؟
+                        {t('apply_ip_desc').replace('{ip}', selectedDevice?.ip || variableValues['IP_ADDRESS'] || '')}
                       </p>
                     </div>
                   </div>
@@ -442,12 +445,12 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                     {isIpConfirmed ? (
                       <>
                         <Check className="w-3.5 h-3.5" />
-                        <span>آدرس تایید شد</span>
+                        <span>{t('apply_ip_confirmed_btn')}</span>
                       </>
                     ) : (
                       <>
                         <AlertTriangle className="w-3.5 h-3.5" />
-                        <span>نیاز به بررسی و تایید</span>
+                        <span>{t('apply_ip_unconfirmed_btn')}</span>
                       </>
                     )}
                   </button>
@@ -457,7 +460,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-3 border-t border-white/10">
                   <div>
                     <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                      آدرس آی‌پی مدیریتی (IP Address):
+                      {t('apply_ip_field')}
                     </label>
                     <input
                       type="text"
@@ -477,7 +480,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
 
                   <div>
                     <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                      ماسک شبکه یا پیشوند (Subnet):
+                      {t('apply_subnet_field')}
                     </label>
                     <input
                       type="text"
@@ -499,7 +502,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
 
                   <div>
                     <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                      گیت‌وی خروجی (Default Gateway):
+                      {t('apply_gateway_field')}
                     </label>
                     <input
                       type="text"
@@ -519,10 +522,10 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                     <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>سایر پارامترها و مشخصات فیزیکی استقرار:</span>
+                    <span>{t('apply_other_params')}</span>
                   </h4>
                   <span className="text-[11px] text-slate-400">
-                    این متغیرها به صورت خودکار در متن دستورات تزریق می‌گردند
+                    {t('apply_other_params_desc')}
                   </span>
                 </div>
 
@@ -570,12 +573,12 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                   {isIpConfirmed && isIpValid ? (
                     <span className="text-emerald-400 flex items-center gap-1">
                       <Check className="w-3.5 h-3.5" />
-                      آماده پیش‌نمایش و اجرای دستورات
+                      {t('apply_ready_to_preview')}
                     </span>
                   ) : (
                     <span className="text-amber-400 flex items-center gap-1">
                       <AlertTriangle className="w-3.5 h-3.5" />
-                      لطفاً پیش از ادامه، آدرس IP را بررسی و تایید فرمایید
+                      {t('apply_need_ip_confirm')}
                     </span>
                   )}
                 </div>
@@ -585,8 +588,8 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                   onClick={() => setActiveStep('preview')}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-semibold shadow-[0_0_15px_rgba(99,102,241,0.3)] transition active:scale-95"
                 >
-                  <span>مشاهده پیش‌نمایش دستورات</span>
-                  <ArrowRight className="w-4 h-4 rotate-180" />
+                  <span>{t('apply_btn_preview')}</span>
+                  <ArrowRight className={`w-4 h-4 ${isEn ? '' : 'rotate-180'}`} />
                 </button>
               </div>
             </div>
@@ -599,9 +602,9 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                 <div className="flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-200 font-medium">
-                    دستورات پیکربندی آماده اجرا روی{' '}
+                    {isEn ? 'Configuration commands ready for: ' : 'دستورات پیکربندی آماده اجرا روی '}
                     <b className="text-white font-mono">{variableValues['DEVICE_NAME'] || selectedDevice?.name}</b>{' '}
-                    (آدرس: <b className="text-cyan-300 font-mono">{variableValues['IP_ADDRESS']}</b>)
+                    ({isEn ? 'IP: ' : 'آدرس: '}<b className="text-cyan-300 font-mono">{variableValues['IP_ADDRESS']}</b>)
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -610,14 +613,14 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                     className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-slate-200 text-[11px] font-medium transition"
                   >
                     {copiedScript ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                    <span>{copiedScript ? 'کپی شد' : 'کپی دستورات'}</span>
+                    <span>{copiedScript ? t('apply_copied_script') : t('apply_copy_script')}</span>
                   </button>
                   <button
                     onClick={handleDownloadScript}
                     className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-slate-200 text-[11px] font-medium transition"
                   >
                     <Download className="w-3 h-3" />
-                    <span>دانلود فایل کانفیگ</span>
+                    <span>{t('apply_download_script')}</span>
                   </button>
                 </div>
               </div>
@@ -634,7 +637,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                   onClick={() => setActiveStep('variables')}
                   className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-medium transition"
                 >
-                  ← بازگشت به ویرایش متغیرها
+                  {isEn ? '← Back to Variables' : '← بازگشت به ویرایش متغیرها'}
                 </button>
 
                 <button
@@ -644,7 +647,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                   className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-[0_0_20px_rgba(16,185,129,0.4)] transition active:scale-95"
                 >
                   <Play className="w-4 h-4 fill-white" />
-                  <span>تایید نهایی و اجرای دستورات روی تجهیز</span>
+                  <span>{t('apply_btn_execute')}</span>
                 </button>
               </div>
             </div>
@@ -670,12 +673,12 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                   <div>
                     <h4 className="font-bold text-sm text-white">
                       {activeStep === 'executing'
-                        ? 'در حال اتصال و ارسال خط‌به‌خط دستورات به تجهیز...'
-                        : 'دستورات تمپلیت با موفقیت کامل روی تجهیز اجرا و ذخیره شد'}
+                        ? t('apply_executing_title')
+                        : t('apply_success_title')}
                     </h4>
                     <p className="text-xs text-slate-300 mt-0.5">
-                      تجهیز: <span className="font-mono font-bold text-white">{selectedDevice?.name}</span> | آی‌پی جدید:{' '}
-                      <span className="font-mono font-bold text-cyan-300">{selectedDevice?.ip}</span> | وضعیت: پایدار در دیتابیس
+                      {isEn ? 'Device: ' : 'تجهیز: '}<span className="font-mono font-bold text-white">{selectedDevice?.name}</span> | {isEn ? 'New IP: ' : 'آی‌پی جدید: '}{' '}
+                      <span className="font-mono font-bold text-cyan-300">{selectedDevice?.ip}</span> | {isEn ? 'Status: Synced with DB' : 'وضعیت: پایدار در دیتابیس'}
                     </p>
                   </div>
                 </div>
@@ -721,7 +724,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-medium transition"
                   >
                     <Download className="w-4 h-4" />
-                    <span>دانلود بک‌آپ اسکریپت اعمال شده</span>
+                    <span>{t('apply_download_backup')}</span>
                   </button>
 
                   <button
@@ -729,7 +732,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                     onClick={onClose}
                     className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-bold shadow-[0_0_15px_rgba(99,102,241,0.4)] transition active:scale-95"
                   >
-                    <span>تکمیل فرآیند و بستن پنجره</span>
+                    <span>{t('apply_btn_finish')}</span>
                   </button>
                 </div>
               )}

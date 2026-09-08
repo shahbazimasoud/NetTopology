@@ -5,17 +5,39 @@ export interface ReleaseNote {
   releaseDate: string;
   type: VersionType;
   title: string;
+  title_en?: string;
   changes: string[];
+  changes_en?: string[];
 }
 
-export const APP_VERSION = '1.4.0';
+export const APP_VERSION = '1.4.1';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.4.1',
+    releaseDate: '2026-09-08',
+    type: 'patch',
+    title: 'اصلاح ریسپانسیو مودال‌ها در صفحات کوچک و ترجمه کامل متون فارسی به انگلیسی',
+    title_en: 'Modal Responsive Viewport Scaling & Complete English Localization for All Modals',
+    changes: [
+      'حل کامل مشکل بیرون زدن مودال‌ها از صفحه نمایش در مانیتورها و لپ‌تاپ‌های کوچک با ارتفاع داینامیک (max-h-[90vh]) و اسکرول داخلی',
+      'ترجمه جامع و کامل ۱۰۰ درصدی تمام متون، پیام‌ها، راهنماها و دکمه‌های فارسی موجود در مودال‌ها در حالت انگلیسی',
+      'تثبیت هدر و فوتر مودال‌ها (Pinned Header/Footer) با کانتینر اسکرول‌پذیر میانی برای دسترسی همیشگی به دکمه‌های تایید و بستن',
+      'هماهنگ‌سازی و بهبود استایل مودال‌های ثبت تجهیز، کلون‌گیری، اعمال تمپلیت، بازرسی پورت، ترمینال و یادداشت‌های انتشار'
+    ],
+    changes_en: [
+      'Fixed viewport overflow for all modals on small screens with max-h-[90vh] constraints and independent inner scrolling',
+      'Complete 100% English translation for all modal dialogs, forms, tooltips, validation messages, and action buttons',
+      'Pinned modal headers and action footers ensuring save/cancel controls remain visible and accessible on any screen height',
+      'Harmonized visual styling across Add Device, Clone Template, Apply Template, Port Inspector, Terminal, and Release Notes modals'
+    ]
+  },
   {
     version: '1.4.0',
     releaseDate: '2026-09-08',
     type: 'minor',
     title: 'سیستم جامع چندزبانگی (انگلیسی پیش‌فرض و فارسی)، منوی آکاردئونی سایدبار و یکپارچه‌سازی سایز دکمه‌ها',
+    title_en: 'Comprehensive i18n System (English Default & Persian), Accordion Sidebar & Button Size Standardization',
     changes: [
       'پیاده‌سازی موتور جامع بین‌المللی‌سازی و چندزبانگی (i18n) با زبان پیش‌فرض انگلیسی (English Default) و زبان دوم فارسی (Persian)',
       'تضمین عدم نمایش هرگونه متن فارسی در حالت انگلیسی با واژه‌نامه کامل دوزبانه برای عناوین، پیام‌ها، دکمه‌ها، فیلترها و راهنماها',
@@ -23,6 +45,14 @@ export const RELEASE_HISTORY: ReleaseNote[] = [
       'بازطراحی ساختار منوی سایدبار به صورت آکاردئونی هوشمند (Accordion Collapsible Groups) با حالت باز پیش‌فرض و رفتار تک‌والد بازشونده',
       'هماهنگ‌سازی و استانداردسازی سایز، پدینگ و تایپوگرافی دکمه‌های اکشن بالای صفحه مدیریت الگوها بر اساس استانداردهای صفحه مدیریت تجهیزات',
       'ثبت قوانین الزامی چندزبانگی، رفتار سایدبار و استانداردهای دکمه‌ها در سند راهنمای سیستمی AGENTS.md'
+    ],
+    changes_en: [
+      'Implemented robust internationalization (i18n) engine with English as default and Persian as secondary language',
+      'Strict zero-Persian mandate in English mode with full dual-language dictionary across all views, controls, and alerts',
+      'Interactive header language selector with seamless RTL/LTR layout transitions and persistent browser storage',
+      'Accordion collapsible sidebar architecture with default-open state and single-parent auto-collapse behavior',
+      'Standardized action button dimensions, paddings, and typography across template management and device inventory views',
+      'Persistent system rule documentation updated in AGENTS.md'
     ]
   },
   {

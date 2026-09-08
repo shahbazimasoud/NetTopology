@@ -17,6 +17,7 @@ import {
   CopyPlus
 } from 'lucide-react';
 import { ConfigTemplate, TemplateVariable } from '../types';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface TemplateEditorModalProps {
   isOpen: boolean;
@@ -26,21 +27,21 @@ interface TemplateEditorModalProps {
   onSaveAsClone?: (template: Partial<ConfigTemplate>) => Promise<void>;
 }
 
-const COMMON_VARS: { name: string; label: string; default_value: string; type: TemplateVariable['type'] }[] = [
-  { name: 'DEVICE_NAME', label: 'نام تجهیز (Hostname)', default_value: 'SW-ACCESS-01', type: 'text' },
-  { name: 'IP_ADDRESS', label: 'آدرس آی‌پی (Management IP)', default_value: '192.168.1.50', type: 'ip' },
-  { name: 'SUBNET_MASK', label: 'ماسک شبکه (Subnet Mask)', default_value: '255.255.255.0', type: 'subnet' },
-  { name: 'SUBNET_CIDR', label: 'پیشوند شبکه (CIDR Prefix)', default_value: '24', type: 'number' },
-  { name: 'DEFAULT_GATEWAY', label: 'گیت‌وی پیش‌فرض (Gateway)', default_value: '192.168.1.254', type: 'gateway' },
-  { name: 'MANAGEMENT_VLAN', label: 'ویلن مدیریت (VLAN ID)', default_value: '1', type: 'vlan' },
-  { name: 'BUILDING', label: 'ساختمان استقرار', default_value: 'ساختمان مرکزی', type: 'text' },
-  { name: 'FLOOR', label: 'طبقه استقرار', default_value: 'طبقه ۱', type: 'text' },
-  { name: 'UNIT', label: 'واحد / اتاق', default_value: 'واحد شبکه', type: 'text' },
-  { name: 'RACK', label: 'شماره رک', default_value: 'Rack-01', type: 'text' },
-  { name: 'DOMAIN_NAME', label: 'دامنه شبکه (Domain)', default_value: 'corp.local', type: 'text' },
-  { name: 'ADMIN_PASSWORD', label: 'رمز عبور ادمین', default_value: 'Admin@2026!', type: 'password' },
-  { name: 'NTP_SERVER', label: 'سرور زمان NTP', default_value: '192.168.1.254', type: 'ip' },
-  { name: 'DNS_SERVER', label: 'سرور DNS', default_value: '8.8.8.8', type: 'ip' }
+const COMMON_VARS: { name: string; label: string; labelEn: string; default_value: string; type: TemplateVariable['type'] }[] = [
+  { name: 'DEVICE_NAME', label: 'نام تجهیز (Hostname)', labelEn: 'Hostname (Device Name)', default_value: 'SW-ACCESS-01', type: 'text' },
+  { name: 'IP_ADDRESS', label: 'آدرس آی‌پی (Management IP)', labelEn: 'Management IP Address', default_value: '192.168.1.50', type: 'ip' },
+  { name: 'SUBNET_MASK', label: 'ماسک شبکه (Subnet Mask)', labelEn: 'Subnet Mask', default_value: '255.255.255.0', type: 'subnet' },
+  { name: 'SUBNET_CIDR', label: 'پیشوند شبکه (CIDR Prefix)', labelEn: 'CIDR Prefix (/24)', default_value: '24', type: 'number' },
+  { name: 'DEFAULT_GATEWAY', label: 'گیت‌وی پیش‌فرض (Gateway)', labelEn: 'Default Gateway', default_value: '192.168.1.254', type: 'gateway' },
+  { name: 'MANAGEMENT_VLAN', label: 'ویلن مدیریت (VLAN ID)', labelEn: 'Management VLAN ID', default_value: '1', type: 'vlan' },
+  { name: 'BUILDING', label: 'ساختمان استقرار', labelEn: 'Building Location', default_value: 'HQ-Building', type: 'text' },
+  { name: 'FLOOR', label: 'طبقه استقرار', labelEn: 'Floor Location', default_value: 'Floor-1', type: 'text' },
+  { name: 'UNIT', label: 'واحد / اتاق', labelEn: 'Unit / Room', default_value: 'Server-Room', type: 'text' },
+  { name: 'RACK', label: 'شماره رک', labelEn: 'Rack Number', default_value: 'Rack-01', type: 'text' },
+  { name: 'DOMAIN_NAME', label: 'دامنه شبکه (Domain)', labelEn: 'Domain Name', default_value: 'corp.local', type: 'text' },
+  { name: 'ADMIN_PASSWORD', label: 'رمز عبور ادمین', labelEn: 'Admin Password', default_value: 'Admin@2026!', type: 'password' },
+  { name: 'NTP_SERVER', label: 'سرور زمان NTP', labelEn: 'NTP Server IP', default_value: '192.168.1.254', type: 'ip' },
+  { name: 'DNS_SERVER', label: 'سرور DNS', labelEn: 'DNS Server IP', default_value: '8.8.8.8', type: 'ip' }
 ];
 
 export const TemplateEditorModal: React.FC<TemplateEditorModalProps> = ({
@@ -50,6 +51,7 @@ export const TemplateEditorModal: React.FC<TemplateEditorModalProps> = ({
   onSave,
   onSaveAsClone,
 }) => {
+  const { t, isEn } = useLanguage();
   const [name, setName] = useState('');
   const [vendor, setVendor] = useState<'cisco' | 'mikrotik' | 'generic'>('cisco');
   const [targetType, setTargetType] = useState<'switch' | 'router' | 'all'>('switch');
@@ -102,19 +104,19 @@ lldp run
 end
 write memory`);
       setVariables([
-        { name: 'DEVICE_NAME', label: 'نام تجهیز (Hostname)', description: 'نام سوئیچ در شبکه', default_value: 'SW-NEW-01', required: true, type: 'text' },
-        { name: 'IP_ADDRESS', label: 'آدرس آی‌پی مدیریتی', description: 'آدرس IP سوئیچ', default_value: '192.168.1.100', required: true, type: 'ip' },
-        { name: 'SUBNET_MASK', label: 'ماسک زیرشبکه', description: 'ماسک شبکه', default_value: '255.255.255.0', required: true, type: 'subnet' },
-        { name: 'DEFAULT_GATEWAY', label: 'گیت‌وی پیش‌فرض', description: 'گیت‌وی خروجی', default_value: '192.168.1.254', required: true, type: 'gateway' },
-        { name: 'MANAGEMENT_VLAN', label: 'ویلن مدیریت', description: 'شماره VLAN', default_value: '1', required: true, type: 'vlan' },
-        { name: 'BUILDING', label: 'ساختمان', description: 'ساختمان محل نصب', default_value: 'ساختمان مرکزی', required: false, type: 'text' },
-        { name: 'FLOOR', label: 'طبقه', description: 'طبقه محل نصب', default_value: 'طبقه ۱', required: false, type: 'text' },
-        { name: 'DOMAIN_NAME', label: 'دامنه شبکه', description: 'دامنه', default_value: 'corp.local', required: true, type: 'text' },
-        { name: 'ADMIN_PASSWORD', label: 'رمز عبور SSH', description: 'رمز عبور کاربر ادمین', default_value: 'Admin@2026!', required: true, type: 'password' },
+        { name: 'DEVICE_NAME', label: isEn ? 'Hostname (Device Name)' : 'نام تجهیز (Hostname)', description: 'Switch hostname in network', default_value: 'SW-NEW-01', required: true, type: 'text' },
+        { name: 'IP_ADDRESS', label: isEn ? 'Management IP Address' : 'آدرس آی‌پی مدیریتی', description: 'Management IP address', default_value: '192.168.1.100', required: true, type: 'ip' },
+        { name: 'SUBNET_MASK', label: isEn ? 'Subnet Mask' : 'ماسک زیرشبکه', description: 'Subnet mask', default_value: '255.255.255.0', required: true, type: 'subnet' },
+        { name: 'DEFAULT_GATEWAY', label: isEn ? 'Default Gateway' : 'گیت‌وی پیش‌فرض', description: 'Default gateway', default_value: '192.168.1.254', required: true, type: 'gateway' },
+        { name: 'MANAGEMENT_VLAN', label: isEn ? 'Management VLAN' : 'ویلن مدیریت', description: 'VLAN ID', default_value: '1', required: true, type: 'vlan' },
+        { name: 'BUILDING', label: isEn ? 'Building Location' : 'ساختمان', description: 'Building location', default_value: 'HQ-Building', required: false, type: 'text' },
+        { name: 'FLOOR', label: isEn ? 'Floor Location' : 'طبقه', description: 'Floor location', default_value: 'Floor-1', required: false, type: 'text' },
+        { name: 'DOMAIN_NAME', label: isEn ? 'Network Domain' : 'دامنه شبکه', description: 'Domain name', default_value: 'corp.local', required: true, type: 'text' },
+        { name: 'ADMIN_PASSWORD', label: isEn ? 'SSH Admin Password' : 'رمز عبور SSH', description: 'Admin user password', default_value: 'Admin@2026!', required: true, type: 'password' },
       ]);
     }
     setErrorMsg(null);
-  }, [templateToEdit, isOpen]);
+  }, [templateToEdit, isOpen, isEn]);
 
   // Insert variable into textarea cursor position
   const insertVariableAtCursor = (varName: string) => {
@@ -137,7 +139,7 @@ write memory`);
         ...prev,
         {
           name: varName,
-          label: foundCommon?.label || varName,
+          label: foundCommon ? (isEn ? foundCommon.labelEn : foundCommon.label) : varName,
           description: '',
           default_value: foundCommon?.default_value || '',
           required: true,
@@ -162,7 +164,7 @@ write memory`);
         const foundCommon = COMMON_VARS.find((c) => c.name === varName);
         newVars.push({
           name: varName,
-          label: foundCommon?.label || varName,
+          label: foundCommon ? (isEn ? foundCommon.labelEn : foundCommon.label) : varName,
           description: '',
           default_value: foundCommon?.default_value || '',
           required: true,
@@ -189,7 +191,7 @@ write memory`);
       ...variables,
       {
         name: `CUSTOM_VAR_${uniqueNum}`,
-        label: `متغیر جدید ${uniqueNum}`,
+        label: isEn ? `Custom Var ${uniqueNum}` : `متغیر جدید ${uniqueNum}`,
         description: '',
         default_value: '',
         required: false,
@@ -210,11 +212,11 @@ write memory`);
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setErrorMsg('لطفاً عنوان تمپلیت را وارد فرمایید.');
+      setErrorMsg(isEn ? 'Please enter a template title.' : 'لطفاً عنوان تمپلیت را وارد فرمایید.');
       return;
     }
     if (!commands.trim()) {
-      setErrorMsg('متن دستورات تمپلیت نمی‌تواند خالی باشد.');
+      setErrorMsg(isEn ? 'Template command script cannot be empty.' : 'متن دستورات تمپلیت نمی‌تواند خالی باشد.');
       return;
     }
 
@@ -233,7 +235,7 @@ write memory`);
       });
       onClose();
     } catch (err: any) {
-      setErrorMsg(err.message || 'خطا در ذخیره تمپلیت');
+      setErrorMsg(err.message || (isEn ? 'Failed to save template' : 'خطا در ذخیره تمپلیت'));
     } finally {
       setSaving(false);
     }
@@ -241,11 +243,11 @@ write memory`);
 
   const handleSaveAsClone = async () => {
     if (!commands.trim()) {
-      setErrorMsg('متن دستورات نمی‌تواند خالی باشد.');
+      setErrorMsg(isEn ? 'Command script cannot be empty.' : 'متن دستورات نمی‌تواند خالی باشد.');
       return;
     }
-    const defaultCloneName = name ? `${name} (نسخه جدید)` : 'تمپلیت کلون شده جدید';
-    const newName = window.prompt('لطفاً عنوان و نام تمپلیت کلون شده را وارد فرمایید:', defaultCloneName);
+    const defaultCloneName = name ? `${name} ${isEn ? '(New Version)' : '(نسخه جدید)'}` : (isEn ? 'New Cloned Template' : 'تمپلیت کلون شده جدید');
+    const newName = window.prompt(isEn ? 'Please enter a name for the cloned template:' : 'لطفاً عنوان و نام تمپلیت کلون شده را وارد فرمایید:', defaultCloneName);
     if (!newName || !newName.trim()) return;
 
     setSaving(true);
@@ -256,7 +258,7 @@ write memory`);
           name: newName.trim(),
           vendor,
           target_type: targetType,
-          role: role.trim() || 'Custom Clone',
+          role: role.trim() || (isEn ? 'Custom Clone' : 'Custom Clone'),
           description: description.trim(),
           default_cli_mode: defaultCliMode,
           commands,
@@ -267,7 +269,7 @@ write memory`);
           name: newName.trim(),
           vendor,
           target_type: targetType,
-          role: role.trim() || 'Custom Clone',
+          role: role.trim() || (isEn ? 'Custom Clone' : 'Custom Clone'),
           description: description.trim(),
           default_cli_mode: defaultCliMode,
           commands,
@@ -276,7 +278,7 @@ write memory`);
       }
       onClose();
     } catch (err: any) {
-      setErrorMsg(err.message || 'خطا در ثبت کلون تمپلیت');
+      setErrorMsg(err.message || (isEn ? 'Failed to clone template' : 'خطا در ثبت کلون تمپلیت'));
     } finally {
       setSaving(false);
     }
@@ -285,8 +287,11 @@ write memory`);
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop-blur animate-fadeIn" data-modal-backdrop="true">
-      <div className="w-full max-w-5xl max-h-[94vh] flex flex-col bg-slate-900/95 border border-white/10 rounded-2xl shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-hidden text-slate-100 backdrop-blur-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 modal-backdrop-blur animate-fadeIn overflow-y-auto" data-modal-backdrop="true">
+      <div 
+        dir={isEn ? 'ltr' : 'rtl'}
+        className="w-full max-w-5xl my-auto max-h-[92vh] sm:max-h-[90vh] flex flex-col bg-slate-900/95 border border-white/10 rounded-2xl shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-hidden text-slate-100 backdrop-blur-2xl"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-white/10 bg-slate-950/60 shrink-0">
           <div className="flex items-center gap-3">
@@ -295,10 +300,14 @@ write memory`);
             </div>
             <div>
               <h3 className="font-bold text-base text-white">
-                {templateToEdit ? 'ویرایش تمپلیت کانفیگ' : 'تعریف تمپلیت جدید کانفیگ تجهیز'}
+                {templateToEdit 
+                  ? (isEn ? 'Edit Configuration Template' : 'ویرایش تمپلیت کانفیگ') 
+                  : (isEn ? 'Create New Configuration Template' : 'تعریف تمپلیت جدید کانفیگ تجهیز')}
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                تنظیم دستورات استاندارد سیسکو و میکروتیک به همراه متغیرهای پویا و تعاملی
+                {isEn 
+                  ? 'Configure Cisco and MikroTik standard commands with dynamic interactive variables'
+                  : 'تنظیم دستورات استاندارد سیسکو و میکروتیک به همراه متغیرهای پویا و تعاملی'}
               </p>
             </div>
           </div>
@@ -322,13 +331,13 @@ write memory`);
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
             <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                عنوان و نام تمپلیت: <span className="text-rose-400">*</span>
+                {isEn ? 'Template Title / Name:' : 'عنوان و نام تمپلیت:'} <span className="text-rose-400">*</span>
               </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="مثلاً: کانفیگ سوئیچ طبقات سیسکو (Cisco Floor Switch)"
+                placeholder={isEn ? 'e.g., Cisco Floor Switch Configuration' : 'مثلاً: کانفیگ سوئیچ طبقات سیسکو (Cisco Floor Switch)'}
                 className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
                 required
               />
@@ -336,7 +345,7 @@ write memory`);
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                سازنده و سیستم‌عامل (Vendor):
+                {isEn ? 'Vendor / OS:' : 'سازنده و سیستم‌عامل (Vendor):'}
               </label>
               <select
                 value={vendor}
@@ -350,41 +359,41 @@ write memory`);
               >
                 <option value="cisco">Cisco (IOS / IOS-XE)</option>
                 <option value="mikrotik">MikroTik (RouterOS / SwitchOS)</option>
-                <option value="generic">Generic / Other</option>
+                <option value="generic">{isEn ? 'Generic / Other' : 'Generic / سایر'}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                نوع دیوایس هدف (Device Type):
+                {isEn ? 'Target Device Type:' : 'نوع دیوایس هدف (Device Type):'}
               </label>
               <select
                 value={targetType}
                 onChange={(e) => setTargetType(e.target.value as any)}
                 className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
               >
-                <option value="switch">سوئیچ (Switch)</option>
-                <option value="router">روتر (Router)</option>
-                <option value="all">همگانی (All Devices)</option>
+                <option value="switch">{isEn ? 'Switch' : 'سوئیچ (Switch)'}</option>
+                <option value="router">{isEn ? 'Router' : 'روتر (Router)'}</option>
+                <option value="all">{isEn ? 'All Devices' : 'همگانی (All Devices)'}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                نقش عملیاتی در شبکه (Role):
+                {isEn ? 'Network Role:' : 'نقش عملیاتی در شبکه (Role):'}
               </label>
               <input
                 type="text"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                placeholder="مثلاً: Access Switch, Core Switch"
+                placeholder={isEn ? 'e.g., Access Switch, Core Switch' : 'مثلاً: Access Switch, Core Switch'}
                 className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                مد خط فرمان پیش‌فرض:
+                {isEn ? 'Default CLI Mode:' : 'مد خط فرمان پیش‌فرض:'}
               </label>
               <select
                 value={defaultCliMode}
@@ -399,13 +408,13 @@ write memory`);
 
             <div className="sm:col-span-2">
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                توضیحات و کاربرد:
+                {isEn ? 'Description & Usage:' : 'توضیحات و کاربرد:'}
               </label>
               <input
                 type="text"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="توضیح کوتاه در رابطه با نوع سناریو یا محل استفاده این تمپلیت..."
+                placeholder={isEn ? 'Brief description of the scenario or usage of this template...' : 'توضیح کوتاه در رابطه با نوع سناریو یا محل استفاده این تمپلیت...'}
                 className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
               />
             </div>
@@ -416,7 +425,7 @@ write memory`);
             <div className="flex flex-wrap items-center justify-between gap-2">
               <label className="text-xs font-bold text-slate-300 flex items-center gap-2">
                 <Terminal className="w-4 h-4 text-cyan-400" />
-                <span>مجموعه کامندها و دستورات پیکربندی (CLI Command Set):</span>
+                <span>{isEn ? 'CLI Command Set:' : 'مجموعه کامندها و دستورات پیکربندی (CLI Command Set):'}</span>
               </label>
               <div className="flex items-center gap-2">
                 <button
@@ -429,7 +438,11 @@ write memory`);
                   }`}
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  <span>{showPreview ? 'مخفی‌سازی پیش‌نمایش' : 'پیش‌نمایش زنده'}</span>
+                  <span>
+                    {showPreview 
+                      ? (isEn ? 'Hide Preview' : 'مخفی‌سازی پیش‌نمایش') 
+                      : (isEn ? 'Live Preview' : 'پیش‌نمایش زنده')}
+                  </span>
                 </button>
               </div>
             </div>
@@ -437,14 +450,14 @@ write memory`);
             {/* Quick Variable Insert Bar */}
             <div className="p-2.5 rounded-xl bg-slate-950/70 border border-white/10 space-y-1.5">
               <div className="text-[11px] text-slate-400 flex items-center justify-between">
-                <span>کلیک برای درج خودکار متغیر پویا در مکان نشانگر موس:</span>
+                <span>{isEn ? 'Click to insert dynamic variable at cursor position:' : 'کلیک برای درج خودکار متغیر پویا در مکان نشانگر موس:'}</span>
                 {detectedVarNames.length > variables.length && (
                   <button
                     type="button"
                     onClick={handleAddMissingDetectedVars}
                     className="text-cyan-400 hover:text-cyan-300 text-[10px] font-bold underline"
                   >
-                    + همگام‌سازی متغیرهای شناسایی شده در متن
+                    {isEn ? '+ Sync detected variables in text' : '+ همگام‌سازی متغیرهای شناسایی شده در متن'}
                   </button>
                 )}
               </div>
@@ -455,7 +468,7 @@ write memory`);
                     type="button"
                     onClick={() => insertVariableAtCursor(cv.name)}
                     className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-200 border border-white/10 hover:border-cyan-500/40 text-[10px] font-mono transition"
-                    title={cv.label}
+                    title={isEn ? cv.labelEn : cv.label}
                   >
                     <span>+</span>
                     <span>{`{{${cv.name}}}`}</span>
@@ -473,7 +486,7 @@ write memory`);
                   onChange={(e) => setCommands(e.target.value)}
                   rows={14}
                   className="w-full bg-slate-950 border border-white/15 rounded-xl p-3.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-cyan-500 dir-ltr text-left leading-relaxed selection:bg-cyan-500/30"
-                  placeholder="دستورات خط فرمان را خط به خط اینجا بنویسید..."
+                  placeholder={isEn ? 'Enter command script line by line here...' : 'دستورات خط فرمان را خط به خط اینجا بنویسید...'}
                   required
                 />
               </div>
@@ -500,10 +513,12 @@ write memory`);
               <div>
                 <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
                   <Sliders className="w-4 h-4 text-indigo-400" />
-                  <span>تعریف و تنظیمات متغیرهای تعاملی (Interactive Variables):</span>
+                  <span>{isEn ? 'Interactive Variables Setup:' : 'تعریف و تنظیمات متغیرهای تعاملی (Interactive Variables):'}</span>
                 </h4>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  هنگام اعمال تمپلیت، سیستم این فیلدها را به صورت تعاملی و هوشمند از کاربر سوال خواهد کرد.
+                  {isEn 
+                    ? 'When applying this template, the system will prompt the user for these fields.' 
+                    : 'هنگام اعمال تمپلیت، سیستم این فیلدها را به صورت تعاملی و هوشمند از کاربر سوال خواهد کرد.'}
                 </p>
               </div>
 
@@ -513,20 +528,20 @@ write memory`);
                 className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-medium transition"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>افزودن متغیر سفارشی</span>
+                <span>{isEn ? 'Add Custom Variable' : 'افزودن متغیر سفارشی'}</span>
               </button>
             </div>
 
             <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/5">
-              <table className="w-full text-xs text-right">
+              <table className={`w-full text-xs ${isEn ? 'text-left' : 'text-right'}`}>
                 <thead>
                   <tr className="bg-slate-950/60 border-b border-white/10 text-slate-400 font-medium">
-                    <th className="p-2.5">نام فنی متغیر</th>
-                    <th className="p-2.5">عنوان نمایشی در فرم</th>
-                    <th className="p-2.5">نوع داده</th>
-                    <th className="p-2.5">مقدار پیش‌فرض</th>
-                    <th className="p-2.5">اجباری؟</th>
-                    <th className="p-2.5 text-center">عملیات</th>
+                    <th className="p-2.5">{isEn ? 'Variable Key' : 'نام فنی متغیر'}</th>
+                    <th className="p-2.5">{isEn ? 'Display Label' : 'عنوان نمایشی در فرم'}</th>
+                    <th className="p-2.5">{isEn ? 'Data Type' : 'نوع داده'}</th>
+                    <th className="p-2.5">{isEn ? 'Default Value' : 'مقدار پیش‌فرض'}</th>
+                    <th className="p-2.5">{isEn ? 'Required?' : 'اجباری؟'}</th>
+                    <th className="p-2.5 text-center">{isEn ? 'Actions' : 'عملیات'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -549,13 +564,13 @@ write memory`);
                           onChange={(e) => handleUpdateVariable(idx, { type: e.target.value as any })}
                           className="bg-slate-950 border border-white/10 px-2 py-1 rounded text-xs text-white"
                         >
-                          <option value="text">متن (Text)</option>
-                          <option value="ip">آدرس آی‌پی (IPv4)</option>
-                          <option value="subnet">سابنت ماسک (Mask)</option>
-                          <option value="gateway">گیت‌وی (Gateway)</option>
-                          <option value="vlan">شناسه ویلن (VLAN)</option>
-                          <option value="password">رمز عبور (Password)</option>
-                          <option value="number">عدد (Number)</option>
+                          <option value="text">{isEn ? 'Text' : 'متن (Text)'}</option>
+                          <option value="ip">{isEn ? 'IPv4 Address' : 'آدرس آی‌پی (IPv4)'}</option>
+                          <option value="subnet">{isEn ? 'Subnet Mask' : 'سابنت ماسک (Mask)'}</option>
+                          <option value="gateway">{isEn ? 'Gateway' : 'گیت‌وی (Gateway)'}</option>
+                          <option value="vlan">{isEn ? 'VLAN ID' : 'شناسه ویلن (VLAN)'}</option>
+                          <option value="password">{isEn ? 'Password' : 'رمز عبور (Password)'}</option>
+                          <option value="number">{isEn ? 'Number' : 'عدد (Number)'}</option>
                         </select>
                       </td>
                       <td className="p-2.5">
@@ -597,7 +612,7 @@ write memory`);
               onClick={onClose}
               className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-medium transition"
             >
-              انصراف
+              {isEn ? 'Cancel' : 'انصراف'}
             </button>
 
             <div className="flex items-center gap-2">
@@ -607,10 +622,10 @@ write memory`);
                   disabled={saving}
                   onClick={handleSaveAsClone}
                   className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-semibold shadow-[0_0_15px_rgba(6,182,212,0.15)] transition active:scale-95"
-                  title="ذخیره این تغییرات به عنوان یک تمپلیت کلون شده جدید با نام دلخواه بدون تغییر تمپلیت اصلی"
+                  title={isEn ? 'Save as new cloned template with custom name' : 'ذخیره این تغییرات به عنوان یک تمپلیت کلون شده جدید با نام دلخواه بدون تغییر تمپلیت اصلی'}
                 >
                   <CopyPlus className="w-3.5 h-3.5" />
-                  <span>ذخیره به عنوان کلون با نام جدید...</span>
+                  <span>{isEn ? 'Save as Clone...' : 'ذخیره به عنوان کلون با نام جدید...'}</span>
                 </button>
               )}
 
@@ -620,7 +635,13 @@ write memory`);
                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] transition active:scale-95"
               >
                 <Save className="w-4 h-4" />
-                <span>{saving ? 'در حال ذخیره‌سازی...' : templateToEdit ? 'ذخیره تغییرات تمپلیت' : 'ذخیره تمپلیت در پایگاه الگوها'}</span>
+                <span>
+                  {saving 
+                    ? (isEn ? 'Saving...' : 'در حال ذخیره‌سازی...') 
+                    : templateToEdit 
+                    ? (isEn ? 'Save Changes' : 'ذخیره تغییرات تمپلیت') 
+                    : (isEn ? 'Save Template to Library' : 'ذخیره تمپلیت در پایگاه الگوها')}
+                </span>
               </button>
             </div>
           </div>

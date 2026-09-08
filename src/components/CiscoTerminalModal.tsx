@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Device, SwitchPort, VlanInfo } from '../types';
 import { fetchDevicePorts, updateSwitchPort, writeMemory, fetchVlans } from '../services/api';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface CiscoTerminalModalProps {
   device: Device | null;
@@ -42,6 +43,7 @@ interface TerminalLine {
 interface CommandGuideItem {
   cmd: string;
   desc: string;
+  descEn: string;
   category: 'exec' | 'config' | 'show' | 'action';
   mode: CliMode;
   forType?: 'switch' | 'router' | 'all';
@@ -53,6 +55,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   onClose,
   onDeviceUpdated,
 }) => {
+  const { t, isEn } = useLanguage();
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const [currentInput, setCurrentInput] = useState('');
   const [cliMode, setCliMode] = useState<CliMode>('USER_EXEC');
@@ -109,7 +112,9 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
         {
           id: 'sys-5',
           type: 'system',
-          text: `Cisco IOS CLI آماده است. برای شروع دستور 'enable' را وارد کنید یا از سایدبار دستورات راهنما استفاده نمایید.`,
+          text: isEn
+            ? "Cisco IOS CLI is ready. Type 'enable' to begin or use the command guide sidebar."
+            : "Cisco IOS CLI آماده است. برای شروع دستور 'enable' را وارد کنید یا از سایدبار دستورات راهنما استفاده نمایید.",
         },
       ]);
 
@@ -117,7 +122,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
         if (inputRef.current) inputRef.current.focus();
       }, 150);
     }
-  }, [isOpen, device]);
+  }, [isOpen, device, isEn]);
 
   // Auto scroll to bottom of terminal
   useEffect(() => {
@@ -545,7 +550,9 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
       {
         id: String(Date.now() + 1),
         type: 'error',
-        text: `% Invalid input detected at '^' marker.\n  ${trimmed}\n  ^\nدستور در این مرحله (${cliMode}) معتبر نیست یا نیاز به پارامترهای دیگر دارد. از '?' یا سایدبار راهنما کمک بگیرید.`,
+        text: isEn
+          ? `% Invalid input detected at '^' marker.\n  ${trimmed}\n  ^\nCommand not valid in current mode (${cliMode}) or missing parameters. Use '?' or the sidebar guide.`
+          : `% Invalid input detected at '^' marker.\n  ${trimmed}\n  ^\nدستور در این مرحله (${cliMode}) معتبر نیست یا نیاز به پارامترهای دیگر دارد. از '?' یا سایدبار راهنما کمک بگیرید.`,
       },
     ]);
   };
@@ -578,49 +585,49 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   // Sidebar commands guide data
   const COMMAND_GUIDES: CommandGuideItem[] = [
     // USER_EXEC
-    { cmd: 'enable', desc: 'ورود به حالت دسترسی ویژه و مدیریتی (Privileged EXEC #)', category: 'exec', mode: 'USER_EXEC' },
-    { cmd: 'show version', desc: 'نمایش نسخه IOS-XE، مشخصات سخت‌افزار، حافظه و Uptime', category: 'show', mode: 'USER_EXEC' },
-    { cmd: 'show ip interface brief', desc: 'مشاهده خلاصه وضعیت اینترفیس‌ها، آی‌پی و لایه فیزیکی', category: 'show', mode: 'USER_EXEC' },
-    { cmd: 'ping 192.168.1.254', desc: 'تست ارسال بسته‌های ICMP Echo به مقصد شبکه', category: 'action', mode: 'USER_EXEC' },
-    { cmd: 'exit', desc: 'بستن نشست SSH و خروج از ترمینال', category: 'action', mode: 'USER_EXEC' },
+    { cmd: 'enable', desc: 'ورود به حالت دسترسی ویژه و مدیریتی (Privileged EXEC #)', descEn: 'Enter Privileged EXEC mode (level 15 #)', category: 'exec', mode: 'USER_EXEC' },
+    { cmd: 'show version', desc: 'نمایش نسخه IOS-XE، مشخصات سخت‌افزار، حافظه و Uptime', descEn: 'Display IOS-XE version, hardware specs, memory and uptime', category: 'show', mode: 'USER_EXEC' },
+    { cmd: 'show ip interface brief', desc: 'مشاهده خلاصه وضعیت اینترفیس‌ها، آی‌پی و لایه فیزیکی', descEn: 'Display interface status, IP addresses, and Layer 1/2 state', category: 'show', mode: 'USER_EXEC' },
+    { cmd: 'ping 192.168.1.254', desc: 'تست ارسال بسته‌های ICMP Echo به مقصد شبکه', descEn: 'Send ICMP Echo packets to target network destination', category: 'action', mode: 'USER_EXEC' },
+    { cmd: 'exit', desc: 'بستن نشست SSH و خروج از ترمینال', descEn: 'Close SSH session and disconnect', category: 'action', mode: 'USER_EXEC' },
 
     // PRIVILEGED_EXEC
-    { cmd: 'configure terminal', desc: 'ورود به مد تنظیمات کلی سیستم (Global Configuration)', category: 'config', mode: 'PRIVILEGED_EXEC' },
-    { cmd: 'show running-config', desc: 'نمایش پیکربندی فعال و زنده در حافظه موقت (RAM)', category: 'show', mode: 'PRIVILEGED_EXEC' },
-    { cmd: 'show interfaces status', desc: 'نمایش مشخصات پورت‌ها: وضعیت، حالت Trunk/Access، سرعت و VLAN', category: 'show', mode: 'PRIVILEGED_EXEC' },
-    { cmd: 'show ip interface brief', desc: 'خلاصه تمامی اینترفیس‌ها، IPها و وضعیت Up/Down', category: 'show', mode: 'PRIVILEGED_EXEC' },
-    { cmd: 'show vlan brief', desc: 'لیست تمامی ویلن‌های موجود در دیتابیس سوئیچ و پورت‌های منتسب', category: 'show', mode: 'PRIVILEGED_EXEC', forType: 'switch' },
-    { cmd: 'show mac address-table', desc: 'مشاهده جدول آدرس‌های مک پویای یادگرفته‌شده روی پورت‌ها', category: 'show', mode: 'PRIVILEGED_EXEC', forType: 'switch' },
-    { cmd: 'show cdp neighbors', desc: 'شناسایی و مشاهده تجهیزات سیسکوی متصل به این پورت‌ها', category: 'show', mode: 'PRIVILEGED_EXEC' },
-    { cmd: 'show ip route', desc: 'مشاهده جدول مسیریابی IP (Direct, Static, OSPF)', category: 'show', mode: 'PRIVILEGED_EXEC' },
-    { cmd: 'write memory', desc: 'ذخیره دائم تغییرات Running-Config در NVRAM (Startup-Config)', category: 'action', mode: 'PRIVILEGED_EXEC' },
-    { cmd: 'disable', desc: 'بازگشت به سطح کاربری عادی User EXEC (>)', category: 'action', mode: 'PRIVILEGED_EXEC' },
+    { cmd: 'configure terminal', desc: 'ورود به مد تنظیمات کلی سیستم (Global Configuration)', descEn: 'Enter Global Configuration mode (config #)', category: 'config', mode: 'PRIVILEGED_EXEC' },
+    { cmd: 'show running-config', desc: 'نمایش پیکربندی فعال و زنده در حافظه موقت (RAM)', descEn: 'Display active configuration currently in RAM', category: 'show', mode: 'PRIVILEGED_EXEC' },
+    { cmd: 'show interfaces status', desc: 'نمایش مشخصات پورت‌ها: وضعیت، حالت Trunk/Access، سرعت و VLAN', descEn: 'Display port status, duplex, speed, and VLAN assignment', category: 'show', mode: 'PRIVILEGED_EXEC' },
+    { cmd: 'show ip interface brief', desc: 'خلاصه تمامی اینترفیس‌ها، IPها و وضعیت Up/Down', descEn: 'Summary of all interfaces, IPs, and Up/Down status', category: 'show', mode: 'PRIVILEGED_EXEC' },
+    { cmd: 'show vlan brief', desc: 'لیست تمامی ویلن‌های موجود در دیتابیس سوئیچ و پورت‌های منتسب', descEn: 'List VLAN database and port assignments', category: 'show', mode: 'PRIVILEGED_EXEC', forType: 'switch' },
+    { cmd: 'show mac address-table', desc: 'مشاهده جدول آدرس‌های مک پویای یادگرفته‌شده روی پورت‌ها', descEn: 'Display dynamic MAC address forwarding table', category: 'show', mode: 'PRIVILEGED_EXEC', forType: 'switch' },
+    { cmd: 'show cdp neighbors', desc: 'شناسایی و مشاهده تجهیزات سیسکوی متصل به این پورت‌ها', descEn: 'Discover directly connected Cisco neighbor devices', category: 'show', mode: 'PRIVILEGED_EXEC' },
+    { cmd: 'show ip route', desc: 'مشاهده جدول مسیریابی IP (Direct, Static, OSPF)', descEn: 'Display IP routing table (Direct, Static, OSPF)', category: 'show', mode: 'PRIVILEGED_EXEC' },
+    { cmd: 'write memory', desc: 'ذخیره دائم تغییرات Running-Config در NVRAM (Startup-Config)', descEn: 'Save active running-config to NVRAM (startup-config)', category: 'action', mode: 'PRIVILEGED_EXEC' },
+    { cmd: 'disable', desc: 'بازگشت به سطح کاربری عادی User EXEC (>)', descEn: 'Exit Privileged EXEC and return to User EXEC (>)', category: 'action', mode: 'PRIVILEGED_EXEC' },
 
     // GLOBAL_CONFIG
-    { cmd: 'hostname SW-CORE-HQ', desc: 'تغییر نام و شناسه تجهیز در شبکه', category: 'config', mode: 'GLOBAL_CONFIG' },
-    { cmd: `interface ${ports[0]?.port_id || 'GigabitEthernet1/0/1'}`, desc: 'ورود به پیکربندی اختصاصی اینترفیس مشخص (config-if)', category: 'config', mode: 'GLOBAL_CONFIG' },
-    { cmd: 'vlan 20', desc: 'ساخت یا ورود به تنظیمات شماره ویلن در دیتابیس (config-vlan)', category: 'config', mode: 'GLOBAL_CONFIG', forType: 'switch' },
-    { cmd: 'ip default-gateway 192.168.1.254', desc: 'تنظیم گیت‌وی پیش‌فرض سوئیچ لایه ۲ برای مدیریت از راه دور', category: 'config', mode: 'GLOBAL_CONFIG', forType: 'switch' },
-    { cmd: 'ip route 0.0.0.0 0.0.0.0 192.168.1.254', desc: 'تنظیم دیفالت روت به سمت روتر گیت‌وی لبه', category: 'config', mode: 'GLOBAL_CONFIG' },
-    { cmd: 'do write memory', desc: 'اجرای دستور ذخیره مستقیم بدون خروج از مد کانفیگ (با پیشوند do)', category: 'action', mode: 'GLOBAL_CONFIG' },
-    { cmd: 'exit', desc: 'بازگشت به سطح Privileged EXEC (#)', category: 'action', mode: 'GLOBAL_CONFIG' },
-    { cmd: 'end', desc: 'خروج مستقیم به ریشه فرامین مدیریتی (#)', category: 'action', mode: 'GLOBAL_CONFIG' },
+    { cmd: 'hostname SW-CORE-HQ', desc: 'تغییر نام و شناسه تجهیز در شبکه', descEn: 'Configure device hostname and network identity', category: 'config', mode: 'GLOBAL_CONFIG' },
+    { cmd: `interface ${ports[0]?.port_id || 'GigabitEthernet1/0/1'}`, desc: 'ورود به پیکربندی اختصاصی اینترفیس مشخص (config-if)', descEn: 'Enter specific interface configuration mode (config-if)', category: 'config', mode: 'GLOBAL_CONFIG' },
+    { cmd: 'vlan 20', desc: 'ساخت یا ورود به تنظیمات شماره ویلن در دیتابیس (config-vlan)', descEn: 'Create or configure VLAN in database (config-vlan)', category: 'config', mode: 'GLOBAL_CONFIG', forType: 'switch' },
+    { cmd: 'ip default-gateway 192.168.1.254', desc: 'تنظیم گیت‌وی پیش‌فرض سوئیچ لایه ۲ برای مدیریت از راه دور', descEn: 'Configure default gateway for Layer 2 management', category: 'config', mode: 'GLOBAL_CONFIG', forType: 'switch' },
+    { cmd: 'ip route 0.0.0.0 0.0.0.0 192.168.1.254', desc: 'تنظیم دیفالت روت به سمت روتر گیت‌وی لبه', descEn: 'Set default static route to edge gateway router', category: 'config', mode: 'GLOBAL_CONFIG' },
+    { cmd: 'do write memory', desc: 'اجرای دستور ذخیره مستقیم بدون خروج از مد کانفیگ (با پیشوند do)', descEn: 'Execute write memory from config mode using "do" prefix', category: 'action', mode: 'GLOBAL_CONFIG' },
+    { cmd: 'exit', desc: 'بازگشت به سطح Privileged EXEC (#)', descEn: 'Return to Privileged EXEC level (#)', category: 'action', mode: 'GLOBAL_CONFIG' },
+    { cmd: 'end', desc: 'خروج مستقیم به ریشه فرامین مدیریتی (#)', descEn: 'Direct exit to root Privileged EXEC (#)', category: 'action', mode: 'GLOBAL_CONFIG' },
 
     // INTERFACE_CONFIG
-    { cmd: 'switchport mode access', desc: 'تعیین حالت پورت به عنوان Access برای اتصال هاست یا پرینتر', category: 'config', mode: 'INTERFACE_CONFIG', forType: 'switch' },
-    { cmd: 'switchport mode trunk', desc: 'تعیین حالت پورت به عنوان Trunk برای عبور ترافیک چند ویلن', category: 'config', mode: 'INTERFACE_CONFIG', forType: 'switch' },
-    { cmd: 'switchport access vlan 20', desc: 'انتساب پورت اکسس به شناسه ویلن مشخص (مثلاً VLAN 20)', category: 'config', mode: 'INTERFACE_CONFIG', forType: 'switch' },
-    { cmd: 'switchport trunk allowed vlan 1,10,20,50', desc: 'محدودسازی ویلن‌های مجاز به عبور از روی ترانک', category: 'config', mode: 'INTERFACE_CONFIG', forType: 'switch' },
-    { cmd: 'spanning-tree portfast', desc: 'فعال‌سازی PortFast جهت حذف تاخیر همگرایی STP روی پورت‌های کلاینت', category: 'config', mode: 'INTERFACE_CONFIG', forType: 'switch' },
-    { cmd: 'ip address 192.168.10.1 255.255.255.0', desc: 'تخصیص آدرس IP و ساب‌نت ماسک به اینترفیس روتر یا SVI', category: 'config', mode: 'INTERFACE_CONFIG' },
-    { cmd: 'description Link to Server-Farm', desc: 'توضیحات و برچسب مستندسازی روی اینترفیس', category: 'config', mode: 'INTERFACE_CONFIG' },
-    { cmd: 'shutdown', desc: 'خاموش و غیرفعال‌سازی پورت از نظر مدیریتی (Admin Disabled)', category: 'action', mode: 'INTERFACE_CONFIG' },
-    { cmd: 'no shutdown', desc: 'روشن و فعال‌سازی مجدد پورت (Up)', category: 'action', mode: 'INTERFACE_CONFIG' },
-    { cmd: 'exit', desc: 'خروج از اینترفیس و بازگشت به Global Config', category: 'action', mode: 'INTERFACE_CONFIG' },
+    { cmd: 'switchport mode access', desc: 'تعیین حالت پورت به عنوان Access برای اتصال هاست یا پرینتر', descEn: 'Set port mode to Access for host/printer endpoints', category: 'config', mode: 'INTERFACE_CONFIG', forType: 'switch' },
+    { cmd: 'switchport mode trunk', desc: 'تعیین حالت پورت به عنوان Trunk برای عبور ترافیک چند ویلن', descEn: 'Set port mode to Trunk to pass multiple VLAN traffic', category: 'config', mode: 'INTERFACE_CONFIG', forType: 'switch' },
+    { cmd: 'switchport access vlan 20', desc: 'انتساب پورت اکسس به شناسه ویلن مشخص (مثلاً VLAN 20)', descEn: 'Assign access port to specific VLAN ID (e.g., VLAN 20)', category: 'config', mode: 'INTERFACE_CONFIG', forType: 'switch' },
+    { cmd: 'switchport trunk allowed vlan 1,10,20,50', desc: 'محدودسازی ویلن‌های مجاز به عبور از روی ترانک', descEn: 'Filter and restrict allowed VLANs on trunk port', category: 'config', mode: 'INTERFACE_CONFIG', forType: 'switch' },
+    { cmd: 'spanning-tree portfast', desc: 'فعال‌سازی PortFast جهت حذف تاخیر همگرایی STP روی پورت‌های کلاینت', descEn: 'Enable PortFast to eliminate STP convergence delay on host ports', category: 'config', mode: 'INTERFACE_CONFIG', forType: 'switch' },
+    { cmd: 'ip address 192.168.10.1 255.255.255.0', desc: 'تخصیص آدرس IP و ساب‌نت ماسک به اینترفیس روتر یا SVI', descEn: 'Assign IP address and subnet mask to router or SVI interface', category: 'config', mode: 'INTERFACE_CONFIG' },
+    { cmd: 'description Link to Server-Farm', desc: 'توضیحات و برچسب مستندسازی روی اینترفیس', descEn: 'Set interface documentation label and description', category: 'config', mode: 'INTERFACE_CONFIG' },
+    { cmd: 'shutdown', desc: 'خاموش و غیرفعال‌سازی پورت از نظر مدیریتی (Admin Disabled)', descEn: 'Administratively shutdown and disable the interface', category: 'action', mode: 'INTERFACE_CONFIG' },
+    { cmd: 'no shutdown', desc: 'روشن و فعال‌سازی مجدد پورت (Up)', descEn: 'Administratively enable and bring interface up (no shutdown)', category: 'action', mode: 'INTERFACE_CONFIG' },
+    { cmd: 'exit', desc: 'خروج از اینترفیس و بازگشت به Global Config', descEn: 'Exit interface and return to Global Configuration', category: 'action', mode: 'INTERFACE_CONFIG' },
 
     // VLAN_CONFIG
-    { cmd: 'name Staff-Office', desc: 'نام‌گذاری شناسه ویلن جاری', category: 'config', mode: 'VLAN_CONFIG', forType: 'switch' },
-    { cmd: 'exit', desc: 'خروج و ذخیره تغییرات ویلن در دیتابیس', category: 'action', mode: 'VLAN_CONFIG', forType: 'switch' },
+    { cmd: 'name Staff-Office', desc: 'نام‌گذاری شناسه ویلن جاری', descEn: 'Assign descriptive name to current VLAN ID', category: 'config', mode: 'VLAN_CONFIG', forType: 'switch' },
+    { cmd: 'exit', desc: 'خروج و ذخیره تغییرات ویلن در دیتابیس', descEn: 'Exit and save VLAN changes to switch database', category: 'action', mode: 'VLAN_CONFIG', forType: 'switch' },
   ];
 
   // Filter commands for sidebar
@@ -632,16 +639,21 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
     }
     if (commandSearch) {
       const q = commandSearch.toLowerCase();
-      return item.cmd.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q);
+      const descText = isEn ? item.descEn : item.desc;
+      return item.cmd.toLowerCase().includes(q) || descText.toLowerCase().includes(q);
     }
     return true;
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 modal-backdrop-blur overflow-hidden" data-modal-backdrop="true" dir="rtl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 modal-backdrop-blur overflow-y-auto"
+      data-modal-backdrop="true"
+      dir={isEn ? 'ltr' : 'rtl'}
+    >
       <div
-        className={`bg-slate-900 border border-slate-700 rounded-xl shadow-2xl flex flex-col overflow-hidden text-slate-100 transition-all ${
-          isFullscreen ? 'w-full h-full rounded-none' : 'w-full max-w-6xl h-[92vh]'
+        className={`bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100 transition-all my-auto max-h-[94vh] sm:max-h-[90vh] ${
+          isFullscreen ? 'w-full h-full max-h-screen rounded-none' : 'w-full max-w-6xl'
         }`}
       >
         {/* Top Header Bar */}
@@ -657,10 +669,10 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-white font-mono text-sm tracking-wide">{device.name}</span>
-                <span className="terminal-header-ip text-xs font-mono font-bold px-2 py-0.5 rounded-md shadow-xs" title="آدرس آی‌پی دستگاه">
+                <span className="terminal-header-ip text-xs font-mono font-bold px-2 py-0.5 rounded-md shadow-xs" title={isEn ? "Device IP Address" : "آدرس آی‌پی دستگاه"}>
                   {device.ip}
                 </span>
-                <span className="terminal-header-ssh text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-xs" title="نسخه پروتکل SSH">
+                <span className="terminal-header-ssh text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-xs" title={isEn ? "SSH Protocol Version" : "نسخه پروتکل SSH"}>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                   SSH-2.0
                 </span>
@@ -681,12 +693,12 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             {hasUnsavedChanges && (
               <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/40 text-amber-300 text-xs animate-pulse">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-[11px]">تغییرات در Running-Config ذخیره نشده در استارتاپ</span>
+                <span className="text-[11px]">{isEn ? 'Unsaved running-config changes' : 'تغییرات در Running-Config ذخیره نشده در استارتاپ'}</span>
                 <button
                   onClick={handleExecuteWriteMemory}
                   disabled={isWritingMemory}
                   className="px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-[10px] transition flex items-center gap-1"
-                  title="اجرای مستقیم دستور write memory"
+                  title={isEn ? "Execute write memory command directly" : "اجرای مستقیم دستور write memory"}
                 >
                   <Save className="w-3 h-3" />
                   <span>Write Memory</span>
@@ -694,26 +706,26 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
               </div>
             )}
 
-            {/* Quick Interfaces Dropdown (لیست کشویی اینترفیس‌ها و وضعیت) */}
+            {/* Quick Interfaces Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setIsInterfaceDropdownOpen(!isInterfaceDropdownOpen)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium transition shadow-sm"
               >
                 <Cable className="w-3.5 h-3.5 text-indigo-400" />
-                <span>لیست کشویی اینترفیس‌ها ({ports.length})</span>
+                <span>{isEn ? `Interfaces (${ports.length})` : `لیست کشویی اینترفیس‌ها (${ports.length})`}</span>
                 {isInterfaceDropdownOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
 
               {/* Collapsible Interface Table / Drawer */}
               {isInterfaceDropdownOpen && (
                 <div
-                  className="absolute left-0 mt-2 w-[480px] max-h-[380px] overflow-y-auto bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 z-50 text-right text-xs"
-                  dir="rtl"
+                  className={`absolute ${isEn ? 'left-0' : 'right-0'} mt-2 w-[340px] sm:w-[480px] max-h-[380px] overflow-y-auto bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 z-50 text-xs`}
+                  dir={isEn ? 'ltr' : 'rtl'}
                 >
                   <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-2">
                     <span className="font-bold text-slate-200 text-xs">
-                      اینترفیس‌های {device.name} (بدون نیاز به بازگشت به صفحه قبل)
+                      {isEn ? `${device.name} Interfaces` : `اینترفیس‌های ${device.name} (بدون نیاز به بازگشت به صفحه قبل)`}
                     </span>
                     <button
                       onClick={() => setIsInterfaceDropdownOpen(false)}
@@ -740,7 +752,9 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                             <div>
                               <div className="font-mono font-bold text-white text-xs">{p.port_id}</div>
                               <div className="text-[10px] text-slate-400">
-                                {p.connected_device !== 'Disconnected' ? p.connected_device : 'خالی / بدون اتصال'}
+                                {p.connected_device !== 'Disconnected'
+                                  ? p.connected_device
+                                  : (isEn ? 'Empty / Disconnected' : 'خالی / بدون اتصال')}
                               </div>
                             </div>
                           </div>
@@ -767,9 +781,9 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                                 executeCommand(`interface ${p.port_id}`);
                               }}
                               className="px-2 py-1 rounded bg-indigo-600/80 hover:bg-indigo-600 text-white text-[10px] font-medium transition"
-                              title="ورود به مد کانفیگ این پورت در ترمینال"
+                              title={isEn ? "Select interface in CLI" : "ورود به مد کانفیگ این پورت در ترمینال"}
                             >
-                              انتخاب در CLI
+                              {isEn ? "Select in CLI" : "انتخاب در CLI"}
                             </button>
                           </div>
                         </div>
@@ -784,7 +798,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
               className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
-              title={isFullscreen ? 'حالت پنجره' : 'تمام صفحه'}
+              title={isFullscreen ? (isEn ? 'Exit Fullscreen' : 'حالت پنجره') : (isEn ? 'Fullscreen' : 'تمام صفحه')}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
@@ -792,19 +806,19 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             <button
               onClick={onClose}
               className="p-1.5 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
-              title="بستن ترمینال"
+              title={isEn ? 'Close Terminal' : 'بستن ترمینال'}
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Main Body: Terminal Screen (Left/Center) + Sidebar Guides (Right) */}
+        {/* Main Body: Terminal Screen + Sidebar Guides */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-          {/* Terminal Console View (Left) */}
+          {/* Terminal Console View */}
           <div className="cisco-terminal-screen flex-1 flex flex-col bg-slate-950 p-3.5 overflow-hidden font-mono text-xs select-text">
             {/* Output Lines Canvas */}
-            <div className="flex-1 overflow-y-auto space-y-1 pr-1 pb-2 scrollbar-thin scrollbar-thumb-slate-700">
+            <div className="flex-1 overflow-y-auto space-y-1 pr-1 pb-2 scrollbar-thin scrollbar-thumb-slate-700" dir="ltr">
               {lines.map((line) => {
                 if (line.type === 'input') {
                   return (
@@ -844,7 +858,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             </div>
 
             {/* Input Prompt Box */}
-            <div className="mt-2 pt-2 border-t border-slate-800/90 flex items-center gap-2 bg-slate-900/60 px-3 py-1.5 rounded-lg">
+            <div className="mt-2 pt-2 border-t border-slate-800/90 flex items-center gap-2 bg-slate-900/60 px-3 py-1.5 rounded-lg" dir="ltr">
               <span className="text-emerald-400 font-bold whitespace-nowrap font-mono">{getPrompt()}</span>
               <input
                 ref={inputRef}
@@ -852,7 +866,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                 value={currentInput}
                 onChange={(e) => setCurrentInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="دستور سیسکو را تایپ کنید (مثلاً enable یا show ip int brief)..."
+                placeholder={isEn ? "Type Cisco IOS command (e.g. enable, show ip int brief)..." : "دستور سیسکو را تایپ کنید (مثلاً enable یا show ip int brief)..."}
                 className="cisco-cli-input flex-1 bg-transparent font-mono outline-none border-none text-xs"
                 autoFocus
                 dir="ltr"
@@ -865,19 +879,19 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                 className="cisco-btn-exec px-3 py-1.5 rounded-lg text-white text-xs font-mono font-bold flex items-center gap-1.5 transition shadow-sm shrink-0"
               >
                 <Send className="w-3 h-3" />
-                <span className="hidden sm:inline">ارسال</span>
+                <span className="hidden sm:inline">{isEn ? 'Send' : 'ارسال'}</span>
               </button>
             </div>
           </div>
 
-          {/* Context-Aware Cisco Commands Sidebar (Right) */}
-          <div className="cisco-sidebar-guide w-full md:w-80 lg:w-96 border-t md:border-t-0 md:border-r flex flex-col overflow-hidden text-right">
+          {/* Context-Aware Cisco Commands Sidebar */}
+          <div className={`cisco-sidebar-guide w-full md:w-80 lg:w-96 border-t md:border-t-0 ${isEn ? 'md:border-l' : 'md:border-r'} flex flex-col overflow-hidden ${isEn ? 'text-left' : 'text-right'}`}>
             {/* Sidebar Header */}
             <div className="p-3 bg-white/50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                   <HelpCircle className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>راهنمای هوشمند دستورات مرحله</span>
+                  <span>{isEn ? 'Command Guide' : 'راهنمای هوشمند دستورات مرحله'}</span>
                 </span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800 font-bold">
                   {cliMode}
@@ -888,32 +902,42 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="جستجوی دستور یا کاربرد..."
+                  placeholder={isEn ? "Search command or description..." : "جستجوی دستور یا کاربرد..."}
                   value={commandSearch}
                   onChange={(e) => setCommandSearch(e.target.value)}
-                  className="w-full px-2.5 py-1.5 pr-7 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white text-[11px] placeholder:text-slate-400 focus:outline-none focus:border-indigo-500"
+                  className={`w-full px-2.5 py-1.5 ${isEn ? 'pl-7 pr-2.5' : 'pr-7 pl-2.5'} rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white text-[11px] placeholder:text-slate-400 focus:outline-none focus:border-indigo-500`}
                 />
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-2" />
+                <Search className={`w-3.5 h-3.5 text-slate-400 absolute ${isEn ? 'left-2' : 'right-2'} top-2`} />
               </div>
             </div>
 
             {/* Current Mode Badge Explanation */}
             <div className="p-2.5 bg-indigo-50/70 dark:bg-indigo-950/30 border-b border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-700 dark:text-slate-300 space-y-1">
               <div className="font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
-                <span>مرحله فعلی:</span>
+                <span>{isEn ? 'Current Prompt:' : 'مرحله فعلی:'}</span>
                 <span className="font-mono text-emerald-600 dark:text-emerald-400">{getPrompt()}</span>
               </div>
               <div className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed">
                 {cliMode === 'USER_EXEC' &&
-                  'حالت کاربری ابتدایی (User EXEC). فقط دستورات اولیه مانیتورینگ و تست پینگ مجاز هستند. برای دسترسی به تنظیمات دستور enable را اجرا کنید.'}
+                  (isEn
+                    ? 'User EXEC mode (>). Basic monitoring and ping commands allowed. Type enable to enter Privileged mode.'
+                    : 'حالت کاربری ابتدایی (User EXEC). فقط دستورات اولیه مانیتورینگ و تست پینگ مجاز هستند. برای دسترسی به تنظیمات دستور enable را اجرا کنید.')}
                 {cliMode === 'PRIVILEGED_EXEC' &&
-                  'حالت دسترسی ویژه مدیریتی (Privileged EXEC #). می‌توانید دستورات کامل Show، Write Memory، Debug و ورود به configure terminal را اجرا کنید.'}
+                  (isEn
+                    ? 'Privileged EXEC mode (#). Full Show, Write Memory, Debug, and configure terminal available.'
+                    : 'حالت دسترسی ویژه مدیریتی (Privileged EXEC #). می‌توانید دستورات کامل Show، Write Memory، Debug و ورود به configure terminal را اجرا کنید.')}
                 {cliMode === 'GLOBAL_CONFIG' &&
-                  'حالت تنظیمات کلی سیستم (Global Config). تنظیم نام هاست، ساخت ویلن، ورود به اینترفیس‌ها، روتینگ و سرویس‌ها در این مد انجام می‌شود.'}
+                  (isEn
+                    ? 'Global Configuration mode. Set hostname, create VLANs, enter interfaces, routing, and services.'
+                    : 'حالت تنظیمات کلی سیستم (Global Config). تنظیم نام هاست، ساخت ویلن، ورود به اینترفیس‌ها، روتینگ و سرویس‌ها در این مد انجام می‌شود.')}
                 {cliMode === 'INTERFACE_CONFIG' &&
-                  `حالت پیکربندی پورت ${currentInterface || ''}. تنظیم مود Access/Trunk، ویلن، وضعیت خاموش/روشن، توضیحات پورت و Spanning-Tree.`}
+                  (isEn
+                    ? `Interface ${currentInterface || ''} configuration. Set Access/Trunk mode, VLAN, admin status, and STP.`
+                    : `حالت پیکربندی پورت ${currentInterface || ''}. تنظیم مود Access/Trunk، ویلن، وضعیت خاموش/روشن، توضیحات پورت و Spanning-Tree.`)}
                 {cliMode === 'VLAN_CONFIG' &&
-                  `حالت تنظیمات دیتابیس VLAN ${currentVlanId}. نام‌گذاری و فعال‌سازی ویلن در سوئیچ.`}
+                  (isEn
+                    ? `VLAN ${currentVlanId} database configuration. Name and activate VLAN in switch database.`
+                    : `حالت تنظیمات دیتابیس VLAN ${currentVlanId}. نام‌گذاری و فعال‌سازی ویلن در سوئیچ.`)}
               </div>
             </div>
 
@@ -921,7 +945,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             <div className="flex-1 overflow-y-auto p-2.5 space-y-2 scrollbar-thin scrollbar-thumb-slate-700">
               {relevantCommands.length === 0 ? (
                 <div className="text-center py-6 text-slate-500 text-xs">
-                  دستوری با این فیلتر در مد فعلی یافت نشد.
+                  {isEn ? 'No commands found for this filter in the current mode.' : 'دستوری با این فیلتر در مد فعلی یافت نشد.'}
                 </div>
               ) : (
                 relevantCommands.map((item, idx) => (
@@ -948,7 +972,9 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">{item.desc}</p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">
+                      {isEn ? item.descEn : item.desc}
+                    </p>
 
                     {/* Action Buttons */}
                     <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
@@ -959,14 +985,14 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                         }}
                         className="cisco-btn-insert px-2.5 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95"
                       >
-                        درج در خط فرمان
+                        {isEn ? 'Insert' : 'درج در خط فرمان'}
                       </button>
                       <button
                         onClick={() => executeCommand(item.cmd)}
                         className="cisco-btn-exec px-3 py-1 rounded-lg text-[10px] font-bold transition flex items-center gap-1 active:scale-95"
                       >
                         <Play className="w-2.5 h-2.5 fill-current" />
-                        <span>اجرا</span>
+                        <span>{isEn ? 'Run' : 'اجرا'}</span>
                       </button>
                     </div>
                   </div>
@@ -976,12 +1002,12 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
             {/* Quick Helper Bar */}
             <div className="p-2.5 bg-white/50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 text-[10px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
-              <span>راهنما: برای تکمیل Tab بزنید</span>
+              <span>{isEn ? 'Tip: Press Tab to auto-complete' : 'راهنما: برای تکمیل Tab بزنید'}</span>
               <button
                 onClick={() => executeCommand('?')}
                 className="text-indigo-600 dark:text-indigo-400 hover:underline font-mono font-bold"
               >
-                دستور ?
+                {isEn ? '? Command' : 'دستور ?'}
               </button>
             </div>
           </div>

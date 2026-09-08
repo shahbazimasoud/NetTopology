@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.4.1-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۴.۰
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.4.0
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۴.۱
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.4.1
 
 ---
 
@@ -117,6 +117,11 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 - **تغییر پویا و آنی چیدمان (LTR / RTL):** سوئیچر زبان هدر با تغییر بلادرنگ جهت چیدمان و هم‌ترازی المان‌ها و دکمه‌ها بدون نیاز به رفرش صفحه و ذخیره دائم در حافظه مرورگر.
 - **منوی سایدبار آکاردئونی با والدهای مجزا (Accordion Sidebar):** دسته‌بندی و گروه‌بندی ساختاریافته منوها به صورت والدهای مشخص با آیکون تاشو، حالت پیش‌فرض باز، و رفتار جمع‌شدن سایر والدها با کلیک روی والد جدید.
 - **یکپارچه‌سازی ابعاد دکمه‌ها:** هماهنگی کامل سایز، پدینگ و تایپوگرافی دکمه‌های اکشن در بالای صفحه مدیریت الگوها و تمپلیت‌ها با صفحه موجودی و مدیریت تجهیزات شبکه (`px-3.5 py-1.5 rounded-xl text-xs font-medium`).
+
+### ۱۳. اصلاح ریسپانسیو مودال‌ها در صفحات کوچک و ترجمه کامل انگلیسی (Responsive Modals & Localization)
+- **مقیاس‌پذیری دقیق در مانیتورها و لپ‌تاپ‌های کوچک:** حل ریشه‌ای مشکل بیرون زدن مودال‌ها از صفحه با محدودیت هوشمند ارتفاع (`max-h-[92vh] sm:max-h-[90vh]`) و تفکیک اسکرول عمودی داخلی برای محتوا.
+- **ترجمه ۱۰۰٪ انگلیسی در تمام مودال‌ها:** حذف کامل تمام متون و عبارات فارسی هاردکد شده در مودال‌های «ثبت تجهیز جدید»، «کلون‌گیری تمپلیت»، «اعمال تعاملی تمپلیت»، «بازرسی پورت»، «استخراج زنده کانفیگ»، «ترمینال سیسکو» و «تاریخچه نسخه‌ها» در زمان انتخاب زبان انگلیسی.
+- **تثبیت هدر و فوتر عملیاتی (Pinned Header & Footer):** سربرگ و دکمه‌های تایید/لغو در فوتر مودال‌ها همواره ثابت و در دسترس کاربر باقی می‌مانند بدون آنکه به زیر صفحه یا خارج از کادر بروند.
 
 ---
 
@@ -297,6 +302,11 @@ npm start
 - **Dynamic LTR / RTL Directionality:** Live direction toggling via the navbar language switcher with instant visual alignment and local storage persistence.
 - **Collapsible Accordion Sidebar Navigation:** Parent categories with distinct interactive labels, collapsible chevron toggles, default open initial state, and single-expanded accordion logic.
 - **Action Button Sizing Harmonization:** Action buttons in Template Management and all page headers adhere strictly to the unified sizing standard established by the Device Management view (`px-3.5 py-1.5 rounded-xl text-xs font-medium`).
+
+### 13. Modal Responsive Viewport Scaling & Complete English Localization
+- **Adaptive Small Screen & Laptop Scaling:** Eliminated viewport overflow on smaller displays using dynamic height clamping (`max-h-[92vh] sm:max-h-[90vh]`) combined with dedicated vertical inner content scrolling.
+- **Complete English Translation in Modals:** 100% elimination of hardcoded Persian phrases in English mode across all modal windows (Add Device, Clone Template, Apply Template, Port Inspector, Live Config Capture, Terminal, and Release Notes).
+- **Pinned Headers & Action Footers:** Form titles, close buttons, and primary action buttons (Save, Apply, Cancel) stay permanently anchored within view, preventing controls from sliding off-screen.
 
 ---
 

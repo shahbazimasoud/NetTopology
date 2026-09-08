@@ -17,6 +17,7 @@ import {
   Plus
 } from 'lucide-react';
 import { ConfigTemplate, TemplateVariable, Device } from '../types';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface CloneTemplateModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
   onSaveClone,
   onCloneAndApply,
 }) => {
+  const { t, isEn } = useLanguage();
   const [name, setName] = useState('');
   const [vendor, setVendor] = useState<'cisco' | 'mikrotik' | 'generic'>('cisco');
   const [targetType, setTargetType] = useState<'switch' | 'router' | 'all'>('switch');
@@ -50,11 +52,15 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
 
   useEffect(() => {
     if (sourceTemplate && isOpen) {
-      setName(`${sourceTemplate.name} (کلون تجهیز جدید)`);
+      setName(`${sourceTemplate.name} ${isEn ? '(Cloned)' : '(کلون تجهیز جدید)'}`);
       setVendor(sourceTemplate.vendor);
       setTargetType(sourceTemplate.target_type);
       setRole(sourceTemplate.role);
-      setDescription(sourceTemplate.description ? `${sourceTemplate.description} (نسخه سفارشی‌شده)` : '');
+      setDescription(
+        sourceTemplate.description
+          ? `${sourceTemplate.description} ${isEn ? '(Custom Clone)' : '(نسخه سفارشی‌شده)'}`
+          : ''
+      );
       setDefaultCliMode(sourceTemplate.default_cli_mode);
       setCommands(sourceTemplate.commands);
       // Deep clone variables
@@ -66,7 +72,7 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
       setActiveTab('editor');
       setErrorMsg(null);
     }
-  }, [sourceTemplate, isOpen]);
+  }, [sourceTemplate, isOpen, isEn]);
 
   if (!isOpen || !sourceTemplate) return null;
 
@@ -102,7 +108,7 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
       ...variables,
       {
         name: `VAR_${num}`,
-        label: `متغیر جدید ${num}`,
+        label: isEn ? `New Variable ${num}` : `متغیر جدید ${num}`,
         description: '',
         default_value: '',
         required: true,
@@ -129,11 +135,11 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
   // Validation
   const validate = () => {
     if (!name.trim()) {
-      setErrorMsg('لطفاً نامی برای تمپلیت کلون شده وارد فرمایید.');
+      setErrorMsg(isEn ? 'Please enter a name for the cloned template.' : 'لطفاً نامی برای تمپلیت کلون شده وارد فرمایید.');
       return false;
     }
     if (!commands.trim()) {
-      setErrorMsg('متن دستورات کلون شده نمی‌تواند خالی باشد.');
+      setErrorMsg(isEn ? 'Cloned template command body cannot be empty.' : 'متن دستورات کلون شده نمی‌تواند خالی باشد.');
       return false;
     }
     return true;
@@ -164,7 +170,7 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
       }
     } catch (err: any) {
       console.error('Error saving clone:', err);
-      setErrorMsg(err.message || 'خطا در ثبت تمپلیت کلون شده');
+      setErrorMsg(err.message || (isEn ? 'Error saving cloned template' : 'خطا در ثبت تمپلیت کلون شده'));
     } finally {
       setSaving(false);
     }
@@ -173,10 +179,14 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
   const commandLines = commands.split('\n');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop-blur animate-fadeIn" data-modal-backdrop="true">
-      <div className="w-full max-w-5xl max-h-[94vh] flex flex-col bg-slate-900/95 border border-cyan-500/30 rounded-2xl shadow-[0_0_60px_rgba(6,182,212,0.25)] overflow-hidden text-slate-100 backdrop-blur-2xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 modal-backdrop-blur animate-fadeIn overflow-y-auto"
+      data-modal-backdrop="true"
+      dir={isEn ? 'ltr' : 'rtl'}
+    >
+      <div className="w-full max-w-5xl max-h-[92vh] sm:max-h-[88vh] my-auto flex flex-col bg-slate-900/95 border border-cyan-500/30 rounded-2xl shadow-[0_0_60px_rgba(6,182,212,0.25)] overflow-hidden text-slate-100 backdrop-blur-2xl">
         
-        {/* Header */}
+        {/* Header (Pinned) */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-white/10 bg-slate-950/70 shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
@@ -184,15 +194,15 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base text-white">
-                  کلون‌گیری و انشعاب از تمپلیت (Clone Template)
+                <h3 className="font-bold text-sm sm:text-base text-white">
+                  {t('clone_modal_title')}
                 </h3>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                   Fork & Customize
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
-                <span>الگوی مبدا:</span>
+              <p className="text-xs text-slate-400 mt-0.5 flex flex-wrap items-center gap-1.5">
+                <span>{t('clone_modal_source')}</span>
                 <span className="font-semibold text-slate-200">«{sourceTemplate.name}»</span>
                 <span className="text-slate-500">|</span>
                 <span
@@ -212,25 +222,28 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
           <button
             onClick={onClose}
             className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition"
+            aria-label={t('action_close')}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Info Banner */}
-        <div className="px-5 py-2.5 bg-gradient-to-r from-cyan-950/40 via-indigo-950/30 to-transparent border-b border-white/5 flex items-center justify-between text-xs text-slate-300">
+        <div className="px-5 py-2.5 bg-gradient-to-r from-cyan-950/40 via-indigo-950/30 to-transparent border-b border-white/5 flex items-center justify-between text-xs text-slate-300 shrink-0">
           <div className="flex items-center gap-2">
             <Info className="w-4 h-4 text-cyan-400 shrink-0" />
             <span>
-              دستورات و متغیرها از تمپلیت اصلی کپی شده‌اند. می‌توانید نام جدید را وارد کرده و تغییرات جزیی مورد نیاز برای تجهیز دیگر را در متن دستورات اعمال فرمایید.
+              {isEn
+                ? 'Commands and variables are duplicated from source template. Customize the name, parameters, or CLI lines for your target device.'
+                : 'دستورات و متغیرها از تمپلیت اصلی کپی شده‌اند. می‌توانید نام جدید را وارد کرده و تغییرات جزیی مورد نیاز برای تجهیز دیگر را در متن دستورات اعمال فرمایید.'}
             </span>
           </div>
-          <span className="text-[11px] font-mono text-cyan-400 hidden md:inline">
-            {commandLines.length} خط دستور | {variables.length} متغیر
+          <span className="text-[11px] font-mono text-cyan-400 hidden md:inline shrink-0">
+            {commandLines.length} {isEn ? 'lines' : 'خط'} | {variables.length} {isEn ? 'variables' : 'متغیر'}
           </span>
         </div>
 
-        {/* Body Content */}
+        {/* Body Content (Scrollable) */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
           {errorMsg && (
             <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs">
@@ -244,13 +257,13 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="md:col-span-2">
                 <label className="block text-xs font-semibold text-slate-200 mb-1">
-                  نام تمپلیت جدید (Clone Name): <span className="text-rose-400">*</span>
+                  {t('clone_modal_name')} <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="مثال: سوئیچ دسترسی طبقه دوم، روتر شعبه تبریز، کانفیگ استاندارد Core..."
+                  placeholder={t('clone_modal_name_placeholder')}
                   className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 shadow-inner"
                   autoFocus
                 />
@@ -258,13 +271,13 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-200 mb-1">
-                  نقش تجهیز در شبکه (Role):
+                  {t('clone_modal_role')}
                 </label>
                 <input
                   type="text"
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  placeholder="مثال: Access Switch, Branch Router..."
+                  placeholder={t('clone_modal_role_placeholder')}
                   className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                 />
               </div>
@@ -273,43 +286,43 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
               <div>
                 <label className="block text-xs font-semibold text-slate-200 mb-1">
-                  سازنده (Vendor):
+                  {isEn ? 'Hardware Vendor:' : 'سازنده (Vendor):'}
                 </label>
                 <select
                   value={vendor}
                   onChange={(e) => setVendor(e.target.value as any)}
                   className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
                 >
-                  <option value="cisco">سیسکو (Cisco IOS-XE)</option>
-                  <option value="mikrotik">میکروتیک (MikroTik RouterOS)</option>
-                  <option value="generic">عمومی (Generic Network)</option>
+                  <option value="cisco">{isEn ? 'Cisco (IOS-XE / IOS)' : 'سیسکو (Cisco IOS-XE)'}</option>
+                  <option value="mikrotik">{isEn ? 'MikroTik (RouterOS)' : 'میکروتیک (MikroTik RouterOS)'}</option>
+                  <option value="generic">{isEn ? 'Generic Network Equipment' : 'عمومی (Generic Network)'}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-200 mb-1">
-                  نوع هدف:
+                  {isEn ? 'Target Role Type:' : 'نوع هدف:'}
                 </label>
                 <select
                   value={targetType}
                   onChange={(e) => setTargetType(e.target.value as any)}
                   className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
                 >
-                  <option value="switch">سوئیچ (Switch)</option>
-                  <option value="router">روتر (Router)</option>
-                  <option value="all">هر دو (سوئیچ و روتر)</option>
+                  <option value="switch">{isEn ? 'Switch' : 'سوئیچ (Switch)'}</option>
+                  <option value="router">{isEn ? 'Router' : 'روتر (Router)'}</option>
+                  <option value="all">{isEn ? 'Both (Switch & Router)' : 'هر دو (سوئیچ و روتر)'}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-200 mb-1">
-                  توضیحات تمپلیت جدید:
+                  {t('clone_modal_desc')}
                 </label>
                 <input
                   type="text"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="توضیح کوتاه در مورد این کلون و هدف آن..."
+                  placeholder={t('clone_modal_desc_placeholder')}
                   className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                 />
               </div>
@@ -317,7 +330,7 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+          <div className="flex flex-wrap items-center justify-between border-b border-white/10 pb-2 gap-2">
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -329,7 +342,7 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
                 }`}
               >
                 <Terminal className="w-3.5 h-3.5" />
-                <span>ویرایشگر دستورات CLI کلون‌شده</span>
+                <span>{isEn ? 'CLI Commands Editor' : 'ویرایشگر دستورات CLI کلون‌شده'}</span>
                 <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-slate-300">
                   {commandLines.length}
                 </span>
@@ -345,7 +358,7 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
                 }`}
               >
                 <Sliders className="w-3.5 h-3.5" />
-                <span>تنظیم متغیرها و مقادیر پیش‌فرض</span>
+                <span>{isEn ? 'Variables & Defaults' : 'تنظیم متغیرها و مقادیر پیش‌فرض'}</span>
                 <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-slate-300">
                   {variables.length}
                 </span>
@@ -361,14 +374,14 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" />
-                <span>پیش‌نمایش نهایی دستورات</span>
+                <span>{isEn ? 'Compiled Preview' : 'پیش‌نمایش نهایی دستورات'}</span>
               </button>
             </div>
 
             {/* Quick Helper */}
             {activeTab === 'editor' && (
               <div className="flex items-center gap-1.5 text-[11px] text-slate-400 hidden sm:flex">
-                <span>کلیک برای درج متغیر در مکان مکان‌نما:</span>
+                <span>{isEn ? 'Click variables below to insert into cursor position:' : 'کلیک برای درج متغیر در مکان مکان‌نما:'}</span>
               </div>
             )}
           </div>
@@ -381,7 +394,7 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
                 <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl bg-slate-950/70 border border-white/5">
                   <span className="text-[11px] text-slate-400 font-medium px-1 flex items-center gap-1">
                     <Sparkles className="w-3 h-3 text-cyan-400" />
-                    <span>متغیرها:</span>
+                    <span>{isEn ? 'Variables:' : 'متغیرها:'}</span>
                   </span>
                   {variables.map((v) => (
                     <button
@@ -389,7 +402,7 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
                       type="button"
                       onClick={() => insertVarTag(v.name)}
                       className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-white/5 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 hover:border-cyan-500/30 transition flex items-center gap-1"
-                      title={`درج {{${v.name}}} در دستورات (پیش‌فرض: ${v.default_value || 'خالی'})`}
+                      title={isEn ? `Insert {{${v.name}}} (Default: ${v.default_value || 'None'})` : `درج {{${v.name}}} در دستورات (پیش‌فرض: ${v.default_value || 'خالی'})`}
                     >
                       <span>{`{{${v.name}}}`}</span>
                       <Plus className="w-2.5 h-2.5 text-cyan-400" />
@@ -403,17 +416,17 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
                 <div className="flex items-center justify-between px-3 py-1.5 bg-white/5 border-b border-white/10 text-[11px] text-slate-400 font-mono">
                   <span className="flex items-center gap-1.5">
                     <Terminal className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>CLI Commands Script (ویرایش جزیی دستورات)</span>
+                    <span>{isEn ? 'CLI Commands Script (Customization)' : 'CLI Commands Script (ویرایش جزیی دستورات)'}</span>
                   </span>
                   <span className="text-[10px] text-slate-400">
-                    تغییرات جزئی مورد نظرتان را مستقیماً در خطوط زیر اعمال نمایید
+                    {isEn ? 'Edit lines directly or insert variables' : 'تغییرات جزئی مورد نظرتان را مستقیماً در خطوط زیر اعمال نمایید'}
                   </span>
                 </div>
                 <textarea
                   ref={textareaRef}
                   value={commands}
                   onChange={(e) => setCommands(e.target.value)}
-                  rows={14}
+                  rows={13}
                   className="w-full bg-slate-950 p-4 font-mono text-xs text-slate-200 leading-relaxed focus:outline-none resize-y dir-ltr text-left selection:bg-cyan-500/30"
                   placeholder="enable&#10;configure terminal&#10;..."
                   spellCheck={false}
@@ -427,7 +440,9 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-slate-400">
-                  می‌توانید مقادیر پیش‌فرض متغیرها را برای تجهیز جدید تغییر دهید (مثلاً سابنت یا گیت‌وی متفاوت).
+                  {isEn
+                    ? 'Configure default values and parameter types for the new cloned device.'
+                    : 'می‌توانید مقادیر پیش‌فرض متغیرها را برای تجهیز جدید تغییر دهید (مثلاً سابنت یا گیت‌وی متفاوت).'}
                 </p>
                 <button
                   type="button"
@@ -435,26 +450,26 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
                   className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-xs border border-indigo-500/30 transition"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>افزودن متغیر جدید</span>
+                  <span>{isEn ? 'Add New Variable' : 'افزودن متغیر جدید'}</span>
                 </button>
               </div>
 
               <div className="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/60">
-                <table className="w-full text-right text-xs">
+                <table className="w-full text-xs" style={{ textAlign: isEn ? 'left' : 'right' }}>
                   <thead className="bg-white/5 border-b border-white/10 text-slate-400 font-medium">
                     <tr>
-                      <th className="p-3">نام در دستورات</th>
-                      <th className="p-3">عنوان متغیر (Label)</th>
-                      <th className="p-3">نوع داده</th>
-                      <th className="p-3">مقدار پیش‌فرض برای این کلون</th>
-                      <th className="p-3 text-center">اجباری</th>
-                      <th className="p-3 text-center">حذف</th>
+                      <th className="p-3">{isEn ? 'Variable Name' : 'نام در دستورات'}</th>
+                      <th className="p-3">{isEn ? 'Field Label' : 'عنوان متغیر (Label)'}</th>
+                      <th className="p-3">{isEn ? 'Data Type' : 'نوع داده'}</th>
+                      <th className="p-3">{isEn ? 'Default Value for Clone' : 'مقدار پیش‌فرض برای این کلون'}</th>
+                      <th className="p-3 text-center">{isEn ? 'Required' : 'اجباری'}</th>
+                      <th className="p-3 text-center">{isEn ? 'Delete' : 'حذف'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {variables.map((v, idx) => (
                       <tr key={idx} className="hover:bg-white/5 transition">
-                        <td className="p-3 font-mono text-cyan-300">
+                        <td className="p-3 font-mono text-cyan-300 dir-ltr text-left">
                           {`{{${v.name}}}`}
                         </td>
                         <td className="p-2.5">
@@ -471,13 +486,13 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
                             onChange={(e) => handleUpdateVar(idx, { type: e.target.value as any })}
                             className="bg-slate-900 border border-white/10 px-2 py-1 rounded-lg text-xs text-white"
                           >
-                            <option value="text">متن (Text)</option>
-                            <option value="ip">آدرس IP</option>
-                            <option value="subnet">سابنت ماسک</option>
-                            <option value="gateway">گیت‌وی</option>
-                            <option value="vlan">شناسه ویلن</option>
-                            <option value="password">رمز عبور</option>
-                            <option value="number">عدد</option>
+                            <option value="text">{isEn ? 'Text' : 'متن (Text)'}</option>
+                            <option value="ip">{isEn ? 'IP Address' : 'آدرس IP'}</option>
+                            <option value="subnet">{isEn ? 'Subnet Mask' : 'سابنت ماسک'}</option>
+                            <option value="gateway">{isEn ? 'Gateway' : 'گیت‌وی'}</option>
+                            <option value="vlan">{isEn ? 'VLAN ID' : 'شناسه ویلن'}</option>
+                            <option value="password">{isEn ? 'Password / Secret' : 'رمز عبور'}</option>
+                            <option value="number">{isEn ? 'Number' : 'عدد'}</option>
                           </select>
                         </td>
                         <td className="p-2.5">
@@ -485,8 +500,8 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
                             type="text"
                             value={v.default_value}
                             onChange={(e) => handleUpdateVar(idx, { default_value: e.target.value })}
-                            placeholder="مقدار اولیه..."
-                            className="w-full bg-slate-900 border border-white/10 px-2.5 py-1 rounded-lg text-xs font-mono text-emerald-300"
+                            placeholder={isEn ? 'Default value...' : 'مقدار اولیه...'}
+                            className="w-full bg-slate-900 border border-white/10 px-2.5 py-1 rounded-lg text-xs font-mono text-emerald-300 dir-ltr text-left"
                           />
                         </td>
                         <td className="p-2.5 text-center">
@@ -518,7 +533,7 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
           {activeTab === 'preview' && (
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>پیش‌نمایش فرامین CLI جایگذاری‌شده با مقادیر پیش‌فرض فعلی:</span>
+                <span>{isEn ? 'Compiled CLI commands rendered with current default values:' : 'پیش‌نمایش فرامین CLI جایگذاری‌شده با مقادیر پیش‌فرض فعلی:'}</span>
                 <span className="font-mono text-emerald-400">Ready to execute</span>
               </div>
               <div className="rounded-2xl bg-slate-950 border border-white/10 p-4 font-mono text-xs text-slate-200 max-h-96 overflow-y-auto dir-ltr text-left leading-relaxed">
@@ -528,10 +543,12 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
           )}
         </div>
 
-        {/* Footer Actions */}
+        {/* Footer Actions (Pinned) */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 sm:p-5 border-t border-white/10 bg-slate-950/70 shrink-0">
           <div className="text-xs text-slate-400">
-            تمپلیت کلون شده به عنوان یک الگوی مجزا ذخیره خواهد شد و الگوی مبدا بدون تغییر باقی می‌ماند.
+            {isEn
+              ? 'The cloned template will be saved independently. Original template remains unchanged.'
+              : 'تمپلیت کلون شده به عنوان یک الگوی مجزا ذخیره خواهد شد و الگوی مبدا بدون تغییر باقی می‌ماند.'}
           </div>
 
           <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
@@ -540,7 +557,7 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-medium transition"
             >
-              انصراف
+              {t('action_cancel')}
             </button>
 
             {onCloneAndApply && (
@@ -549,10 +566,10 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
                 disabled={saving}
                 onClick={() => handleSave(true)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40 text-xs font-semibold shadow-[0_0_15px_rgba(16,185,129,0.2)] transition active:scale-95"
-                title="ذخیره تمپلیت و باز کردن پنجره اعمال روی تجهیز"
+                title={isEn ? 'Save template and open Apply modal' : 'ذخیره تمپلیت و باز کردن پنجره اعمال روی تجهیز'}
               >
                 <Play className="w-3.5 h-3.5 fill-emerald-400 text-emerald-400" />
-                <span>ذخیره و اعمال روی تجهیز...</span>
+                <span>{isEn ? 'Save & Apply to Device...' : 'ذخیره و اعمال روی تجهیز...'}</span>
               </button>
             )}
 
@@ -563,7 +580,7 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold shadow-[0_0_20px_rgba(6,182,212,0.35)] transition active:scale-95"
             >
               <CopyPlus className="w-4 h-4" />
-              <span>{saving ? 'در حال ثبت کلون...' : 'ثبت و ذخیره تمپلیت جدید (Clone)'}</span>
+              <span>{saving ? t('clone_modal_btn_saving') : t('clone_modal_btn')}</span>
             </button>
           </div>
         </div>
@@ -572,3 +589,4 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
     </div>
   );
 };
+
