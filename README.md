@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.3.3-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.3.4-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۳.۳
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.3.3
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۳.۴
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.3.4
 
 ---
 
@@ -101,7 +101,8 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 
 ### ۱۰. حالت تمام‌صفحه نقشه شماتیک توپولوژی (Fullscreen Topology Mode)
 - **دکمه اختصاصی در بالا سمت چپ نقشه:** دکمه شناور با ترنزیشن نرم و افکت نورانی که در زمان هاور با برچسب «حالت فول» راهنمای کاربر است.
-- **مخفی‌سازی کامل اجزای اضافی:** با فعال‌سازی حالت فول، تمامی عناصر محیط کاربری شامل هدر بالای نرم‌افزار، سایدبار دسترسی راست و منوهای بالا به‌طور کامل مخفی شده و نقشه تمام مساحت مانیتور را پوشش می‌دهد.
+- **مخفی‌سازی کامل هدر اصلی، سایدبار و فوتر:** با فعال‌سازی حالت فول، تمامی عناصر محیط کاربری شامل هدر فوقانی نرم‌افزار (نام پورتال، دکمه داده‌های نمونه، پویش سریع، تم و...)، سایدبار دسترسی راست و فوتر وضعیت شبکه به‌طور کامل از DOM خارج و مخفی شده و نقشه ۱۰۰٪ مساحت صفحه نمایش را اشغال می‌کند.
+- **طراحی بهینه و شناور راهنمای نقشه (Collapsible Floating Legend):** رفع کامل مشکل قرارگیری راهنما در زیر فوتر و انتقال آن به مختصات استاندارد و امن پایین سمت چپ (`bottom-5 left-5`) با قابلیت باز و بسته شدن هوشمند (Toggle / Collapse) جهت ایجاد دسترسی آسان بدون اشغال فضای ترسیم نودها.
 - **پشتیبانی از کلید میانبر Esc:** امکان خروج آنی و روان از حالت تمام‌صفحه با فشردن کلید Escape یا کلیک مجدد روی دکمه.
 - **مدیریت نوار ابزار در حالت فول:** دکمه سوئیچ سریع جهت مخفی‌سازی یا آشکارسازی نوار ابزار نقشه برای دستیابی به ۱۰۰٪ مساحت خالص نقشه شبکه.
 
@@ -273,7 +274,8 @@ npm start
 
 ### 10. Fullscreen Schematic Topology Mode
 - **Dedicated Top-Left Floating Control:** Instant fullscreen toggle positioned at the top-left of the topology canvas with hover tooltip indication ("حالت فول" / Full Mode).
-- **Total UI Concealment:** Completely masks all application navigation chrome—including the top header, sidebar navigation, top tabs, and footer—allocating 100% of the viewport strictly to the interactive SVG network canvas.
+- **Total Header, Sidebar & Footer Concealment:** Completely removes all application chrome from the DOM—including the top header navbar (portal name, sample data button, quick scan, theme controls), sidebar navigation, and bottom status footer—allocating 100% of the viewport strictly to the interactive SVG network canvas.
+- **Collapsible Floating Topology Legend:** Solves the footer overlap issue by anchoring the interactive legend in a safe, modern glassmorphism floating card at `bottom-5 left-5` with smart collapse/expand controls, ensuring zero obstruction of network nodes and ports.
 - **Escape Key & Native Fullscreen Sync:** Exit seamlessly at any time with the `Esc` keyboard shortcut or via the top-left toggle button.
 - **In-Canvas Toolbar Toggle:** Allows toggling the internal filter/search bar on or off in full mode for an uninterrupted, edge-to-edge network map experience.
 

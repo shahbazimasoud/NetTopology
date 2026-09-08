@@ -22,7 +22,9 @@ import {
   Terminal,
   Move,
   RotateCcw,
-  Check
+  Check,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { TopologyData, Device, TopologyLink, TopologyNode } from '../types';
 
@@ -35,6 +37,8 @@ interface SchematicTopologyViewProps {
   onInspectDevice: (device: Device) => void;
   onInspectPorts: (device: Device) => void;
   onConnectTerminal?: (device: Device) => void;
+  isFullMode?: boolean;
+  onToggleFullMode?: () => void;
 }
 
 export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
@@ -46,6 +50,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   onInspectDevice,
   onInspectPorts,
   onConnectTerminal,
+  isFullMode: propIsFullMode,
+  onToggleFullMode,
 }) => {
   const [viewMode, setViewMode] = useState<'schematic' | 'physical'>('schematic');
 
@@ -108,33 +114,43 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const [filterBuilding, setFilterBuilding] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showPortLabels, setShowPortLabels] = useState(true);
-  const [isFullMode, setIsFullMode] = useState(false);
+  const [internalFullMode, setInternalFullMode] = useState(false);
+  const isFullMode = propIsFullMode !== undefined ? propIsFullMode : internalFullMode;
   const [showToolbarInFullMode, setShowToolbarInFullMode] = useState(false);
+  const [isLegendOpen, setIsLegendOpen] = useState(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Toggle Full Mode (Hides header, sidebar, top menu, and maximizes map to full browser viewport)
   const toggleFullMode = useCallback(() => {
-    setIsFullMode((prev) => {
-      const next = !prev;
-      if (next) {
-        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
-          document.documentElement.requestFullscreen().catch(() => {});
+    if (onToggleFullMode) {
+      onToggleFullMode();
+    } else {
+      setInternalFullMode((prev) => {
+        const next = !prev;
+        if (next) {
+          if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+          }
+        } else {
+          if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          }
         }
-      } else {
-        if (document.fullscreenElement && document.exitFullscreen) {
-          document.exitFullscreen().catch(() => {});
-        }
-      }
-      return next;
-    });
-  }, []);
+        return next;
+      });
+    }
+  }, [onToggleFullMode]);
 
   // Listen for Escape key and browser fullscreen change events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isFullMode) {
-        setIsFullMode(false);
+        if (onToggleFullMode) {
+          onToggleFullMode();
+        } else {
+          setInternalFullMode(false);
+        }
         if (document.fullscreenElement && document.exitFullscreen) {
           document.exitFullscreen().catch(() => {});
         }
@@ -143,7 +159,11 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && isFullMode) {
-        setIsFullMode(false);
+        if (onToggleFullMode) {
+          onToggleFullMode();
+        } else {
+          setInternalFullMode(false);
+        }
       }
     };
 
@@ -153,7 +173,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, [isFullMode]);
+  }, [isFullMode, onToggleFullMode]);
 
   // Save viewport changes to localStorage
   const saveViewport = useCallback((newZoom: number, newPan: { x: number; y: number }) => {
@@ -914,34 +934,69 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             </svg>
 
             {/* Bottom Floating Legend & Interactive Guide */}
-            <div className="absolute bottom-3 left-3 z-20 spatial-glass border border-white/10 backdrop-blur-xl rounded-xl p-3 shadow-2xl text-xs space-y-1.5 text-slate-200">
-              <div className="text-[11px] font-bold text-white mb-1 flex items-center justify-between gap-3 glow-text-cyan">
-                <div className="flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>راهنمای نقشه توپولوژی</span>
+            <div className="absolute bottom-5 left-5 z-30 select-none">
+              {!isLegendOpen ? (
+                <button
+                  type="button"
+                  onClick={() => setIsLegendOpen(true)}
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/20 hover:border-cyan-400/50 text-slate-200 hover:text-white shadow-2xl backdrop-blur-2xl text-xs font-medium transition active:scale-95 group"
+                  title="نمایش راهنمای نقشه توپولوژی"
+                >
+                  <Info className="w-4 h-4 text-cyan-400 group-hover:rotate-12 transition-transform" />
+                  <span>راهنمای نقشه</span>
+                  <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              ) : (
+                <div className="spatial-glass border border-white/15 backdrop-blur-2xl rounded-2xl p-3 sm:p-3.5 shadow-[0_10px_35px_rgba(0,0,0,0.6)] text-xs text-slate-200 min-w-[280px] sm:min-w-[340px] max-w-sm transition-all duration-200">
+                  <div className="flex items-center justify-between gap-3 pb-2 mb-2 border-b border-white/10">
+                    <div className="flex items-center gap-2">
+                      <Info className="w-4 h-4 text-cyan-400" />
+                      <span className="font-bold text-white text-xs font-mono glow-text-cyan">
+                        راهنمای نقشه توپولوژی
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-mono text-cyan-300 bg-cyan-500/15 px-2 py-0.5 rounded-md border border-cyan-500/30 hidden sm:inline">
+                        اسکرول = زوم | درگ = جابجایی
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsLegendOpen(false)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
+                        title="بستن راهنما"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Connection Types & Node States */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px] text-slate-300">
+                    <div className="flex items-center gap-2">
+                      <span className="w-4 h-1 bg-purple-500 rounded shadow-[0_0_8px_rgba(168,85,247,0.7)]"></span>
+                      <span className="text-purple-300 font-mono font-semibold">Trunk (802.1Q)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-4 h-1 bg-cyan-500 rounded shadow-[0_0_8px_rgba(6,182,212,0.7)]"></span>
+                      <span className="text-cyan-300 font-mono font-semibold">Access (VLAN)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
+                      <span className="text-emerald-300">آنلاین و فعال</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.7)]"></span>
+                      <span className="text-rose-300">قطع / آفلاین</span>
+                    </div>
+                  </div>
+
+                  {/* Quick Gesture Guide */}
+                  <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                    <span>جابجایی نودها با Drag & Drop</span>
+                    <span className="text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">Auto-Save</span>
+                  </div>
                 </div>
-                <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/15 px-1.5 py-0.5 rounded border border-cyan-500/30">
-                  اسکرول موس = زوم | کشیدن = جابجایی
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-[11px] text-slate-300">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-4 h-1 bg-purple-500 rounded shadow-[0_0_8px_rgba(168,85,247,0.5)]"></span>
-                  <span className="text-purple-300 font-mono font-medium">Trunk (802.1Q)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-4 h-1 bg-cyan-500 rounded shadow-[0_0_8px_rgba(6,182,212,0.5)]"></span>
-                  <span className="text-cyan-300 font-mono font-medium">Access (VLAN)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"></span>
-                  <span>آنلاین</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                  <span>آفلاین</span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         ) : (

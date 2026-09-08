@@ -73,6 +73,50 @@ export default function App() {
   const [applyPreselectedTemplateId, setApplyPreselectedTemplateId] = useState<string | undefined>(undefined);
   const [isReleaseNotesOpen, setIsReleaseNotesOpen] = useState(false);
 
+  // Fullscreen Topology Mode (Hides Navbar header, sidebar, and footer for 100% canvas view)
+  const [isTopologyFullscreen, setIsTopologyFullscreen] = useState(false);
+
+  const toggleTopologyFullscreen = useCallback(() => {
+    setIsTopologyFullscreen((prev) => {
+      const next = !prev;
+      if (next) {
+        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      } else {
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+      return next;
+    });
+  }, []);
+
+  // Listen for Escape key and browser fullscreen changes
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isTopologyFullscreen) {
+        setIsTopologyFullscreen(false);
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    };
+
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isTopologyFullscreen) {
+        setIsTopologyFullscreen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [isTopologyFullscreen]);
+
   // Initial load
   const loadData = useCallback(async () => {
     try {
@@ -214,35 +258,42 @@ export default function App() {
       {/* Dynamic Ambient Glow Background */}
       <div className="ambient-glow-background" />
 
-      {/* Navbar Header */}
-      <Navbar
-        onRefreshAll={handleRefreshAll}
-        isRefreshing={isRefreshing}
-        onQuickScan={handleRunScan}
-        isScanning={isScanning}
-        onResetDemo={handleResetDemo}
-        onlineCount={onlineCount}
-        totalDevices={devices.length}
-        panelTheme={panelTheme}
-        onChangeTheme={changeTheme}
-        onOpenReleaseNotes={() => setIsReleaseNotesOpen(true)}
-      />
-
-      {/* Main Layout (Sidebar + Content View) */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative z-10 min-h-0">
-        {/* Sidebar */}
-        <Sidebar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          devicesCount={devices.length}
-          offlineCount={offlineCount}
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={toggleSidebarCollapse}
+      {/* Navbar Header (Hidden in Full Mode) */}
+      {!isTopologyFullscreen && (
+        <Navbar
+          onRefreshAll={handleRefreshAll}
+          isRefreshing={isRefreshing}
+          onQuickScan={handleRunScan}
+          isScanning={isScanning}
+          onResetDemo={handleResetDemo}
+          onlineCount={onlineCount}
+          totalDevices={devices.length}
+          panelTheme={panelTheme}
+          onChangeTheme={changeTheme}
           onOpenReleaseNotes={() => setIsReleaseNotesOpen(true)}
         />
+      )}
+
+      {/* Main Layout (Sidebar + Content View) */}
+      <div className={`flex-1 flex flex-col lg:flex-row overflow-hidden relative min-h-0 ${isTopologyFullscreen ? 'z-50 h-full w-full p-0 m-0' : 'z-10'}`}>
+        {/* Sidebar (Hidden in Full Mode) */}
+        {!isTopologyFullscreen && (
+          <Sidebar
+            activeTab={activeTab}
+            setActiveTab={(tab) => {
+              setIsTopologyFullscreen(false);
+              setActiveTab(tab);
+            }}
+            devicesCount={devices.length}
+            offlineCount={offlineCount}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={toggleSidebarCollapse}
+            onOpenReleaseNotes={() => setIsReleaseNotesOpen(true)}
+          />
+        )}
 
         {/* View Port */}
-        <main className="flex-1 overflow-y-auto min-h-0 min-w-0">
+        <main className={`flex-1 min-h-0 min-w-0 ${isTopologyFullscreen ? 'overflow-hidden h-full w-full p-0 m-0' : 'overflow-y-auto'}`}>
           {activeTab === 'dashboard' && (
             <DashboardView
               devices={devices}
@@ -293,6 +344,8 @@ export default function App() {
               onInspectDevice={(dev) => setPortInspectorDevice(dev)}
               onInspectPorts={(dev) => setPortInspectorDevice(dev)}
               onConnectTerminal={(dev) => setTerminalDevice(dev)}
+              isFullMode={isTopologyFullscreen}
+              onToggleFullMode={toggleTopologyFullscreen}
             />
           )}
 
@@ -304,36 +357,38 @@ export default function App() {
         </main>
       </div>
 
-      {/* High Density Cyber Spatial Footer Status Bar */}
-      <footer className="h-8 spatial-glass text-slate-300 flex items-center px-4 lg:px-6 shrink-0 justify-between text-[11px] border-t border-white/10 select-none z-20 backdrop-blur-xl">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
-            وضعیت شبکه: <b className="text-emerald-400 font-mono font-bold">Nominal Pro</b>
-          </span>
-          <span className="hidden sm:inline text-slate-400">
-            تاخیر هسته: <b className="text-cyan-400 font-mono">1.2ms</b>
-          </span>
-          <span>
-            تجهیزات متصل: <b className="text-indigo-400 font-mono font-bold">{onlineCount}</b>/{devices.length}
-          </span>
-          <span className="hidden md:inline text-slate-400">
-            موتور همسایگی: <b className="text-purple-400 font-mono">CDP v2 / LLDP Matrix</b>
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsReleaseNotesOpen(true)}
-            className="font-mono text-slate-400 hover:text-cyan-300 text-[10px] hidden sm:flex items-center gap-1.5 transition"
-            title="مشاهده نسخه و تاریخچه تغییرات"
-          >
-            <span>NetTopology OS</span>
-            <span className="text-cyan-400 font-bold bg-white/5 hover:bg-white/10 px-1.5 py-0.2 rounded border border-white/10">
-              v{APP_VERSION}
+      {/* High Density Cyber Spatial Footer Status Bar (Hidden in Full Mode) */}
+      {!isTopologyFullscreen && (
+        <footer className="h-8 spatial-glass text-slate-300 flex items-center px-4 lg:px-6 shrink-0 justify-between text-[11px] border-t border-white/10 select-none z-20 backdrop-blur-xl">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
+              وضعیت شبکه: <b className="text-emerald-400 font-mono font-bold">Nominal Pro</b>
             </span>
-          </button>
-        </div>
-      </footer>
+            <span className="hidden sm:inline text-slate-400">
+              تاخیر هسته: <b className="text-cyan-400 font-mono">1.2ms</b>
+            </span>
+            <span>
+              تجهیزات متصل: <b className="text-indigo-400 font-mono font-bold">{onlineCount}</b>/{devices.length}
+            </span>
+            <span className="hidden md:inline text-slate-400">
+              موتور همسایگی: <b className="text-purple-400 font-mono">CDP v2 / LLDP Matrix</b>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsReleaseNotesOpen(true)}
+              className="font-mono text-slate-400 hover:text-cyan-300 text-[10px] hidden sm:flex items-center gap-1.5 transition"
+              title="مشاهده نسخه و تاریخچه تغییرات"
+            >
+              <span>NetTopology OS</span>
+              <span className="text-cyan-400 font-bold bg-white/5 hover:bg-white/10 px-1.5 py-0.2 rounded border border-white/10">
+                v{APP_VERSION}
+              </span>
+            </button>
+          </div>
+        </footer>
+      )}
 
       {/* Toast Notification */}
       {toastMessage && (
