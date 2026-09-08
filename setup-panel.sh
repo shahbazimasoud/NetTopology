@@ -130,19 +130,56 @@ DETECTED_IP=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || hostnam
 
 prompt_read "Enter Domain Name or Server IP for NetTopology [Default: ${DETECTED_IP}]: " PANEL_DOMAIN "${DETECTED_IP}"
 
-# Port Configuration
+# 1. Frontend Web UI Port Configuration
 while true; do
-  prompt_read "Enter Web Access Port to run the panel on [Default: 3000]: " PANEL_PORT "3000"
-  if [[ "$PANEL_PORT" =~ ^[0-9]+$ ]] && [ "$PANEL_PORT" -ge 1 ] && [ "$PANEL_PORT" -le 65535 ]; then
+  prompt_read "Enter Frontend Port (Web UI & Network Dashboard) [Default: 3000]: " FRONTEND_PORT "3000"
+  if [[ "$FRONTEND_PORT" =~ ^[0-9]+$ ]] && [ "$FRONTEND_PORT" -ge 1 ] && [ "$FRONTEND_PORT" -le 65535 ]; then
     break
   else
     log_error "Invalid port number. Please enter a value between 1 and 65535."
-    PANEL_PORT="3000"
+    FRONTEND_PORT="3000"
   fi
 done
 
+# 2. Backend Python API Port Configuration
+while true; do
+  prompt_read "Enter Backend Port (Python Cisco Topology & Switch Engine) [Default: 5001]: " BACKEND_PORT "5001"
+  if [[ "$BACKEND_PORT" =~ ^[0-9]+$ ]] && [ "$BACKEND_PORT" -ge 1 ] && [ "$BACKEND_PORT" -le 65535 ]; then
+    if [ "$BACKEND_PORT" -eq "$FRONTEND_PORT" ]; then
+      log_error "Port conflict! Backend port ($BACKEND_PORT) cannot be the same as Frontend port ($FRONTEND_PORT). Please choose a different port."
+      BACKEND_PORT="5001"
+    else
+      break
+    fi
+  else
+    log_error "Invalid port number. Please enter a value between 1 and 65535."
+    BACKEND_PORT="5001"
+  fi
+done
+
+log_info "Interconnection Bridge configured:"
+log_info "  • Frontend Web UI: Port $FRONTEND_PORT"
+log_info "  • Backend Cisco API: Port $BACKEND_PORT"
+log_info "  • Automated Proxy Bridge: Port $FRONTEND_PORT will seamlessly forward all /api/* requests to Port $BACKEND_PORT"
+
 # Enable Nginx Reverse Proxy with SSL?
 prompt_read "Enable Nginx Reverse Proxy with SSL support? (y/n) [Default: y]: " ENABLE_NGINX "y"
+SSL_PORT="8443"
+if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
+  while true; do
+    prompt_read "Enter Nginx HTTPS / SSL Port [Default: 8443]: " SSL_PORT "8443"
+    if [[ "$SSL_PORT" =~ ^[0-9]+$ ]] && [ "$SSL_PORT" -ge 1 ] && [ "$SSL_PORT" -le 65535 ]; then
+      if [ "$SSL_PORT" -eq "$FRONTEND_PORT" ] || [ "$SSL_PORT" -eq "$BACKEND_PORT" ]; then
+        log_error "Port conflict! SSL port ($SSL_PORT) cannot be the same as Frontend ($FRONTEND_PORT) or Backend ($BACKEND_PORT)."
+      else
+        break
+      fi
+    else
+      log_error "Invalid port number. Please enter a value between 1 and 65535."
+      SSL_PORT="8443"
+    fi
+  done
+fi
 
 # ------------------------------------------------------------------------------
 # 2. System Dependency Installation
@@ -303,8 +340,17 @@ npm run build
 chmod +x "$INSTALL_DIR"/*.sh 2>/dev/null || true
 
 # ------------------------------------------------------------------------------
-# 6. Systemd Service Deployment
+# 6. Environment Configuration (.env) & Systemd Service Deployment
 # ------------------------------------------------------------------------------
+log_step "Writing Environment Configuration (.env)..."
+cat << EOF > "$INSTALL_DIR/.env"
+NODE_ENV=production
+PORT=$FRONTEND_PORT
+FRONTEND_PORT=$FRONTEND_PORT
+BACKEND_PORT=$BACKEND_PORT
+PYTHON_PORT=$BACKEND_PORT
+EOF
+
 log_step "Configuring Systemd Daemon Service..."
 SERVICE_FILE="/etc/systemd/system/nettopology.service"
 NODE_EXEC=$(command -v node || echo "/usr/local/bin/node")
@@ -322,7 +368,10 @@ ExecStart=$NODE_EXEC dist/server.cjs
 Restart=always
 RestartSec=3
 Environment=NODE_ENV=production
-Environment=PORT=3000
+Environment=PORT=$FRONTEND_PORT
+Environment=FRONTEND_PORT=$FRONTEND_PORT
+Environment=BACKEND_PORT=$BACKEND_PORT
+Environment=PYTHON_PORT=$BACKEND_PORT
 
 [Install]
 WantedBy=multi-user.target
@@ -337,7 +386,7 @@ log_success "NetTopology systemd daemon service is active and running!"
 # 7. Optional Nginx Reverse Proxy with Self-Signed SSL
 # ------------------------------------------------------------------------------
 if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
-  log_step "Setting up Nginx Reverse Proxy with SSL on port $PANEL_PORT..."
+  log_step "Setting up Nginx Reverse Proxy with SSL on port $SSL_PORT..."
   DEBIAN_FRONTEND=noninteractive apt-get install -y nginx openssl < /dev/null || true
 
   mkdir -p /etc/nginx/ssl
@@ -356,8 +405,8 @@ if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
   NGINX_CONF="/etc/nginx/sites-available/nettopology.conf"
   cat << EOF > "$NGINX_CONF"
 server {
-    listen $PANEL_PORT ssl http2;
-    listen [::]:$PANEL_PORT ssl http2;
+    listen $SSL_PORT ssl http2;
+    listen [::]:$SSL_PORT ssl http2;
     server_name $PANEL_DOMAIN _;
 
     ssl_certificate $SSL_CERT;
@@ -366,8 +415,9 @@ server {
     ssl_ciphers HIGH:!aNULL:!MD5;
     client_max_body_size 50M;
 
+    # Frontend Web UI & Management Dashboard
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:$FRONTEND_PORT;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -380,15 +430,25 @@ server {
         proxy_read_timeout 86400s;
         proxy_send_timeout 86400s;
     }
+
+    # Direct Backend API routing (also proxied by Node on frontend port)
+    location /api/ {
+        proxy_pass http://127.0.0.1:$FRONTEND_PORT/api/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 300s;
+    }
 }
 EOF
 
   ln -sf "$NGINX_CONF" "/etc/nginx/sites-enabled/nettopology.conf"
   if nginx -t &>/dev/null; then
     systemctl reload nginx || systemctl restart nginx
-    log_success "Nginx successfully configured with SSL on port $PANEL_PORT!"
+    log_success "Nginx successfully configured with SSL on port $SSL_PORT!"
   else
-    log_warning "Nginx configuration test failed. Reverting to direct port 3000 access."
+    log_warning "Nginx configuration test failed. Falling back to direct ports."
   fi
 fi
 
@@ -397,29 +457,28 @@ fi
 # ------------------------------------------------------------------------------
 if command -v ufw &>/dev/null && ufw status | grep -q "active"; then
   log_info "Configuring UFW firewall rules..."
-  ufw allow 3000/tcp comment 'NetTopology Direct' 2>/dev/null || true
+  ufw allow "$FRONTEND_PORT/tcp" comment 'NetTopology Frontend UI' 2>/dev/null || true
+  ufw allow "$BACKEND_PORT/tcp" comment 'NetTopology Backend Cisco API' 2>/dev/null || true
   if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
-    ufw allow "$PANEL_PORT/tcp" comment 'NetTopology Web SSL' 2>/dev/null || true
+    ufw allow "$SSL_PORT/tcp" comment 'NetTopology HTTPS SSL' 2>/dev/null || true
   fi
 fi
 
 # ------------------------------------------------------------------------------
 # 9. Installation Report Summary
 # ------------------------------------------------------------------------------
-if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
-  ACCESS_URL="https://$PANEL_DOMAIN:$PANEL_PORT"
-else
-  ACCESS_URL="http://$PANEL_DOMAIN:3000"
-fi
-
 echo ""
 log_success "NETTOPOLOGY INSTALLATION COMPLETED SUCCESSFULLY!"
 echo -e "${CYAN}======================================================================${NC}"
-echo -e "  ${BOLD}NetTopology Service is active and running under systemd daemon!${NC}"
+echo -e "  ${BOLD}NetTopology Dual-Engine Services are active under systemd!${NC}"
 echo -e "${CYAN}======================================================================${NC}"
-echo -e "  🌐 ${BOLD}Web Panel Access URL:${NC} ${GREEN}${BOLD}${ACCESS_URL}${NC}"
-echo -e "  🔗 ${BOLD}Direct Backend URL:${NC}   ${BLUE}http://${DETECTED_IP}:3000${NC}"
-echo -e "  📂 ${BOLD}Install Directory:${NC}    ${YELLOW}${INSTALL_DIR}${NC}"
+echo -e "  🌐 ${BOLD}Frontend Web UI:${NC}        ${GREEN}${BOLD}http://${PANEL_DOMAIN}:${FRONTEND_PORT}${NC}"
+echo -e "  ⚙️  ${BOLD}Backend Cisco API Engine:${NC} ${BLUE}${BOLD}http://${PANEL_DOMAIN}:${BACKEND_PORT}/api/topology${NC}"
+echo -e "  🌉 ${BOLD}Interconnection Bridge:${NC}   ${PURPLE}${BOLD}Active (Port ${FRONTEND_PORT} proxies to Port ${BACKEND_PORT})${NC}"
+if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
+echo -e "  🔒 ${BOLD}HTTPS / SSL Secure URL:${NC}   ${GREEN}${BOLD}https://${PANEL_DOMAIN}:${SSL_PORT}${NC}"
+fi
+echo -e "  📂 ${BOLD}Installation Path:${NC}        ${YELLOW}${INSTALL_DIR}${NC}"
 echo -e "${CYAN}======================================================================${NC}"
 echo -e "  ⚙️  ${BOLD}Service Commands:${NC}"
 echo -e "     • Check Status:   ${YELLOW}systemctl status nettopology${NC}"

@@ -98,15 +98,20 @@ curl -sSL https://raw.githubusercontent.com/shahbazimasoud/NetTopology/master/se
 ```
 
 #### قابلیت‌های اسکریپت نصب `setup-panel.sh`:
+- **پیکربندی هوشمند دوپورت (Dual-Port Architecture) و پل ارتباطی خودکار (Interconnection Bridge)**:
+  - دریافت پورت فرانت‌اند (رابط وب و داشبورد مدیریتی - پیش‌فرض: `3000`).
+  - دریافت پورت بک‌اند (موتور پایتون سیسکو و اندپوینت‌های API - پیش‌فرض: `5001`).
+  - بررسی عدم تداخل پورت‌ها و برقراری ارتباط خودکار دوطرفه از طریق Reverse-Proxy داخلی اکسپرس (تمامی درخواست‌های `/api/*` از پورت فرانت‌اند به پورت بک‌اند فوروارد می‌شوند تا در مرورگر کاربر هیچ‌گونه خطای CORS یا تداخل پورتی پیش نیاید).
 - بررسی و نصب خودکار وابستگی‌های سیستمی (`curl`, `git`, `python3`, `openssl`, `build-essential`, `ufw`).
 - شناسایی هوشمند یا دانلود و نصب باینری نسخه رسمی `Node.js 22 LTS`.
 - دریافت کدهای پروژه از GitHub با مکانیزم‌های آینه (Proxy Mirror) و بک‌آپ ZIP در صورت وجود اختلال اینترنت.
 - بازیابی خودکار دیتابیس توپولوژی و کانفیگ‌ها در صورت نصب مجدد (`/etc/nettopology-backup`).
+- ساخت فایل `.env` و انتقال متغیرهای `PORT`، `FRONTEND_PORT`، `BACKEND_PORT` به سرویس‌ها.
 - نصب پکیج‌های NPM با تنظیمات Timeout پایدار و ریجستری‌های آینه در صورت نیاز.
 - کامپایل و بیلد نسخه نهایی (Production Vite & TypeScript).
 - ساخت و فعال‌سازی دائمی سرویس Daemon در Systemd (`nettopology.service`) با قابلیت راه‌اندازی خودکار پس از بوت سرور.
 - امکان راه‌اندازی خودکار ریورس‌پروکسی Nginx با گواهی SSL خودامضا (Self-Signed) و پشتیبانی از استریم و وب‌سوکت خط فرمان سیسکو.
-- باز کردن خودکار پورت‌های لازم در فایروال UFW.
+- باز کردن خودکار پورت‌های فرانت‌اند و بک‌اند در فایروال UFW.
 
 ### ۲. حذف کامل یا پاک‌سازی پنل (Uninstaller)
 برای حذف کامل پنل به همراه بک‌آپ‌گیری امن از داده‌های شبکه:
@@ -224,14 +229,19 @@ curl -sSL https://raw.githubusercontent.com/shahbazimasoud/NetTopology/master/se
 ```
 
 #### Installer Features:
+- **Dual-Port Engine Architecture & Automated Interconnection Bridge**:
+  - Prompts for Frontend Port (Web UI & Network Management Dashboard - default: `3000`).
+  - Prompts for Backend Port (Python Cisco Topology & Switch API Engine - default: `5001`).
+  - Automatically validates that ports do not collide and configures an internal Express reverse proxy that seamlessly forwards all `/api/*` requests from the frontend port to the backend port, preventing browser CORS or cross-port issues.
 - Automatically detects or installs `Node.js 22 LTS` via official binaries or NodeSource.
 - Multi-mirror git clone & fallback ZIP download resilience for constrained network environments.
 - Installs all system dependencies (`git`, `curl`, `python3`, `openssl`, `ufw`, `nginx`).
+- Generates `.env` file with `PORT`, `FRONTEND_PORT`, and `BACKEND_PORT` definitions.
 - Persistent database backup & auto-recovery (`/etc/nettopology-backup/network_data.json`).
 - Builds and packages production Vite + TypeScript server assets.
 - Creates and activates a self-healing Systemd daemon service (`nettopology.service`).
 - Optional Nginx reverse proxy integration with automated 10-year TLS/SSL certificates and Cisco CLI WebSocket streaming support.
-- Configures firewall rules automatically.
+- Automatically configures UFW firewall rules for both frontend and backend ports.
 
 ### 2. Complete Uninstallation & Cleanup
 To cleanly remove NetTopology while safeguarding database backups:

@@ -1383,10 +1383,10 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
 
         self._send_json(404, {"error": "Endpoint not found"})
 
-def run_server(port=5001):
-    server_address = ('127.0.0.1', port)
+def run_server(port=5001, host='0.0.0.0'):
+    server_address = (host, port)
     httpd = HTTPServer(server_address, NetworkAPIHandler)
-    print(f"[Python Network Engine] Server running on http://127.0.0.1:{port}")
+    print(f"[Python Network Engine] Server running on http://{host}:{port}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
@@ -1398,6 +1398,11 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         try:
             port = int(sys.argv[1])
+        except ValueError:
+            pass
+    elif os.environ.get("BACKEND_PORT") or os.environ.get("PYTHON_PORT"):
+        try:
+            port = int(os.environ.get("BACKEND_PORT") or os.environ.get("PYTHON_PORT"))
         except ValueError:
             pass
     run_server(port)

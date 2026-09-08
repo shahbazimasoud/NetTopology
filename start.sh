@@ -2,6 +2,12 @@
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR"
 
+if [ -f "$DIR/.env" ]; then
+  set -a
+  source "$DIR/.env" 2>/dev/null || true
+  set +a
+fi
+
 if command -v systemctl &>/dev/null && systemctl list-unit-files 2>/dev/null | grep -q nettopology.service; then
   echo -e "\033[0;32mروشن کردن سرویس nettopology از طریق systemd...\033[0m"
   sudo systemctl start nettopology

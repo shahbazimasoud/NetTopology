@@ -47,6 +47,42 @@ cd "$APP_DIR"
 
 echo -e "${GREEN}✓ مسیر ریشه پنل:${NC} $APP_DIR"
 
+echo -e "\n${YELLOW}>>> لطفاً تنظیمات پورت فرانت‌اند و بک‌اند را مشخص کنید:${NC}"
+while true; do
+  read -p "پورت فرانت‌اند (رابط کاربری و وب‌پنل) [پیش‌فرض: 3000]: " FRONTEND_PORT
+  FRONTEND_PORT="${FRONTEND_PORT:-3000}"
+  if [[ "$FRONTEND_PORT" =~ ^[0-9]+$ ]] && [ "$FRONTEND_PORT" -ge 1 ] && [ "$FRONTEND_PORT" -le 65535 ]; then
+    break
+  else
+    echo -e "${RED}پورت نامعتبر است. یک عدد بین 1 تا 65535 وارد کنید.${NC}"
+  fi
+done
+
+while true; do
+  read -p "پورت بک‌اند (موتور پایتون و API سیسکو) [پیش‌فرض: 5001]: " BACKEND_PORT
+  BACKEND_PORT="${BACKEND_PORT:-5001}"
+  if [[ "$BACKEND_PORT" =~ ^[0-9]+$ ]] && [ "$BACKEND_PORT" -ge 1 ] && [ "$BACKEND_PORT" -le 65535 ]; then
+    if [ "$BACKEND_PORT" -eq "$FRONTEND_PORT" ]; then
+      echo -e "${RED}تداخل پورت! پورت بک‌اند ($BACKEND_PORT) نمی‌تواند با پورت فرانت‌اند ($FRONTEND_PORT) یکسان باشد.${NC}"
+    else
+      break
+    fi
+  else
+    echo -e "${RED}پورت نامعتبر است. یک عدد بین 1 تا 65535 وارد کنید.${NC}"
+  fi
+done
+
+echo -e "${CYAN}✓ پل ارتباطی خودکار: فرانت‌اند روی پورت $FRONTEND_PORT تمام ریکوئست‌های /api/* را به بک‌اند روی پورت $BACKEND_PORT ارسال می‌کند.${NC}\n"
+
+# ذخیره تنظیمات در فایل .env
+cat << EOF > "$APP_DIR/.env"
+NODE_ENV=production
+PORT=$FRONTEND_PORT
+FRONTEND_PORT=$FRONTEND_PORT
+BACKEND_PORT=$BACKEND_PORT
+PYTHON_PORT=$BACKEND_PORT
+EOF
+
 # ------------------------------------------------------------------------------
 # 2. Package Manager & System Dependencies
 # ------------------------------------------------------------------------------
@@ -202,7 +238,10 @@ ExecStart=$NODE_BIN $APP_DIR/dist/server.cjs
 Restart=always
 RestartSec=3
 Environment=NODE_ENV=production
-Environment=PORT=3000
+Environment=PORT=$FRONTEND_PORT
+Environment=FRONTEND_PORT=$FRONTEND_PORT
+Environment=BACKEND_PORT=$BACKEND_PORT
+Environment=PYTHON_PORT=$BACKEND_PORT
 
 [Install]
 WantedBy=multi-user.target
@@ -214,7 +253,8 @@ systemctl restart nettopology.service
 
 # Firewall Check (Optional ufw)
 if command -v ufw &>/dev/null && ufw status | grep -q "Status: active"; then
-  ufw allow 3000/tcp comment 'NetTopology Web Panel' 2>/dev/null || true
+  ufw allow "$FRONTEND_PORT/tcp" comment 'NetTopology Frontend' 2>/dev/null || true
+  ufw allow "$BACKEND_PORT/tcp" comment 'NetTopology Backend' 2>/dev/null || true
 fi
 
 # Detect Local & Public IP
@@ -225,9 +265,10 @@ echo -e "${GREEN}${BOLD}══════════════════�
 echo -e "${GREEN}${BOLD} 🎉  نصب و راه‌اندازی با موفقیت کامل انجام شد!                     ${NC}"
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════════════════════════════${NC}"
 echo ""
-echo -e "🔹 ${BOLD}آدرس دسترسی به پنل در مرورگر:${NC}"
-echo -e "   🔗 لوکال:     ${CYAN}${BOLD}http://localhost:3000${NC}"
-echo -e "   🔗 شبکه/سرور: ${CYAN}${BOLD}http://${LOCAL_IP}:3000${NC}"
+echo -e "🔹 ${BOLD}آدرس‌های دسترسی به پنل و سرویس‌ها:${NC}"
+echo -e "   🌐 رابط کاربری فرانت‌اند: ${CYAN}${BOLD}http://${LOCAL_IP}:${FRONTEND_PORT}${NC}"
+echo -e "   ⚙️  موتور API پایتون:    ${BLUE}${BOLD}http://${LOCAL_IP}:${BACKEND_PORT}/api/topology${NC}"
+echo -e "   🌉 پل ارتباطی:           ${PURPLE}${BOLD}فعال (پورت ${FRONTEND_PORT} تمام ریکوئست‌ها را به پورت ${BACKEND_PORT} می‌فرستد)${NC}"
 echo ""
 echo -e "🔹 ${BOLD}دستورات مدیریت پنل:${NC}"
 echo -e "   • وضعیت سرویس:          ${YELLOW}sudo systemctl status nettopology${NC}"

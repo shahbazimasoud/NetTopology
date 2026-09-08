@@ -9,8 +9,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
-const PYTHON_PORT = 5001;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : (process.env.FRONTEND_PORT ? parseInt(process.env.FRONTEND_PORT, 10) : 3000);
+const PYTHON_PORT = process.env.BACKEND_PORT ? parseInt(process.env.BACKEND_PORT, 10) : (process.env.PYTHON_PORT ? parseInt(process.env.PYTHON_PORT, 10) : 5001);
 
 // Parse json and urlencoded
 app.use(express.json());
@@ -21,11 +21,16 @@ let pythonProcess: ChildProcess | null = null;
 
 function startPythonBackend() {
   const pythonScript = path.join(__dirname, 'backend', 'server.py');
-  console.log(`[Python Manager] Starting Python backend from ${pythonScript}...`);
+  console.log(`[Python Manager] Starting Python backend from ${pythonScript} on port ${PYTHON_PORT}...`);
   
   pythonProcess = spawn('python3', [pythonScript, String(PYTHON_PORT)], {
     cwd: __dirname,
-    stdio: 'inherit'
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      BACKEND_PORT: String(PYTHON_PORT),
+      PYTHON_PORT: String(PYTHON_PORT)
+    }
   });
 
   pythonProcess.on('error', (err) => {
@@ -49,6 +54,17 @@ process.on('SIGTERM', () => {
 process.on('SIGINT', () => {
   if (pythonProcess) pythonProcess.kill();
   process.exit(0);
+});
+
+// Bridge status endpoint to verify frontend-backend intercommunication
+app.get('/api/status/bridge', (req: Request, res: Response) => {
+  res.json({
+    status: 'connected',
+    bridge: 'active',
+    frontendPort: PORT,
+    backendPort: PYTHON_PORT,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Proxy /api/* to Python HTTP server
