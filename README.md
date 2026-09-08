@@ -90,31 +90,46 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 
 ## راهنمای نصب و راه‌اندازی
 
-### پیش‌نیازها
-- Node.js نسخه 18 یا بالاتر (یا Bun)
-- مدیر بسته `npm` یا `bun`
+### ۱. نصب خودکار روی سرور و لینوکس با یک دستور (پیشنهادی / One-Liner Setup)
+دقیقاً مشابه سیستم Matrix Stack Manager، می‌توانید این سامانه را با یک خط دستور به صورت خودکار، کامل و بی‌نقص روی سرورهای ابری، VPS یا ماشین‌های لینوکسی (Ubuntu 20.04/22.04/24.04 یا Debian 11/12) نصب و پیکربندی کنید:
 
-### مراحل نصب
+```bash
+curl -sSL https://raw.githubusercontent.com/shahbazimasoud/NetTopology/master/setup-panel.sh | sudo bash
+```
+
+#### قابلیت‌های اسکریپت نصب `setup-panel.sh`:
+- بررسی و نصب خودکار وابستگی‌های سیستمی (`curl`, `git`, `python3`, `openssl`, `build-essential`, `ufw`).
+- شناسایی هوشمند یا دانلود و نصب باینری نسخه رسمی `Node.js 22 LTS`.
+- دریافت کدهای پروژه از GitHub با مکانیزم‌های آینه (Proxy Mirror) و بک‌آپ ZIP در صورت وجود اختلال اینترنت.
+- بازیابی خودکار دیتابیس توپولوژی و کانفیگ‌ها در صورت نصب مجدد (`/etc/nettopology-backup`).
+- نصب پکیج‌های NPM با تنظیمات Timeout پایدار و ریجستری‌های آینه در صورت نیاز.
+- کامپایل و بیلد نسخه نهایی (Production Vite & TypeScript).
+- ساخت و فعال‌سازی دائمی سرویس Daemon در Systemd (`nettopology.service`) با قابلیت راه‌اندازی خودکار پس از بوت سرور.
+- امکان راه‌اندازی خودکار ریورس‌پروکسی Nginx با گواهی SSL خودامضا (Self-Signed) و پشتیبانی از استریم و وب‌سوکت خط فرمان سیسکو.
+- باز کردن خودکار پورت‌های لازم در فایروال UFW.
+
+### ۲. حذف کامل یا پاک‌سازی پنل (Uninstaller)
+برای حذف کامل پنل به همراه بک‌آپ‌گیری امن از داده‌های شبکه:
+```bash
+curl -sSL https://raw.githubusercontent.com/shahbazimasoud/NetTopology/master/uninstall-panel.sh | sudo bash
+```
+
+---
+
+### ۳. نصب دستی از طریق سورس‌کد
 ```bash
 # کلون کردن ریپازیتوری
 git clone https://github.com/shahbazimasoud/NetTopology.git
 cd NetTopology
 
-# نصب وابستگی‌ها
+# اجرای اسکریپت راه‌اندازی محلی
+sudo bash setup-panel.sh
+# یا نصب دستی:
 npm install
-# یا با بون:
-bun install
-
-# اجرای محیط توسعه (Development Server)
-npm run dev
-```
-برنامه روی آدرس `http://localhost:3000` اجرا خواهد شد.
-
-### بیلد پروداکشن (Production Build)
-```bash
 npm run build
 npm start
 ```
+برنامه روی آدرس `http://localhost:3000` اجرا خواهد شد.
 
 ---
 
@@ -201,31 +216,46 @@ npm start
 
 ## Installation & Setup
 
-### Prerequisites
-- Node.js 18+ (or Bun)
-- npm or bun package manager
+### 1. Automated VPS / Server Deployment (Recommended One-Liner)
+Just like Matrix Stack Manager, you can deploy NetTopology to any Ubuntu 20.04/22.04/24.04 or Debian 11/12 VPS/Dedicated server with a single terminal command:
 
-### Getting Started
+```bash
+curl -sSL https://raw.githubusercontent.com/shahbazimasoud/NetTopology/master/setup-panel.sh | sudo bash
+```
+
+#### Installer Features:
+- Automatically detects or installs `Node.js 22 LTS` via official binaries or NodeSource.
+- Multi-mirror git clone & fallback ZIP download resilience for constrained network environments.
+- Installs all system dependencies (`git`, `curl`, `python3`, `openssl`, `ufw`, `nginx`).
+- Persistent database backup & auto-recovery (`/etc/nettopology-backup/network_data.json`).
+- Builds and packages production Vite + TypeScript server assets.
+- Creates and activates a self-healing Systemd daemon service (`nettopology.service`).
+- Optional Nginx reverse proxy integration with automated 10-year TLS/SSL certificates and Cisco CLI WebSocket streaming support.
+- Configures firewall rules automatically.
+
+### 2. Complete Uninstallation & Cleanup
+To cleanly remove NetTopology while safeguarding database backups:
+```bash
+curl -sSL https://raw.githubusercontent.com/shahbazimasoud/NetTopology/master/uninstall-panel.sh | sudo bash
+```
+
+---
+
+### 3. Manual Local Installation
 ```bash
 # Clone the repository
 git clone https://github.com/shahbazimasoud/NetTopology.git
 cd NetTopology
 
-# Install dependencies
+# Run automated local setup:
+sudo bash setup-panel.sh
+
+# Or start manually:
 npm install
-# Or with Bun:
-bun install
-
-# Start development server
-npm run dev
-```
-Open `http://localhost:3000` in your web browser.
-
-### Building for Production
-```bash
 npm run build
 npm start
 ```
+Open `http://localhost:3000` in your web browser.
 
 ---
 
