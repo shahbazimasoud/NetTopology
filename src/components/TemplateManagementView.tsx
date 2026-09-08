@@ -20,12 +20,14 @@ import {
   ExternalLink,
   Code2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  CopyPlus
 } from 'lucide-react';
 import { ConfigTemplate, Device } from '../types';
 import { fetchTemplates, createTemplate, updateTemplate, deleteTemplate } from '../services/api';
 import { TemplateEditorModal } from './TemplateEditorModal';
 import { ApplyTemplateModal } from './ApplyTemplateModal';
+import { CloneTemplateModal } from './CloneTemplateModal';
 
 interface TemplateManagementViewProps {
   devices: Device[];
@@ -54,6 +56,10 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [applyTargetTemplateId, setApplyTargetTemplateId] = useState<string | undefined>(undefined);
   const [applyTargetDevice, setApplyTargetDevice] = useState<Device | null>(null);
+
+  // Clone Modal state
+  const [cloneModalOpen, setCloneModalOpen] = useState(false);
+  const [cloneSourceTemplate, setCloneSourceTemplate] = useState<ConfigTemplate | null>(null);
 
   // Feedback notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -132,7 +138,7 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
     }
   };
 
-  // Duplicate template
+  // Duplicate template (quick identical copy)
   const handleDuplicateTemplate = async (t: ConfigTemplate) => {
     try {
       const duplicated: Partial<ConfigTemplate> = {
@@ -151,6 +157,25 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
     } catch (err: any) {
       alert(err.message || 'خطا در تکثیر تمپلیت');
     }
+  };
+
+  // Open Clone Modal for customizing with a new name and minor command adjustments
+  const handleOpenClone = (t: ConfigTemplate) => {
+    setCloneSourceTemplate(t);
+    setCloneModalOpen(true);
+  };
+
+  // Save cloned template handler
+  const handleSaveClone = async (clonedData: Partial<ConfigTemplate>): Promise<ConfigTemplate> => {
+    const res = await createTemplate(clonedData);
+    showToast(res.message || `تمپلیت کلون شده «${res.template.name}» با موفقیت ذخیره گردید.`);
+    await loadTemplates();
+    return res.template;
+  };
+
+  // Clone & immediately apply
+  const handleCloneAndApply = (clonedTemplate: ConfigTemplate) => {
+    handleOpenApply(clonedTemplate.id);
   };
 
   // Copy template raw code
@@ -209,6 +234,17 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
             <Plus className="w-4 h-4" />
             <span>تعریف تمپلیت جدید</span>
           </button>
+
+          {templates.length > 0 && (
+            <button
+              onClick={() => handleOpenClone(templates[0])}
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-semibold shadow-[0_0_15px_rgba(6,182,212,0.15)] transition active:scale-95"
+              title="کلون‌گیری از یک تمپلیت با نام جدید و ویرایش جزیی دستورات"
+            >
+              <CopyPlus className="w-4 h-4 text-cyan-400" />
+              <span>کلون از الگوها</span>
+            </button>
+          )}
 
           <button
             onClick={() => {
@@ -411,8 +447,17 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
 
                     <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
                       <button
+                        onClick={() => handleOpenClone(tmpl)}
+                        title="کلون‌گیری با نام جدید برای تجهیز دیگر (Clone)"
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition text-[11px] font-medium"
+                      >
+                        <CopyPlus className="w-3.5 h-3.5" />
+                        <span>کلون</span>
+                      </button>
+
+                      <button
                         onClick={() => handleDuplicateTemplate(tmpl)}
-                        title="تکثیر این تمپلیت"
+                        title="تکثیر سریع این تمپلیت"
                         className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition"
                       >
                         <Copy className="w-3.5 h-3.5" />
@@ -505,6 +550,15 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
 
                   <div className="flex items-center gap-2">
                     <button
+                      onClick={() => handleOpenClone(tmpl)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition active:scale-95"
+                      title="کلون‌گیری با نام جدید برای تجهیز دیگر با تغییرات جزیی"
+                    >
+                      <CopyPlus className="w-3.5 h-3.5" />
+                      <span>کلون با نام دیگر...</span>
+                    </button>
+
+                    <button
                       onClick={() => handleOpenApply(tmpl.id)}
                       className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-[0_0_15px_rgba(16,185,129,0.3)] transition active:scale-95"
                     >
@@ -525,6 +579,19 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
         onClose={() => setEditorOpen(false)}
         templateToEdit={templateToEdit}
         onSave={handleSaveTemplate}
+        onSaveAsClone={handleSaveClone}
+      />
+
+      {/* Clone Template Modal */}
+      <CloneTemplateModal
+        isOpen={cloneModalOpen}
+        onClose={() => {
+          setCloneModalOpen(false);
+          setCloneSourceTemplate(null);
+        }}
+        sourceTemplate={cloneSourceTemplate}
+        onSaveClone={handleSaveClone}
+        onCloneAndApply={handleCloneAndApply}
       />
 
       {/* Apply Template Modal */}

@@ -13,7 +13,8 @@ import {
   Eye,
   Sliders,
   Cpu,
-  ShieldCheck
+  ShieldCheck,
+  CopyPlus
 } from 'lucide-react';
 import { ConfigTemplate, TemplateVariable } from '../types';
 
@@ -22,6 +23,7 @@ interface TemplateEditorModalProps {
   onClose: () => void;
   templateToEdit?: ConfigTemplate | null;
   onSave: (template: Partial<ConfigTemplate>) => Promise<void>;
+  onSaveAsClone?: (template: Partial<ConfigTemplate>) => Promise<void>;
 }
 
 const COMMON_VARS: { name: string; label: string; default_value: string; type: TemplateVariable['type'] }[] = [
@@ -46,6 +48,7 @@ export const TemplateEditorModal: React.FC<TemplateEditorModalProps> = ({
   onClose,
   templateToEdit,
   onSave,
+  onSaveAsClone,
 }) => {
   const [name, setName] = useState('');
   const [vendor, setVendor] = useState<'cisco' | 'mikrotik' | 'generic'>('cisco');
@@ -231,6 +234,49 @@ write memory`);
       onClose();
     } catch (err: any) {
       setErrorMsg(err.message || 'خطا در ذخیره تمپلیت');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveAsClone = async () => {
+    if (!commands.trim()) {
+      setErrorMsg('متن دستورات نمی‌تواند خالی باشد.');
+      return;
+    }
+    const defaultCloneName = name ? `${name} (نسخه جدید)` : 'تمپلیت کلون شده جدید';
+    const newName = window.prompt('لطفاً عنوان و نام تمپلیت کلون شده را وارد فرمایید:', defaultCloneName);
+    if (!newName || !newName.trim()) return;
+
+    setSaving(true);
+    setErrorMsg(null);
+    try {
+      if (onSaveAsClone) {
+        await onSaveAsClone({
+          name: newName.trim(),
+          vendor,
+          target_type: targetType,
+          role: role.trim() || 'Custom Clone',
+          description: description.trim(),
+          default_cli_mode: defaultCliMode,
+          commands,
+          variables,
+        });
+      } else {
+        await onSave({
+          name: newName.trim(),
+          vendor,
+          target_type: targetType,
+          role: role.trim() || 'Custom Clone',
+          description: description.trim(),
+          default_cli_mode: defaultCliMode,
+          commands,
+          variables,
+        });
+      }
+      onClose();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'خطا در ثبت کلون تمپلیت');
     } finally {
       setSaving(false);
     }
@@ -552,14 +598,29 @@ write memory`);
               انصراف
             </button>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] transition active:scale-95"
-            >
-              <Save className="w-4 h-4" />
-              <span>{saving ? 'در حال ذخیره‌سازی...' : 'ذخیره تمپلیت در پایگاه الگوها'}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              {templateToEdit && (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={handleSaveAsClone}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-semibold shadow-[0_0_15px_rgba(6,182,212,0.15)] transition active:scale-95"
+                  title="ذخیره این تغییرات به عنوان یک تمپلیت کلون شده جدید با نام دلخواه بدون تغییر تمپلیت اصلی"
+                >
+                  <CopyPlus className="w-3.5 h-3.5" />
+                  <span>ذخیره به عنوان کلون با نام جدید...</span>
+                </button>
+              )}
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold shadow-[0_0_20px_rgba(6,182,212,0.4)] transition active:scale-95"
+              >
+                <Save className="w-4 h-4" />
+                <span>{saving ? 'در حال ذخیره‌سازی...' : templateToEdit ? 'ذخیره تغییرات تمپلیت' : 'ذخیره تمپلیت در پایگاه الگوها'}</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>

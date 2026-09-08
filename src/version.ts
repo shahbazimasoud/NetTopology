@@ -8,9 +8,22 @@ export interface ReleaseNote {
   changes: string[];
 }
 
-export const APP_VERSION = '1.2.0';
+export const APP_VERSION = '1.2.1';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.2.1',
+    releaseDate: '2026-09-08',
+    type: 'patch',
+    title: 'امکان کلون‌گیری و انشعاب از تمپلیت‌ها با نام جدید و ویرایش جزیی دستورات (Template Cloning)',
+    changes: [
+      'افزودن پنجره اختصاصی کلون‌گیری (Clone Template Modal) با امکان تعیین نام جدید دلخواه برای تجهیز جدید',
+      'امکان شخصی‌سازی و اعمال تغییرات جزیی در خطوط فرامین CLI مبدا بدون تغییر تمپلیت اصلی',
+      'امکان تغییر مقادیر پیش‌فرض متغیرها (آدرس IP، سابنت، ویلن و...) متناسب با تجهیز جدید',
+      'دکمه‌های دسترسی سریع کلون بر روی سربرگ و پاورقی تمامی کارت‌های تمپلیت',
+      'امکان ذخیره به عنوان کلون با نام جدید مستقیماً از داخل ویرایشگر تمپلیت (Save as Clone)',
+    ],
+  },
   {
     version: '1.2.0',
     releaseDate: '2026-09-08',
