@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Server, Cable, Zap, Shield, Search, Filter, Edit3, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Device, SwitchPort } from '../types';
 import { fetchDevicePorts, updateSwitchPort } from '../services/api';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface PortManagementViewProps {
   devices: Device[];
 }
 
 export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices }) => {
+  const { t, isRtl, isEn } = useLanguage();
   const switchesAndRouters = devices.filter((d) => d.type === 'switch' || d.type === 'router');
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>(
     switchesAndRouters[0]?.id || devices[0]?.id || ''
@@ -83,7 +85,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
       setSelectedPort(res.port);
       setIsEditing(false);
     } catch (err: any) {
-      alert('خطا در ذخیره پورت: ' + err.message);
+      alert(t('ports_save_error', { error: err.message }));
     } finally {
       setIsSaving(false);
     }
@@ -111,24 +113,27 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
   const trunkCount = ports.filter((p) => p.mode === 'trunk').length;
 
   return (
-    <div className="p-4 space-y-4 max-w-7xl mx-auto text-right text-slate-800">
+    <div
+      dir={isRtl ? 'rtl' : 'ltr'}
+      className={`p-4 space-y-4 max-w-7xl mx-auto ${isRtl ? 'text-right' : 'text-left'} text-slate-800`}
+    >
       {/* Header & Switch Selector */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold text-slate-900">پایش وضعیت پورت‌ها، ترانک یا اکسس و ویلن (VLAN)</h2>
+            <h2 className="text-base font-bold text-slate-900">{t('ports_title')}</h2>
             <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono font-bold">
-              Port Manager
+              {t('ports_tag')}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            مشاهده وضعیت فعال/غیرفعال بودن پورت‌ها، شناسایی تجهیز متصل، حالت ترانک یا اکسس و شماره ویلن اختصاص‌یافته
+            {t('ports_subtitle')}
           </p>
         </div>
 
         {/* Switch Selector Dropdown */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-600">انتخاب سوئیچ یا روتر:</span>
+          <span className="text-xs text-slate-600">{t('ports_select_device')}</span>
           <select
             value={selectedDeviceId}
             onChange={(e) => setSelectedDeviceId(e.target.value)}
@@ -165,23 +170,23 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                 </span>
               </div>
               <p className="text-[10px] text-slate-500 mt-0.5">
-                مدل: {currentDevice.model} • استقرار: {currentDevice.building} • {currentDevice.floor} •{' '}
-                {currentDevice.unit} {currentDevice.rack ? `• رک: ${currentDevice.rack}` : ''}
+                {t('topology_details_model')}: {currentDevice.model} • {t('topology_details_building')}: {currentDevice.building} • {t('topology_details_floor')}: {currentDevice.floor} •{' '}
+                {t('topology_details_unit')}: {currentDevice.unit} {currentDevice.rack ? `• ${t('topology_details_rack')}: ${currentDevice.rack}` : ''}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-4 text-xs">
             <div className="text-center">
-              <div className="text-slate-500 text-[10px]">پورت‌های فعال</div>
+              <div className="text-slate-500 text-[10px]">{t('ports_active_ports')}</div>
               <div className="text-emerald-700 font-bold font-mono text-sm">{activeCount}</div>
             </div>
             <div className="text-center">
-              <div className="text-slate-500 text-[10px]">پورت‌های خاموش</div>
+              <div className="text-slate-500 text-[10px]">{t('ports_inactive_ports')}</div>
               <div className="text-slate-500 font-bold font-mono text-sm">{inactiveCount}</div>
             </div>
             <div className="text-center">
-              <div className="text-slate-500 text-[10px]">پورت‌های ترانک</div>
+              <div className="text-slate-500 text-[10px]">{t('ports_trunk_ports')}</div>
               <div className="text-purple-700 font-bold font-mono text-sm">{trunkCount}</div>
             </div>
           </div>
@@ -193,27 +198,27 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
         <div className="flex items-center justify-between mb-2 text-xs">
           <div className="font-bold text-slate-900 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>طرح فیزیکی پورت‌های روی بدنه سوئیچ (Physical Faceplate)</span>
+            <span>{t('ports_faceplate_title')}</span>
           </div>
           <div className="flex items-center gap-3 text-[11px] text-slate-600">
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>روشن (Up)</span>
+              <span>{t('ports_legend_up')}</span>
             </div>
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-              <span>خاموش (Down)</span>
+              <span>{t('ports_legend_down')}</span>
             </div>
             <div className="flex items-center gap-1">
               <span className="w-2.5 h-2 rounded bg-purple-600"></span>
-              <span>ترانک (Trunk)</span>
+              <span>{t('ports_legend_trunk')}</span>
             </div>
           </div>
         </div>
 
         {loading ? (
           <div className="py-8 text-center text-slate-500 text-xs animate-pulse">
-            در حال دریافت اطلاعات پورت‌ها از سرور...
+            {t('ports_loading')}
           </div>
         ) : (
           <div className="bg-slate-900 border border-slate-800 rounded-lg p-2.5 overflow-x-auto">
@@ -291,7 +296,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                         : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                     }`}
                   >
-                    {selectedPort.mode === 'trunk' ? 'TRUNK (ترانک)' : 'ACCESS (اکسس)'}
+                    {selectedPort.mode === 'trunk' ? (isEn ? 'TRUNK' : 'TRUNK (ترانک)') : (isEn ? 'ACCESS' : 'ACCESS (اکسس)')}
                   </span>
                   <span
                     className={`text-[9px] px-1.5 py-0.2 rounded font-medium ${
@@ -300,11 +305,13 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                         : 'bg-slate-100 text-slate-600 border border-slate-200'
                     }`}
                   >
-                    {selectedPort.status === 'up' ? 'فعال (Connected)' : 'غیرفعال (Disconnected)'}
+                    {selectedPort.status === 'up'
+                      ? (isEn ? 'Connected (Up)' : 'فعال (Connected)')
+                      : (isEn ? 'Disconnected (Down)' : 'غیرفعال (Disconnected)')}
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
-                  سرعت: {selectedPort.speed} • داپلکس: {selectedPort.duplex}
+                  {isEn ? 'Speed' : 'سرعت'}: {selectedPort.speed} • {isEn ? 'Duplex' : 'داپلکس'}: {selectedPort.duplex}
                 </p>
               </div>
             </div>
@@ -315,7 +322,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-medium shadow-sm transition"
               >
                 <Edit3 className="w-3 h-3 text-indigo-600" />
-                <span>ویرایش تنظیمات پورت</span>
+                <span>{isEn ? 'Edit Port Settings' : 'ویرایش تنظیمات پورت'}</span>
               </button>
             ) : (
               <div className="flex items-center gap-2">
@@ -323,7 +330,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                   onClick={() => setIsEditing(false)}
                   className="px-2.5 py-1.5 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs transition"
                 >
-                  انصراف
+                  {t('ports_btn_cancel')}
                 </button>
                 <button
                   onClick={handleSavePort}
@@ -331,7 +338,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                   className="flex items-center gap-1 px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium shadow-sm transition disabled:opacity-50"
                 >
                   <Save className="w-3 h-3" />
-                  <span>{isSaving ? 'در حال ذخیره...' : 'اعمال تغییرات در سوئیچ'}</span>
+                  <span>{isSaving ? t('ports_saving') : t('ports_apply_changes')}</span>
                 </button>
               </div>
             )}
@@ -341,43 +348,43 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
           {!isEditing ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
               <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="text-slate-500 text-[10px] mb-0.5">تجهیز یا هاست متصل:</div>
+                <div className="text-slate-500 text-[10px] mb-0.5">{isEn ? 'Connected Device / Host:' : 'تجهیز یا هاست متصل:'}</div>
                 <div className="text-slate-900 font-semibold font-mono text-xs">
-                  {selectedPort.connected_device || 'تجهیزی متصل نیست'}
+                  {selectedPort.connected_device || t('ports_device_not_connected')}
                 </div>
                 <div className="text-slate-400 text-[10px] mt-0.5 font-mono">
-                  نوع: {selectedPort.connected_type || 'Host'}
+                  {isEn ? 'Type:' : 'نوع:'} {selectedPort.connected_type || 'Host'}
                 </div>
               </div>
 
               <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="text-slate-500 text-[10px] mb-0.5">ویلن (VLAN) تخصیص یافته:</div>
+                <div className="text-slate-500 text-[10px] mb-0.5">{isEn ? 'Assigned VLAN:' : 'ویلن (VLAN) تخصیص یافته:'}</div>
                 <div className="text-indigo-700 font-bold font-mono text-xs">
                   VLAN {selectedPort.vlan}
                 </div>
                 <div className="text-slate-400 text-[10px] mt-0.5 font-mono">
-                  ویلن‌های مجاز ترانک: {selectedPort.allowed_vlans || 'همه (1-4094)'}
+                  {isEn ? 'Allowed Trunk VLANs:' : 'ویلن‌های مجاز ترانک:'} {selectedPort.allowed_vlans || t('ports_all_vlans')}
                 </div>
               </div>
 
               <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="text-slate-500 text-[10px] mb-0.5">وضعیت مدیریتی پورت:</div>
+                <div className="text-slate-500 text-[10px] mb-0.5">{isEn ? 'Admin Status:' : 'وضعیت مدیریتی پورت:'}</div>
                 <div className="text-emerald-700 font-semibold text-xs">
-                  {selectedPort.admin_status === 'enabled' ? 'فعال (No Shutdown)' : 'غیرفعال (Shutdown)'}
+                  {selectedPort.admin_status === 'enabled' ? t('ports_admin_no_shutdown') : t('ports_admin_shutdown')}
                 </div>
                 <div className="text-slate-400 text-[10px] mt-0.5 font-mono">
-                  پروتکل: {selectedPort.mode === 'trunk' ? '802.1Q Encapsulation' : 'Access Native'}
+                  {isEn ? 'Protocol:' : 'پروتکل:'} {selectedPort.mode === 'trunk' ? '802.1Q Encapsulation' : 'Access Native'}
                 </div>
               </div>
 
               <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="text-slate-500 text-[10px] mb-0.5">توان برق (PoE Status):</div>
+                <div className="text-slate-500 text-[10px] mb-0.5">{isEn ? 'PoE Status:' : 'توان برق (PoE Status):'}</div>
                 <div className="flex items-center gap-1 text-slate-900 font-semibold font-mono text-xs">
                   <Zap className="w-3 h-3 text-amber-500" />
-                  <span>{selectedPort.poe_power ? `${selectedPort.poe_power} W` : 'غیرفعال'}</span>
+                  <span>{selectedPort.poe_power ? `${selectedPort.poe_power} W` : t('ports_poe_disabled')}</span>
                 </div>
                 <div className="text-slate-400 text-[10px] mt-0.5 font-mono">
-                  وضعیت: {selectedPort.poe_status || 'off'}
+                  {isEn ? 'State:' : 'وضعیت:'} {selectedPort.poe_status || 'off'}
                 </div>
               </div>
             </div>
@@ -385,19 +392,19 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
             /* Edit Mode */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
               <div>
-                <label className="block text-slate-700 mb-1 text-[11px] font-medium">حالت پورت (Port Mode):</label>
+                <label className="block text-slate-700 mb-1 text-[11px] font-medium">{isEn ? 'Port Mode:' : 'حالت پورت (Port Mode):'}</label>
                 <select
                   value={editMode}
                   onChange={(e) => setEditMode(e.target.value as 'trunk' | 'access')}
                   className="w-full px-2.5 py-1.5 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs font-mono"
                 >
-                  <option value="access">Access (اکسس - کلاینت / هاست / پی‌سی)</option>
-                  <option value="trunk">Trunk (ترانک - ارتباط سوئیچ به سوئیچ / روتر)</option>
+                  <option value="access">{isEn ? 'Access (Client / Host / PC)' : 'Access (اکسس - کلاینت / هاست / پی‌سی)'}</option>
+                  <option value="trunk">{isEn ? 'Trunk (Switch-to-Switch / Router)' : 'Trunk (ترانک - ارتباط سوئیچ به سوئیچ / روتر)'}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-slate-700 mb-1 text-[11px] font-medium">شماره ویلن (VLAN ID):</label>
+                <label className="block text-slate-700 mb-1 text-[11px] font-medium">{isEn ? 'VLAN ID:' : 'شماره ویلن (VLAN ID):'}</label>
                 <input
                   type="number"
                   value={editVlan}
@@ -408,47 +415,47 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
               </div>
 
               <div>
-                <label className="block text-slate-700 mb-1 text-[11px] font-medium">ویلن‌های مجاز (Allowed VLANs):</label>
+                <label className="block text-slate-700 mb-1 text-[11px] font-medium">{isEn ? 'Allowed Trunk VLANs:' : 'ویلن‌های مجاز (Allowed VLANs):'}</label>
                 <input
                   type="text"
                   value={editAllowedVlans}
                   onChange={(e) => setEditAllowedVlans(e.target.value)}
-                  placeholder="مثال: 1,10,20,30,50"
+                  placeholder={isEn ? 'e.g. 1,10,20,30,50' : 'مثال: 1,10,20,30,50'}
                   className="w-full px-2.5 py-1.5 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs font-mono text-left"
                   dir="ltr"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 mb-1 text-[11px] font-medium">تجهیز یا هاست متصل:</label>
+                <label className="block text-slate-700 mb-1 text-[11px] font-medium">{isEn ? 'Connected Device / Host:' : 'تجهیز یا هاست متصل:'}</label>
                 <input
                   type="text"
                   value={editConnected}
                   onChange={(e) => setEditConnected(e.target.value)}
-                  placeholder="مثال: AP-WIFI-02 یا Core Uplink"
+                  placeholder={isEn ? 'e.g. AP-WIFI-02 or Core Uplink' : 'مثال: AP-WIFI-02 یا Core Uplink'}
                   className="w-full px-2.5 py-1.5 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 mb-1 text-[11px] font-medium">وضعیت مدیریتی پورت:</label>
+                <label className="block text-slate-700 mb-1 text-[11px] font-medium">{isEn ? 'Administrative Status:' : 'وضعیت مدیریتی پورت:'}</label>
                 <select
                   value={editAdminStatus}
                   onChange={(e) => setEditAdminStatus(e.target.value as 'enabled' | 'disabled')}
                   className="w-full px-2.5 py-1.5 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs font-mono"
                 >
-                  <option value="enabled">فعال (No Shutdown)</option>
-                  <option value="disabled">غیرفعال (Shutdown)</option>
+                  <option value="enabled">{t('ports_admin_no_shutdown')}</option>
+                  <option value="disabled">{t('ports_admin_shutdown')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-slate-700 mb-1 text-[11px] font-medium">توضیحات (Description):</label>
+                <label className="block text-slate-700 mb-1 text-[11px] font-medium">{isEn ? 'Description:' : 'توضیحات (Description):'}</label>
                 <input
                   type="text"
                   value={editDesc}
                   onChange={(e) => setEditDesc(e.target.value)}
-                  placeholder="توضیح مربوط به این پورت"
+                  placeholder={isEn ? 'Description for this port' : 'توضیح مربوط به این پورت'}
                   className="w-full px-2.5 py-1.5 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs"
                 />
               </div>
@@ -461,16 +468,16 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
         <div className="p-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5 text-xs">
           <div className="flex items-center gap-2">
-            <h4 className="font-bold text-slate-900">جدول تفکیکی تمام پورت‌ها ({filteredPorts.length})</h4>
+            <h4 className="font-bold text-slate-900">{t('ports_table_title', { count: filteredPorts.length })}</h4>
           </div>
 
           <div className="flex items-center flex-wrap gap-2">
             <input
               type="text"
-              placeholder="جستجوی پورت، ویلن یا هاست..."
+              placeholder={t('ports_search_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-2.5 py-1 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs focus:bg-white focus:outline-none focus:border-indigo-500 w-40"
+              className="px-2.5 py-1 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs focus:bg-white focus:outline-none focus:border-indigo-500 w-44"
             />
 
             <div className="flex items-center bg-slate-100 rounded p-0.5 border border-slate-200">
@@ -480,7 +487,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                   filterMode === 'all' ? 'bg-white text-indigo-700 font-semibold shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                همه
+                {t('ports_filter_all')}
               </button>
               <button
                 onClick={() => setFilterMode('up')}
@@ -488,7 +495,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                   filterMode === 'up' ? 'bg-white text-indigo-700 font-semibold shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                فعال
+                {t('ports_filter_up')}
               </button>
               <button
                 onClick={() => setFilterMode('down')}
@@ -496,7 +503,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                   filterMode === 'down' ? 'bg-white text-indigo-700 font-semibold shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                خاموش
+                {t('ports_filter_down')}
               </button>
               <button
                 onClick={() => setFilterMode('trunk')}
@@ -504,7 +511,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                   filterMode === 'trunk' ? 'bg-white text-indigo-700 font-semibold shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                ترانک
+                {t('ports_filter_trunk')}
               </button>
               <button
                 onClick={() => setFilterMode('access')}
@@ -512,24 +519,24 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                   filterMode === 'access' ? 'bg-white text-indigo-700 font-semibold shadow-sm' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                اکسس
+                {t('ports_filter_access')}
               </button>
             </div>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-right text-xs">
+          <table className={`w-full ${isRtl ? 'text-right' : 'text-left'} text-xs`}>
             <thead>
               <tr className="bg-slate-50 text-slate-600 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider">
-                <th className="p-3">نام پورت</th>
-                <th className="p-3">وضعیت پورت</th>
-                <th className="p-3">نوع پورت (Mode)</th>
-                <th className="p-3">ویلن (VLAN)</th>
-                <th className="p-3">تجهیز متصل (Connected Device)</th>
-                <th className="p-3">سرعت اتصال</th>
-                <th className="p-3">PoE</th>
-                <th className="p-3 text-center">عملیات</th>
+                <th className="p-3">{t('ports_col_id')}</th>
+                <th className="p-3">{t('ports_col_status')}</th>
+                <th className="p-3">{t('ports_col_mode')}</th>
+                <th className="p-3">{t('ports_col_vlan')}</th>
+                <th className="p-3">{t('ports_col_connected')}</th>
+                <th className="p-3">{t('ports_col_speed')}</th>
+                <th className="p-3">{t('ports_col_poe')}</th>
+                <th className="p-3 text-center">{t('ports_col_actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-mono">
@@ -594,7 +601,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                       }}
                       className="px-2 py-1 rounded bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-xs font-sans transition border border-slate-200"
                     >
-                      ویرایش
+                      {t('ports_btn_edit')}
                     </button>
                   </td>
                 </tr>

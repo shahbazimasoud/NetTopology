@@ -27,6 +27,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { TopologyData, Device, TopologyLink, TopologyNode } from '../types';
+import { useLanguage } from '../i18n';
 
 interface SchematicTopologyViewProps {
   topology: TopologyData | null;
@@ -53,6 +54,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   isFullMode: propIsFullMode,
   onToggleFullMode,
 }) => {
+  const { t, isEn, isRtl } = useLanguage();
   const [viewMode, setViewMode] = useState<'schematic' | 'physical'>('schematic');
 
   // Viewport zoom and pan with LocalStorage persistence
@@ -117,7 +119,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const [internalFullMode, setInternalFullMode] = useState(false);
   const isFullMode = propIsFullMode !== undefined ? propIsFullMode : internalFullMode;
   const [showToolbarInFullMode, setShowToolbarInFullMode] = useState(false);
-  const [isLegendOpen, setIsLegendOpen] = useState(true);
+  const [isLegendOpen, setIsLegendOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -192,7 +194,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
   // Reset positions back to auto-layout
   const handleResetPositions = () => {
-    if (window.confirm('آیا مایلید موقعیت قرارگیری تجهیزات در نقشه به حالت پیش‌فرض و منظم بازگردد؟')) {
+    if (window.confirm(t('topology_reset_layout_confirm'))) {
       setCustomPositions({});
       setHasSavedPositions(false);
       try {
@@ -452,14 +454,15 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     return (
       <div className="flex flex-col items-center justify-center py-24 text-slate-400 space-y-3">
         <RefreshCw className="w-8 h-8 text-cyan-500 animate-spin" />
-        <p className="text-sm">در حال بارگذاری و ترسیم نقشه شماتیک شبکه از بک‌اند پایتون...</p>
+        <p className="text-sm">{t('topology_loading_map')}</p>
       </div>
     );
   }
 
   return (
     <div
-      className={`text-right overflow-hidden text-slate-100 transition-all duration-300 ${
+      dir={isRtl ? 'rtl' : 'ltr'}
+      className={`${isRtl ? 'text-right' : 'text-left'} overflow-hidden text-slate-100 transition-all duration-300 ${
         isFullMode
           ? 'fixed inset-0 z-[99999] w-screen h-screen bg-slate-950 flex flex-col m-0 p-0 shadow-2xl'
           : 'flex flex-col h-full min-h-[500px] bg-transparent'
@@ -480,7 +483,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>نقشه شماتیک توپولوژی</span>
+                <span>{t('topology_tab_schematic')}</span>
               </button>
               <button
                 onClick={() => setViewMode('physical')}
@@ -491,18 +494,18 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                 }`}
               >
                 <Building2 className="w-3.5 h-3.5" />
-                <span>محیط شماتیک ساختمانی (مکان فیزیکی)</span>
+                <span>{t('topology_tab_physical')}</span>
               </button>
             </div>
 
-            <label className="hidden md:flex items-center gap-1.5 text-slate-300 text-xs cursor-pointer mr-2">
+            <label className="hidden md:flex items-center gap-1.5 text-slate-300 text-xs cursor-pointer mx-2">
               <input
                 type="checkbox"
                 checked={showPortLabels}
                 onChange={(e) => setShowPortLabels(e.target.checked)}
                 className="w-3.5 h-3.5 rounded text-indigo-500 bg-slate-900 border-white/20 focus:ring-indigo-500"
               />
-              <span>نمایش پورت‌های اتصال</span>
+              <span>{t('topology_show_ports')}</span>
             </label>
           </div>
 
@@ -512,7 +515,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             {viewMode === 'schematic' && hasSavedPositions && (
               <div className="hidden lg:flex items-center gap-1 text-[11px] font-mono text-cyan-300 bg-cyan-500/10 px-2 py-1 rounded-lg border border-cyan-500/20">
                 <Check className="w-3 h-3 text-cyan-400" />
-                <span>چیدمان سفارشی ذخیره است</span>
+                <span>{t('topology_custom_layout_saved')}</span>
               </div>
             )}
 
@@ -520,12 +523,12 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             <div className="relative">
               <input
                 type="text"
-                placeholder="جستجوی تجهیز، IP یا واحد..."
+                placeholder={t('topology_search_placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="px-3 py-1.5 pr-8 rounded-xl bg-slate-900/70 border border-white/15 text-slate-100 text-xs placeholder-slate-500 focus:outline-none focus:border-indigo-400 w-44 sm:w-52"
+                className={`px-3 py-1.5 ${isRtl ? 'pr-8' : 'pl-8'} rounded-xl bg-slate-900/70 border border-white/15 text-slate-100 text-xs placeholder-slate-500 focus:outline-none focus:border-indigo-400 w-44 sm:w-52`}
               />
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2" />
+              <Search className={`w-3.5 h-3.5 text-slate-400 absolute ${isRtl ? 'right-2.5' : 'left-2.5'} top-2`} />
             </div>
 
             {/* Building Filter */}
@@ -534,9 +537,9 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
               onChange={(e) => setFilterBuilding(e.target.value)}
               className="px-3 py-1.5 rounded-xl bg-slate-900/70 border border-white/15 text-slate-200 text-xs focus:outline-none focus:border-indigo-400"
             >
-              <option value="all">تمام ساختمان‌ها</option>
+              <option value="all">{t('topology_all_buildings')}</option>
               {topology?.buildings?.map((b: any, index: number) => {
-                const bldgName = typeof b === 'string' ? b : b?.name || `ساختمان ${index + 1}`;
+                const bldgName = typeof b === 'string' ? b : b?.name || t('topology_building_num', { num: index + 1 });
                 return (
                   <option key={`bldg-${index}-${bldgName}`} value={bldgName}>
                     {bldgName}
@@ -550,10 +553,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
               onClick={onScanCdpLldp}
               disabled={isScanning}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-medium shadow-md transition disabled:opacity-50 active:scale-95"
-              title="پویش و استخراج همسایگی‌ها با پروتکل‌های CDP و LLDP"
+              title={t('topology_scan_title')}
             >
               <Zap className={`w-3.5 h-3.5 text-cyan-300 ${isScanning ? 'animate-spin' : ''}`} />
-              <span>{isScanning ? 'در حال اسکن...' : 'اسکن CDP/LLDP'}</span>
+              <span>{isScanning ? t('topology_scanning') : t('topology_scan_cdp_lldp')}</span>
             </button>
 
             {/* Canvas Controls */}
@@ -566,7 +569,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     saveViewport(newZoom, pan);
                   }}
                   className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
-                  title="بزرگنمایی (یا با اسکرول ماوس)"
+                  title={t('topology_zoom_in_title')}
                 >
                   <ZoomIn className="w-3.5 h-3.5" />
                 </button>
@@ -577,14 +580,14 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     saveViewport(newZoom, pan);
                   }}
                   className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
-                  title="کوچکنمایی (یا با اسکرول ماوس)"
+                  title={t('topology_zoom_out_title')}
                 >
                   <ZoomOut className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={handleResetView}
                   className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
-                  title="بازنشانی زوم و مرکز صفحه"
+                  title={t('topology_zoom_reset_title')}
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </button>
@@ -593,7 +596,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   className={`p-1.5 rounded-lg transition ${
                     isFullMode ? 'text-amber-300 bg-amber-500/20' : 'text-slate-400 hover:text-white'
                   }`}
-                  title="حالت فول"
+                  title={isFullMode ? t('topology_exit_full_mode') : t('topology_fullscreen_title')}
                 >
                   {isFullMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                 </button>
@@ -601,7 +604,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   <button
                     onClick={handleResetPositions}
                     className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition border-r border-white/10 pr-1.5 mr-0.5"
-                    title="بازگردانی چیدمان نودها به حالت خودکار اولیه"
+                    title={t('topology_reset_layout_title')}
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
@@ -641,8 +644,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     ? 'bg-gradient-to-r from-amber-500/25 to-rose-500/25 border-amber-500/50 text-amber-300 hover:bg-amber-500/35 shadow-[0_0_25px_rgba(245,158,11,0.4)]'
                     : 'bg-slate-900/85 hover:bg-slate-800 border-white/20 hover:border-cyan-400/50 text-slate-200 hover:text-cyan-300 shadow-[0_0_20px_rgba(0,0,0,0.5)]'
                 }`}
-                title="حالت فول"
-                aria-label="حالت فول"
+                title={isFullMode ? t('topology_exit_full_mode') : t('topology_fullscreen_title')}
+                aria-label={isFullMode ? t('topology_exit_full_mode') : t('topology_fullscreen_title')}
               >
                 {isFullMode ? (
                   <Minimize2 className="w-5 h-5 text-amber-300" />
@@ -650,9 +653,9 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   <Maximize2 className="w-5 h-5 text-cyan-300 group-hover:scale-110 transition-transform" />
                 )}
 
-                {/* Tooltip on hover: "حالت فول" */}
+                {/* Tooltip on hover */}
                 <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 px-3 py-1.5 rounded-lg bg-slate-900/95 border border-white/20 text-white text-xs font-medium whitespace-nowrap shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-50">
-                  {isFullMode ? 'خروج از حالت فول (Esc)' : 'حالت فول'}
+                  {isFullMode ? t('topology_exit_full_mode') : t('topology_fullscreen_title')}
                 </div>
               </button>
 
@@ -662,14 +665,14 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     type="button"
                     onClick={() => setShowToolbarInFullMode((prev) => !prev)}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/85 hover:bg-slate-800 border border-white/20 hover:border-white/30 text-xs text-slate-300 hover:text-white shadow-xl backdrop-blur-xl transition active:scale-95"
-                    title={showToolbarInFullMode ? 'مخفی کردن نوار ابزار' : 'نمایش نوار ابزار'}
+                    title={showToolbarInFullMode ? t('topology_hide_toolbar') : t('topology_show_toolbar')}
                   >
-                    <span>{showToolbarInFullMode ? 'مخفی‌سازی ابزارها' : 'نمایش ابزارها'}</span>
+                    <span>{showToolbarInFullMode ? t('topology_hide_toolbar') : t('topology_show_toolbar')}</span>
                   </button>
 
                   <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono backdrop-blur-md">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                    <span>حالت تمام‌صفحه نقشه (کلید Esc برای خروج)</span>
+                    <span>{t('topology_fullscreen_hint')}</span>
                   </div>
                 </>
               )}
@@ -825,10 +828,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                       {/* Drag Handle Indicator */}
                       <div
                         className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-slate-900/90 border border-white/20 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[9px] font-mono pointer-events-none shadow-md"
-                        title="جهت تغییر مکان، بکشید و رها کنید (Drag & Drop)"
+                        title={t('topology_drag_tooltip')}
                       >
                         <Move className="w-2.5 h-2.5 text-cyan-400" />
-                        <span>جابجایی</span>
+                        <span>{t('topology_drag_reposition')}</span>
                       </div>
 
                       {/* Node Header */}
@@ -894,7 +897,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                         <div className="flex items-center gap-1">
                           <span className="text-slate-400 font-mono">{node.total_ports || 24}P</span>
                           {node.has_unsaved_changes && (
-                            <span className="text-[9px] font-bold text-amber-300 bg-amber-500/20 px-1 rounded border border-amber-500/40" title="دارای تغییرات رایت‌نشده در استارتاپ">
+                            <span className="text-[9px] font-bold text-amber-300 bg-amber-500/20 px-1 rounded border border-amber-500/40" title={t('topology_unsaved_changes_tooltip')}>
                               wr!
                             </span>
                           )}
@@ -907,7 +910,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                                 onConnectTerminal(node);
                               }}
                               className="text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-0.5 hover:underline"
-                              title="کانکت به خط فرمان ترمینال سیسکو"
+                              title={t('topology_terminal_tooltip')}
                             >
                               <Terminal className="w-3 h-3 text-emerald-400" />
                               <span>CLI</span>
@@ -919,10 +922,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                               onInspectPorts(node);
                             }}
                             className="text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-0.5 hover:underline"
-                            title="بررسی و پیکربندی پورت‌ها و VLAN"
+                            title={t('topology_ports_tooltip')}
                           >
                             <Cable className="w-3 h-3" />
-                            <span>پورت‌ها</span>
+                            <span>{t('topology_card_ports')}</span>
                           </button>
                         </div>
                       </div>
@@ -934,16 +937,16 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             </svg>
 
             {/* Bottom Floating Legend & Interactive Guide */}
-            <div className="absolute bottom-5 left-5 z-30 select-none">
+            <div className={`absolute bottom-5 ${isRtl ? 'left-5' : 'right-5'} z-30 select-none`}>
               {!isLegendOpen ? (
                 <button
                   type="button"
                   onClick={() => setIsLegendOpen(true)}
                   className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/20 hover:border-cyan-400/50 text-slate-200 hover:text-white shadow-2xl backdrop-blur-2xl text-xs font-medium transition active:scale-95 group"
-                  title="نمایش راهنمای نقشه توپولوژی"
+                  title={t('topology_legend_expand')}
                 >
                   <Info className="w-4 h-4 text-cyan-400 group-hover:rotate-12 transition-transform" />
-                  <span>راهنمای نقشه</span>
+                  <span>{t('topology_legend_title')}</span>
                   <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
                 </button>
               ) : (
@@ -952,18 +955,18 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     <div className="flex items-center gap-2">
                       <Info className="w-4 h-4 text-cyan-400" />
                       <span className="font-bold text-white text-xs font-mono glow-text-cyan">
-                        راهنمای نقشه توپولوژی
+                        {t('topology_legend_title')}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-mono text-cyan-300 bg-cyan-500/15 px-2 py-0.5 rounded-md border border-cyan-500/30 hidden sm:inline">
-                        اسکرول = زوم | درگ = جابجایی
+                        {t('topology_legend_scroll_hint')}
                       </span>
                       <button
                         type="button"
                         onClick={() => setIsLegendOpen(false)}
                         className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
-                        title="بستن راهنما"
+                        title={t('topology_legend_collapse')}
                       >
                         <ChevronDown className="w-4 h-4" />
                       </button>
@@ -982,17 +985,17 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
-                      <span className="text-emerald-300">آنلاین و فعال</span>
+                      <span className="text-emerald-300">{t('topology_legend_online')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.7)]"></span>
-                      <span className="text-rose-300">قطع / آفلاین</span>
+                      <span className="text-rose-300">{t('topology_legend_offline')}</span>
                     </div>
                   </div>
 
                   {/* Quick Gesture Guide */}
                   <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                    <span>جابجایی نودها با Drag & Drop</span>
+                    <span>{t('topology_legend_drag_hint')}</span>
                     <span className="text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">Auto-Save</span>
                   </div>
                 </div>
@@ -1006,20 +1009,20 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2 glow-text-cyan">
                   <Building2 className="w-4 h-4 text-cyan-400" />
-                  <span>جانمایی شماتیک فیزیکی در ساختمان‌ها و طبقات</span>
+                  <span>{t('topology_physical_title')}</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  نمایش محل استقرار هر سوئیچ، روتر و اکسس‌پوینت بر اساس ساختمان، طبقه، واحد و رک
+                  {t('topology_physical_desc')}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={toggleFullMode}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-white/15 text-xs text-slate-200 transition active:scale-95"
-                title={isFullMode ? 'خروج از حالت فول (Esc)' : 'حالت فول'}
+                title={isFullMode ? t('topology_exit_full_mode') : t('topology_fullscreen_title')}
               >
                 {isFullMode ? <Minimize2 className="w-4 h-4 text-amber-300" /> : <Maximize2 className="w-4 h-4 text-cyan-300" />}
-                <span>{isFullMode ? 'خروج از حالت فول' : 'حالت فول'}</span>
+                <span>{isFullMode ? t('topology_exit_full_mode') : t('topology_fullscreen_title')}</span>
               </button>
             </div>
 
@@ -1039,7 +1042,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                       <div>
                         <h4 className="text-sm font-bold text-white">{bldgName}</h4>
                         <span className="text-[11px] text-slate-400">
-                          {Object.values(floors).reduce((acc, devs) => acc + devs.length, 0)} تجهیز مستقر
+                          {t('topology_devices_in_building', { count: Object.values(floors).reduce((acc, devs) => acc + devs.length, 0) })}
                         </span>
                       </div>
                     </div>
@@ -1059,7 +1062,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                             <span>{floorName}</span>
                           </div>
                           <span className="text-[10px] text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded-lg border border-white/10">
-                            {devices.length} تجهیز در این طبقه
+                            {t('topology_devices_on_floor', { count: devices.length })}
                           </span>
                         </div>
 
@@ -1116,9 +1119,9 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                               </div>
 
                               <div className="text-[10px] text-slate-400 space-y-0.5">
-                                <div>واحد: {device.unit}</div>
+                                <div>{t('topology_unit_label')} {device.unit}</div>
                                 {device.rack && (
-                                  <div className="text-slate-400 font-mono">محل رک: {device.rack}</div>
+                                  <div className="text-slate-400 font-mono">{t('topology_rack_label')} {device.rack}</div>
                                 )}
                               </div>
 
@@ -1131,7 +1134,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                                   className="text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 font-medium"
                                 >
                                   <Cable className="w-3 h-3" />
-                                  <span>بررسی وضعیت پورت‌ها</span>
+                                  <span>{t('topology_inspect_ports_btn')}</span>
                                 </button>
                               </div>
                             </div>
@@ -1148,7 +1151,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
         {/* Node Detail Slide-out Drawer */}
         {selectedNode && (
-          <div className="w-80 lg:w-96 spatial-glass border-r border-white/10 p-4 overflow-y-auto flex flex-col z-30 shadow-2xl backdrop-blur-2xl text-slate-100">
+          <div className={`w-80 lg:w-96 spatial-glass ${isRtl ? 'border-r' : 'border-l'} border-white/10 p-4 overflow-y-auto flex flex-col z-30 shadow-2xl backdrop-blur-2xl text-slate-100`}>
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
@@ -1176,7 +1179,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             {/* Quick Status Bar */}
             <div className="my-3 p-3 rounded-xl bg-slate-900/60 border border-white/10 space-y-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-slate-400">وضعیت لحظه‌ای:</span>
+                <span className="text-slate-400">{t('topology_details_realtime_status')}</span>
                 <span
                   className={`font-semibold flex items-center gap-1 ${
                     selectedNode.is_online ? 'text-emerald-400' : 'text-rose-400'
@@ -1187,21 +1190,21 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                       selectedNode.is_online ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'
                     }`}
                   ></span>
-                  {selectedNode.is_online ? 'آنلاین (Online)' : 'آفلاین (Offline)'}
+                  {selectedNode.is_online ? 'ONLINE' : 'OFFLINE'}
                 </span>
               </div>
               <div className="flex items-center justify-between font-mono">
-                <span className="text-slate-400">آدرس آی‌پی:</span>
+                <span className="text-slate-400">{t('topology_details_ip')}</span>
                 <span className="text-indigo-300 font-bold">{selectedNode.ip}</span>
               </div>
               <div className="flex items-center justify-between font-mono">
-                <span className="text-slate-400">میزان تأخیر (Latency):</span>
+                <span className="text-slate-400">{t('topology_details_latency')}</span>
                 <span className="text-slate-200">
-                  {selectedNode.is_online ? `${selectedNode.latency_ms || 1.1} ms` : 'نامحدود (100% loss)'}
+                  {selectedNode.is_online ? `${selectedNode.latency_ms || 1.1} ms` : (isEn ? 'Timeout (100% loss)' : 'نامحدود (100% loss)')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-400">مدل دستگاه:</span>
+                <span className="text-slate-400">{t('topology_details_model')}</span>
                 <span className="text-slate-200 font-mono text-[11px]">{selectedNode.model}</span>
               </div>
             </div>
@@ -1210,24 +1213,24 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             <div className="space-y-1.5 text-xs mb-3">
               <div className="text-[11px] font-bold text-white flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-                <span>موقعیت مکانی دقیق تجهیز:</span>
+                <span>{t('topology_details_location_title')}</span>
               </div>
               <div className="p-3 rounded-xl bg-slate-900/60 border border-white/10 space-y-1.5 text-slate-300">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">ساختمان:</span>
+                  <span className="text-slate-400">{t('topology_details_building')}</span>
                   <span className="font-medium text-white">{selectedNode.building}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">طبقه:</span>
+                  <span className="text-slate-400">{t('topology_details_floor')}</span>
                   <span className="font-medium text-white">{selectedNode.floor}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">واحد/اتاق:</span>
+                  <span className="text-slate-400">{t('topology_details_unit')}</span>
                   <span className="font-medium text-white">{selectedNode.unit}</span>
                 </div>
                 {selectedNode.rack && (
                   <div className="flex justify-between">
-                    <span className="text-slate-400">محل رک:</span>
+                    <span className="text-slate-400">{t('topology_details_rack')}</span>
                     <span className="font-mono text-cyan-300 font-bold">{selectedNode.rack}</span>
                   </div>
                 )}
@@ -1237,23 +1240,23 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             {/* Protocol Support */}
             <div className="p-3 rounded-xl bg-slate-900/60 border border-white/10 text-xs mb-3 space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-slate-400">پروتکل CDP:</span>
+                <span className="text-slate-400">{t('topology_details_cdp')}</span>
                 <span
                   className={
                     selectedNode.cdp_enabled ? 'text-emerald-400 font-medium' : 'text-slate-500'
                   }
                 >
-                  {selectedNode.cdp_enabled ? 'فعال (Cisco CDP v2)' : 'غیرفعال'}
+                  {selectedNode.cdp_enabled ? (isEn ? 'Active (Cisco CDP v2)' : 'فعال (Cisco CDP v2)') : (isEn ? 'Disabled' : 'غیرفعال')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-400">پروتکل LLDP:</span>
+                <span className="text-slate-400">{t('topology_details_lldp')}</span>
                 <span
                   className={
                     selectedNode.lldp_enabled ? 'text-emerald-400 font-medium' : 'text-slate-500'
                   }
                 >
-                  {selectedNode.lldp_enabled ? 'فعال (IEEE 802.1AB)' : 'غیرفعال'}
+                  {selectedNode.lldp_enabled ? (isEn ? 'Active (IEEE 802.1AB)' : 'فعال (IEEE 802.1AB)') : (isEn ? 'Disabled' : 'غیرفعال')}
                 </span>
               </div>
             </div>
@@ -1265,7 +1268,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                 className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-medium text-xs shadow-lg transition active:scale-98"
               >
                 <Cable className="w-3.5 h-3.5" />
-                <span>مشاهده و پیکربندی پورت‌ها و ویلن</span>
+                <span>{t('topology_view_ports_vlan_btn')}</span>
               </button>
             </div>
           </div>

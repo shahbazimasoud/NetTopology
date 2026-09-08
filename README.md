@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.4.1-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.4.2-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۴.۱
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.4.1
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۴.۲
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.4.2
 
 ---
 
@@ -199,6 +199,13 @@ npm start
 > ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
 
 ### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
+- **نسخه ۱.۴.۲ (v1.4.2 - فاوآیکون شبکه و بومی‌سازی کامل انگلیسی صفحات توپولوژی، پورت‌ها، اسکنر و قالب‌ها)**:
+  - **طراحی فاوآیکون جدید:** ایجاد آیکون مدرن شبکه بر پایه وکتور SVG شامل نودهای شبکه و سوئیچ متمرکز.
+  - **بومی‌سازی کامل صفحه نقشه توپولوژی:** رفع کلمات فارسی مانند «پورت»، راهنمای نقشه، هدر، سرچ‌باکس و دراور مشخصات تجهیز در حالت انگلیسی.
+  - **مودال ویرایش قالب‌های پیکربندی:** انگلیسی‌سازی فیلدهای برچسب نمایش (Display Label) و پلیس‌هولدرها در مودال Edit Configuration Template.
+  - **مدیریت و پایش پورت‌ها:** ترجمه کامل چیدمان فیزیکی پورت‌ها (Faceplate)، کنترل‌ها و جدول پورت‌ها.
+  - **اسکنر لایه ۲ CDP/LLDP:** ترجمه ۱۰۰٪ کارت‌های آماری، جداول همسایگی و پیام‌های اسکن.
+
 - **نسخه ۱.۱.۰ (v1.1.0 - رفع مشکل عدم نمایش صفحه وب)**:
   - **ریشه‌یابی باگ قبلی:** در نسخه‌های پیشین، استفاده از متغیر `import.meta.url` درون باندل CommonJS (`dist/server.cjs`) منجر به خطای مهلک زمان اجرا (`TypeError [ERR_INVALID_ARG_TYPE]`) می‌شد و پراسس نود در ابتدای شروع به کار کرش می‌کرد. همچنین اسکریپت پایتون به اشتباه در مسیر `dist/backend/server.py` جستجو می‌شد.
   - **اصلاحات اعمال‌شده:** 
@@ -383,6 +390,13 @@ Any AI assistant, coding agent, or human contributor working on this repository 
 3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
 
 ### Release Notes & Bug Fixes
+- **Version 1.4.2 (Network Favicon & Complete i18n Localization)**:
+  - **New Vector Network Favicon:** Designed and integrated a professional SVG network topology favicon in `index.html`.
+  - **Complete English Localization for Schematic Topology:** Removed hardcoded Persian terms (such as "پورت"), fully localized legends, headers, search inputs, node cards, and device details drawer.
+  - **Template Editor Modal Localization:** Converted Display Labels, placeholder strings, and guidance text in the Edit Configuration Template modal to use i18n.
+  - **Port Management & Faceplate Localization:** Fully localized switch faceplate layout, port edit form, status badges, and table columns.
+  - **CDP/LLDP Discovery Scanner Localization:** Complete localization for scan metrics, status alerts, neighbor tables, and protocol documentation.
+
 - **Version 1.1.0 (Web UI Display & Daemon Fix)**:
   - **Root Cause of Web UI Failure:** In previous versions, the bundled CommonJS output (`dist/server.cjs`) crashed at launch because `import.meta.url` evaluates to `undefined` in CommonJS, triggering `TypeError [ERR_INVALID_ARG_TYPE]`. Furthermore, the Python Cisco engine path was incorrectly queried in `dist/backend/server.py`.
   - **Applied Resolution:**

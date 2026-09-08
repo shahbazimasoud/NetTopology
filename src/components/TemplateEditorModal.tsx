@@ -75,7 +75,34 @@ export const TemplateEditorModal: React.FC<TemplateEditorModalProps> = ({
       setDescription(templateToEdit.description);
       setDefaultCliMode(templateToEdit.default_cli_mode);
       setCommands(templateToEdit.commands);
-      setVariables(templateToEdit.variables || []);
+      
+      const loadedVars = (templateToEdit.variables || []).map((v) => {
+        if (isEn) {
+          const common = COMMON_VARS.find((c) => c.name === v.name || c.label === v.label);
+          if (common) {
+            return { ...v, label: common.labelEn };
+          }
+          if (/[\u0600-\u06FF]/.test(v.label)) {
+            if (v.label.includes('نام تجهیز') || v.label.includes('Hostname')) return { ...v, label: 'Hostname (Device Name)' };
+            if (v.label.includes('آدرس آی‌پی') || v.label.includes('IP')) return { ...v, label: 'Management IP Address' };
+            if (v.label.includes('ماسک') || v.label.includes('Subnet')) return { ...v, label: 'Subnet Mask' };
+            if (v.label.includes('پیشوند') || v.label.includes('CIDR')) return { ...v, label: 'CIDR Prefix (/24)' };
+            if (v.label.includes('گیت‌وی') || v.label.includes('Gateway')) return { ...v, label: 'Default Gateway' };
+            if (v.label.includes('ویلن') || v.label.includes('VLAN')) return { ...v, label: 'Management VLAN ID' };
+            if (v.label.includes('ساختمان') || v.label.includes('Building')) return { ...v, label: 'Building Location' };
+            if (v.label.includes('طبقه') || v.label.includes('Floor')) return { ...v, label: 'Floor Location' };
+            if (v.label.includes('واحد') || v.label.includes('Unit')) return { ...v, label: 'Unit / Room' };
+            if (v.label.includes('رک') || v.label.includes('Rack')) return { ...v, label: 'Rack Identifier' };
+            if (v.label.includes('دامنه') || v.label.includes('Domain')) return { ...v, label: 'Domain Name' };
+            if (v.label.includes('رمز') || v.label.includes('Password')) return { ...v, label: 'Admin Password' };
+            if (v.label.includes('NTP')) return { ...v, label: 'NTP Server IP' };
+            if (v.label.includes('DNS')) return { ...v, label: 'DNS Server IP' };
+            return { ...v, label: v.name.replace(/_/g, ' ') };
+          }
+        }
+        return v;
+      });
+      setVariables(loadedVars);
     } else {
       setName('');
       setVendor('cisco');
@@ -555,14 +582,15 @@ write memory`);
                           type="text"
                           value={v.label}
                           onChange={(e) => handleUpdateVariable(idx, { label: e.target.value })}
-                          className="w-full bg-slate-950 border border-white/10 px-2 py-1 rounded text-xs text-white"
+                          placeholder={isEn ? 'e.g. Management IP Address' : 'مثلاً عنوان نمایشی در فرم'}
+                          className="w-full bg-slate-950 border border-white/10 px-2 py-1 rounded text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                         />
                       </td>
                       <td className="p-2.5">
                         <select
                           value={v.type}
                           onChange={(e) => handleUpdateVariable(idx, { type: e.target.value as any })}
-                          className="bg-slate-950 border border-white/10 px-2 py-1 rounded text-xs text-white"
+                          className="bg-slate-950 border border-white/10 px-2 py-1 rounded text-xs text-white focus:outline-none focus:border-cyan-500"
                         >
                           <option value="text">{isEn ? 'Text' : 'متن (Text)'}</option>
                           <option value="ip">{isEn ? 'IPv4 Address' : 'آدرس آی‌پی (IPv4)'}</option>
@@ -578,7 +606,8 @@ write memory`);
                           type="text"
                           value={v.default_value}
                           onChange={(e) => handleUpdateVariable(idx, { default_value: e.target.value })}
-                          className="w-full bg-slate-950 border border-white/10 px-2 py-1 rounded text-xs font-mono text-white"
+                          placeholder={isEn ? 'Default value...' : 'مقدار پیش‌فرض...'}
+                          className="w-full bg-slate-950 border border-white/10 px-2 py-1 rounded text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                         />
                       </td>
                       <td className="p-2.5 text-center">
