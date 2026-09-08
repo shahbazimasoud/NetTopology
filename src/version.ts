@@ -10,9 +10,28 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.4.3';
+export const APP_VERSION = '1.4.4';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.4.4',
+    releaseDate: '2026-09-08',
+    type: 'patch',
+    title: 'سازگاری کامل مودال بازرسی پورت با تمام تم‌های رنگی و خلوت‌سازی نوار کناری و پروفایل',
+    title_en: 'Full Theme Color Compatibility for Port Inspector Modal & Sidebar/Profile Decluttering',
+    changes: [
+      'سازگاری کامل مودال بازرسی و پیکربندی پورت‌ها (Port Inspector Modal) شامل جدول پورت‌ها، فرم ویرایش و سامری تایید با تمامی تم‌های رنگی و تم روشن',
+      'حذف باکس هشدار قطعی تجهیزات (Outage Alert) از سایدبار جهت خلوت‌سازی و پاکیزگی نوار ناوبری',
+      'حذف نمایش شماره نسخه از پاورقی سایدبار',
+      'مینیمال‌سازی نشانگر نشست فعال (Active Session) در منوی کاربری به یک نشانگر ظریف و پالس‌زننده'
+    ],
+    changes_en: [
+      'Full multi-theme color compatibility for Port Inspector Modal including inventory table, edit form, and apply confirmation summary',
+      'Removed Outage Alert box from sidebar to achieve a clean, clutter-free navigation drawer',
+      'Removed version badge from sidebar footer',
+      'Minimized Active Session status in profile dropdown to an elegant pulsing indicator'
+    ]
+  },
   {
     version: '1.4.3',
     releaseDate: '2026-09-08',

@@ -392,6 +392,26 @@
   color: #0f172a !important;
 }
 
+.theme-light .port-sub-card {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+.theme-light .port-sub-card thead tr {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
+}
+
+.theme-light .port-sub-card tbody tr:hover {
+  background-color: #f1f5f9 !important;
+}
+
+.theme-light .port-sub-card tbody tr td {
+  border-color: #f1f5f9 !important;
+}
+
 /* Universal Modal Glass Backdrop - Blurs the background with dark spatial glass across all themes */
 .modal-backdrop-blur,
 .modal-glass-backdrop,

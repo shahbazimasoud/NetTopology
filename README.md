@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.4.3-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.4.4-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۴.۳
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.4.3
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۴.۴
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.4.4
 
 ---
 
@@ -206,6 +206,11 @@ npm start
 > ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
 
 ### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
+- **نسخه ۱.۴.۴ (v1.4.4 - سازگاری کامل مودال بازرسی پورت با تمامی تم‌ها و خلوت‌سازی نوار کناری و پروفایل)**:
+  - **سازگاری ۱۰۰٪ تم در مودال بازرسی پورت (Port Inspector Modal):** اصلاح کلیه بخش‌های مودال شامل جدول پورت‌ها، فیلترها، فرم ویرایش و پنجره تایید نهایی تغییرات (Confirmation Summary) با کلاس‌های شیشه‌ای و تم‌پذیر `spatial-glass` بدون پس‌زمینه سفید ثابت.
+  - **خلوت‌سازی سایدبار:** حذف باکس هشدار قطعی تجهیزات (Outage Alert) و شماره نسخه از پاورقی سایدبار ناوبری.
+  - **مینیمال‌سازی نشانگر نشست فعال:** تبدیل برچسب شلوغ Active Session در منوی پروفایل به یک نقطه پالس‌زننده ظریف.
+
 - **نسخه ۱.۴.۳ (v1.4.3 - خلوت‌سازی هدر، منوی پروفایل و سازگاری کامل تم‌ها در پورت‌ها و CDP/LLDP)**:
   - **منوی اختصاصی پروفایل:** انتقال گزینه‌های تیم/سازمان و سوئیچر زبان به منوی پاپ‌آپ جدید پروفایل.
   - **مینیمال کردن هدر:** حذف تگ‌های شمارنده آنلاین و کریتیکال و کوچک‌سازی چشمگیر نمایشگر نسخه در هدر.
@@ -410,6 +415,11 @@ Any AI assistant, coding agent, or human contributor working on this repository 
 3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
 
 ### Release Notes & Bug Fixes
+- **Version 1.4.4 (Port Inspector Modal Theme Harmonization & UI Decluttering)**:
+  - **Full Theme Harmonization in Port Inspector Modal:** Redesigned all modal surfaces including switch ports table, filter bar, port configuration form, and confirmation summary dialog to dynamically adapt to all themes (Obsidian, Emerald, Cobalt, Rose, Amber, and Light).
+  - **Sidebar Decluttering:** Removed Outage Alert badge and version number from the navigation sidebar.
+  - **Profile Session Indicator:** Minimized Active Session badge to a discreet, pulsing emerald dot.
+
 - **Version 1.4.3 (Header Decluttering, Profile Dropdown & Theme Harmonization)**:
   - **Dedicated Profile Dropdown:** Integrated Team/Organization settings and Language switcher into an intuitive user profile menu in the header.
   - **Header Decluttering:** Removed busy online/critical device counts from the top navbar and minimized the version display tag.

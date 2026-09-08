@@ -5,16 +5,13 @@ import {
   Map,
   Cable,
   Radar,
-  ShieldAlert,
   ChevronRight,
   ChevronLeft,
   ChevronDown,
-  Sparkles,
   FileCode2,
   Layers,
   Activity
 } from 'lucide-react';
-import { APP_VERSION } from '../version';
 import { useLanguage } from '../i18n';
 
 export type ActiveTab = 'dashboard' | 'devices' | 'schematic' | 'templates' | 'ports' | 'scanner';
@@ -222,14 +219,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span className="text-[11px] font-bold text-slate-300 tracking-wider">
               {t('sidebar_menu_title')}
             </span>
-            <button
-              onClick={onOpenReleaseNotes}
-              className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 transition flex items-center gap-1 cursor-pointer"
-              title={t('app_version_tooltip')}
-            >
-              <Sparkles className="w-2.5 h-2.5" />
-              <span>v{APP_VERSION}</span>
-            </button>
           </div>
         )}
         <button
@@ -322,36 +311,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
 
-        {/* Critical Offline Alert Box */}
-        {offlineCount > 0 && (
-          <div
-            className={`mt-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs shadow-[0_0_15px_rgba(244,63,94,0.2)] backdrop-blur-md transition-all ${
-              isCollapsed ? 'p-2 flex justify-center' : 'p-2.5 mx-0.5'
-            }`}
-            title={isCollapsed ? t('sidebar_offline_alert_title', { count: offlineCount }) : undefined}
-          >
-            <div className="flex items-center gap-2 font-bold text-[11px] text-rose-300">
-              <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
-              {!isCollapsed && (
-                <span>{t('sidebar_offline_alert_title', { count: offlineCount })}</span>
-              )}
-            </div>
-            {!isCollapsed && (
-              <p className="mt-1 text-[10px] text-rose-200/70 leading-relaxed">
-                {t('sidebar_offline_alert_desc')}
-              </p>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* System Status / Version Widget in Footer */}
+      {/* System Status / Telemetry in Footer */}
       <div className="shrink-0 mt-auto pt-2 border-t border-white/5">
         {!isCollapsed ? (
           <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 space-y-1.5 backdrop-blur-md shadow-xs">
             <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
               <span>{t('sidebar_backend_version')}</span>
-              <span className="text-cyan-400 font-bold">v3.10 Fast</span>
+              <span className="text-cyan-400 font-bold">FastAPI</span>
             </div>
             <p className="text-[10px] text-emerald-400 leading-tight flex items-center gap-1.5 font-medium">
               <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
@@ -363,7 +331,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>{t('sidebar_release_notes')}</span>
-                <span className="text-[8px] bg-indigo-500/20 px-1 rounded">v{APP_VERSION}</span>
               </button>
               <span className="text-emerald-400">{t('sidebar_system_nominal')}</span>
             </div>
@@ -373,9 +340,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               onClick={onOpenReleaseNotes}
               className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-cyan-400 border border-white/10 transition cursor-pointer"
-              title={`v${APP_VERSION}`}
+              title={t('sidebar_release_notes')}
             >
-              <span className="font-mono text-[9px] font-bold">v{APP_VERSION.split('.')[0]}</span>
+              <Activity className="w-4 h-4 text-cyan-400" />
             </button>
             <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" />
           </div>
