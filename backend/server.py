@@ -8,6 +8,13 @@ import uuid
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
+# Import templates seed & execution helpers
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    from backend.templates_seed import get_default_templates, render_template_commands, simulate_device_execution
+except ImportError:
+    from templates_seed import get_default_templates, render_template_commands, simulate_device_execution
+
 # Data file path
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(DATA_DIR, "network_data.json")
@@ -708,7 +715,8 @@ def get_initial_seed_data():
             {"id": 30, "name": "Dev & Engineering", "subnet": "10.30.30.0/24", "color": "#8b5cf6"},
             {"id": 50, "name": "Wireless Guest & Corp APs", "subnet": "172.16.50.0/24", "color": "#f59e0b"},
             {"id": 99, "name": "Out-of-Band Network Mgmt", "subnet": "10.99.99.0/24", "color": "#ec4899"}
-        ]
+        ],
+        "templates": get_default_templates()
     }
 
 # Persistence operations
@@ -722,7 +730,12 @@ def load_data():
             return data
         try:
             with open(DATA_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                # Auto-initialize templates if not yet seeded
+                if "templates" not in data or not data["templates"]:
+                    data["templates"] = get_default_templates()
+                    save_data_unsafe(data)
+                return data
         except Exception as e:
             print(f"Error reading {DATA_FILE}: {e}, regenerating seed data")
             data = get_initial_seed_data()
@@ -936,6 +949,22 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
             self._send_json(200, {"locations": loc_tree})
             return
 
+        if path == "/api/templates":
+            self._send_json(200, {
+                "templates": data.get("templates", []),
+                "total": len(data.get("templates", []))
+            })
+            return
+
+        if path.startswith("/api/templates/"):
+            tmpl_id = path.split("/")[3]
+            tmpl = next((t for t in data.get("templates", []) if t["id"] == tmpl_id), None)
+            if not tmpl:
+                self._send_json(404, {"error": "Template not found"})
+                return
+            self._send_json(200, {"template": tmpl})
+            return
+
         self._send_json(404, {"error": "Endpoint not found"})
 
     def do_POST(self):
@@ -1127,6 +1156,86 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
             })
             return
 
+        if path == "/api/templates":
+            # Create new template
+            new_id = f"tmpl-{body.get('vendor', 'custom')}-{uuid.uuid4().hex[:6]}"
+            new_tmpl = {
+                "id": new_id,
+                "name": body.get("name", "تمپلیت جدید"),
+                "vendor": body.get("vendor", "cisco"),
+                "target_type": body.get("target_type", "switch"),
+                "role": body.get("role", "Access Switch"),
+                "description": body.get("description", ""),
+                "default_cli_mode": body.get("default_cli_mode", "GLOBAL_CONFIG"),
+                "commands": body.get("commands", ""),
+                "variables": body.get("variables", []),
+                "author": body.get("author", "Network Administrator"),
+                "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "is_builtin": False
+            }
+            if "templates" not in data:
+                data["templates"] = []
+            data["templates"].append(new_tmpl)
+            save_data(data)
+            self._send_json(201, {
+                "template": new_tmpl,
+                "message": f"تمپلیت «{new_tmpl['name']}» با موفقیت تعریف و ذخیره گردید."
+            })
+            return
+
+        if path == "/api/templates/apply":
+            # Interactive apply template to device
+            dev_id = body.get("device_id")
+            tmpl_id = body.get("template_id")
+            resolved_vars = body.get("resolved_variables", {})
+
+            device = next((d for d in data.get("devices", []) if d["id"] == dev_id), None)
+            if not device:
+                self._send_json(404, {"error": "تجهیز مورد نظر در دیتابیس یافت نشد."})
+                return
+
+            tmpl = next((t for t in data.get("templates", []) if t["id"] == tmpl_id), None)
+            if not tmpl:
+                self._send_json(404, {"error": "تمپلیت مورد نظر در مخزن الگوها یافت نشد."})
+                return
+
+            # Render commands with confirmed dynamic variables
+            raw_commands = tmpl.get("commands", "")
+            rendered_script = render_template_commands(raw_commands, resolved_vars)
+
+            # Simulate realistic terminal stream logs
+            logs = simulate_device_execution(tmpl, rendered_script, device)
+
+            # Update confirmed device properties in database
+            if "DEVICE_NAME" in resolved_vars and str(resolved_vars["DEVICE_NAME"]).strip():
+                device["name"] = str(resolved_vars["DEVICE_NAME"]).strip()
+            if "IP_ADDRESS" in resolved_vars and str(resolved_vars["IP_ADDRESS"]).strip():
+                device["ip"] = str(resolved_vars["IP_ADDRESS"]).strip()
+            if "BUILDING" in resolved_vars and str(resolved_vars["BUILDING"]).strip():
+                device["building"] = str(resolved_vars["BUILDING"]).strip()
+            if "FLOOR" in resolved_vars and str(resolved_vars["FLOOR"]).strip():
+                device["floor"] = str(resolved_vars["FLOOR"]).strip()
+            if "UNIT" in resolved_vars and str(resolved_vars["UNIT"]).strip():
+                device["unit"] = str(resolved_vars["UNIT"]).strip()
+            if "RACK" in resolved_vars and str(resolved_vars["RACK"]).strip():
+                device["rack"] = str(resolved_vars["RACK"]).strip()
+
+            device["has_unsaved_changes"] = False
+            device["last_seen"] = "هم اکنون (اعمال شده با تمپلیت)"
+            device["last_modified_time"] = time.strftime("%H:%M:%S")
+
+            save_data(data)
+
+            self._send_json(200, {
+                "success": True,
+                "message": f"تمپلیت «{tmpl.get('name')}» با موفقیت روی تجهیز {device.get('name')} اعمال و در حافظه ذخیره گردید.",
+                "device": device,
+                "rendered_script": rendered_script,
+                "logs": logs
+            })
+            return
+
         self._send_json(404, {"error": "Endpoint not found"})
 
     def do_PUT(self):
@@ -1219,6 +1328,24 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
             self._send_json(200, {"device": device, "message": "مشخصات تجهیز با موفقیت تغییر یافت."})
             return
 
+        if path.startswith("/api/templates/"):
+            tmpl_id = path.split("/")[3]
+            tmpl = next((t for t in data.get("templates", []) if t["id"] == tmpl_id), None)
+            if not tmpl:
+                self._send_json(404, {"error": "Template not found"})
+                return
+
+            for k in ["name", "vendor", "target_type", "role", "description", "default_cli_mode", "commands", "variables"]:
+                if k in body:
+                    tmpl[k] = body[k]
+            tmpl["updated_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+            save_data(data)
+            self._send_json(200, {
+                "template": tmpl,
+                "message": f"تمپلیت «{tmpl['name']}» با موفقیت به‌روزرسانی شد."
+            })
+            return
+
         self._send_json(404, {"error": "Endpoint not found"})
 
     def do_DELETE(self):
@@ -1240,6 +1367,18 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
             data["topology_links"] = [l for l in data.get("topology_links", []) if l.get("source") != dev_id and l.get("target") != dev_id]
             save_data(data)
             self._send_json(200, {"message": f"تجهیز {device.get('name')} با موفقیت حذف گردید."})
+            return
+
+        if path.startswith("/api/templates/"):
+            tmpl_id = path.split("/")[3]
+            tmpl = next((t for t in data.get("templates", []) if t["id"] == tmpl_id), None)
+            if not tmpl:
+                self._send_json(404, {"error": "Template not found"})
+                return
+
+            data["templates"] = [t for t in data.get("templates", []) if t["id"] != tmpl_id]
+            save_data(data)
+            self._send_json(200, {"message": f"تمپلیت «{tmpl.get('name')}» با موفقیت حذف گردید."})
             return
 
         self._send_json(404, {"error": "Endpoint not found"})

@@ -9,11 +9,12 @@ import {
   ChevronRight,
   ChevronLeft,
   Server,
-  Sparkles
+  Sparkles,
+  FileCode2
 } from 'lucide-react';
 import { APP_VERSION } from '../version';
 
-export type ActiveTab = 'dashboard' | 'devices' | 'schematic' | 'ports' | 'scanner';
+export type ActiveTab = 'dashboard' | 'devices' | 'schematic' | 'templates' | 'ports' | 'scanner';
 
 interface SidebarProps {
   activeTab: ActiveTab;
@@ -52,6 +53,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'موجودی تجهیزات شبکه',
       icon: Network,
       badge: devicesCount > 0 ? `${devicesCount}` : null,
+    },
+    {
+      id: 'templates' as ActiveTab,
+      label: 'الگوها و تمپلیت‌ها (Template)',
+      icon: FileCode2,
+      badge: null,
     },
   ];
 

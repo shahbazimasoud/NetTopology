@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
-import { X, Network, Server, Wifi, Router as RouterIcon, ShieldCheck, MapPin } from 'lucide-react';
-import { Device, DeviceType } from '../types';
+import React, { useState, useEffect } from 'react';
+import { X, Network, Server, Wifi, Router as RouterIcon, ShieldCheck, MapPin, FileCode2 } from 'lucide-react';
+import { Device, DeviceType, ConfigTemplate } from '../types';
+import { fetchTemplates } from '../services/api';
 
 interface AddDeviceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (device: Partial<Device>) => Promise<void>;
+  onAdd: (device: Partial<Device>) => Promise<Device | void>;
+  onDeviceCreatedWithTemplate?: (device: Device, templateId: string) => void;
 }
 
 export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
   isOpen,
   onClose,
   onAdd,
+  onDeviceCreatedWithTemplate,
 }) => {
   const [name, setName] = useState('');
   const [ip, setIp] = useState('');
@@ -26,8 +29,19 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
   const [cdpEnabled, setCdpEnabled] = useState(true);
   const [lldpEnabled, setLldpEnabled] = useState(true);
   const [snmpCommunity, setSnmpCommunity] = useState('public');
+  const [templates, setTemplates] = useState<ConfigTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    fetchTemplates()
+      .then((res) => {
+        setTemplates(res.templates);
+      })
+      .catch(() => {});
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -45,7 +59,7 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
     try {
       setIsSubmitting(true);
       setError(null);
-      await onAdd({
+      const created = await onAdd({
         name: name.trim(),
         ip: ip.trim(),
         type,
@@ -61,6 +75,11 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
         snmp_community: snmpCommunity.trim(),
       });
       onClose();
+
+      // If user selected a template for this newly introduced device, trigger interactive template applicator
+      if (selectedTemplateId && onDeviceCreatedWithTemplate && created) {
+        onDeviceCreatedWithTemplate(created as Device, selectedTemplateId);
+      }
     } catch (err: any) {
       setError(err.message || 'خطا در ثبت تجهیز');
     } finally {
@@ -292,6 +311,34 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
                 />
               </div>
             </div>
+          </div>
+
+          {/* Configuration Template Selection */}
+          <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                <FileCode2 className="w-4 h-4 text-indigo-600" />
+                <span>الگوی کانفیگ اولیه خودکار (Configuration Template):</span>
+              </label>
+              <span className="text-[10px] text-indigo-600 font-medium">سیسکو / میکروتیک</span>
+            </div>
+            <select
+              value={selectedTemplateId}
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
+              className="w-full px-2.5 py-2 rounded-lg bg-white border border-indigo-200 text-slate-800 text-xs focus:outline-none focus:border-indigo-500 font-sans"
+            >
+              <option value="">-- بدون تمپلیت (فقط ثبت در دیتابیس) --</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  [{t.vendor.toUpperCase()}] {t.name} ({t.role})
+                </option>
+              ))}
+            </select>
+            {selectedTemplateId && (
+              <p className="text-[11px] text-indigo-700 leading-relaxed">
+                پس از زدن دکمه «ثبت تجهیز»، صفحه تایید تعاملی آدرس IP و متغیرهای کانفیگ با مشخصات همین تجهیز باز خواهد شد تا دستورات در مد مناسب به تجهیز ارسال گردند.
+              </p>
+            )}
           </div>
 
           {/* Discovery Protocols CDP & LLDP */}

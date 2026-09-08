@@ -101,3 +101,47 @@ export interface VlanInfo {
   subnet: string;
   color: string;
 }
+
+export type TemplateVendor = 'cisco' | 'mikrotik' | 'generic';
+export type TemplateTargetType = 'switch' | 'router' | 'access_point' | 'all';
+
+export interface TemplateVariable {
+  name: string;
+  label: string;
+  description: string;
+  default_value?: string;
+  required: boolean;
+  type: 'ip' | 'subnet' | 'gateway' | 'text' | 'number' | 'vlan' | 'password';
+}
+
+export interface ConfigTemplate {
+  id: string;
+  name: string;
+  vendor: TemplateVendor;
+  target_type: TemplateTargetType;
+  role: string;
+  description: string;
+  default_cli_mode?: string;
+  commands: string;
+  variables: TemplateVariable[];
+  author?: string;
+  created_at?: string;
+  updated_at?: string;
+  is_builtin?: boolean;
+}
+
+export interface TemplateExecutionLog {
+  timestamp: string;
+  command: string;
+  prompt: string;
+  output: string;
+  status: 'ok' | 'info' | 'warn' | 'error';
+}
+
+export interface TemplateApplyResult {
+  success: boolean;
+  message: string;
+  device: Device;
+  rendered_script: string;
+  logs: TemplateExecutionLog[];
+}

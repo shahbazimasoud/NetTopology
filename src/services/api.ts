@@ -1,4 +1,4 @@
-import { Device, SwitchPort, CdpLldpNeighbor, TopologyData, VlanInfo } from '../types';
+import { Device, SwitchPort, CdpLldpNeighbor, TopologyData, VlanInfo, ConfigTemplate, TemplateApplyResult } from '../types';
 
 const API_BASE = '/api';
 
@@ -139,5 +139,65 @@ export async function resetDemoData(): Promise<any> {
     method: 'POST',
   });
   if (!res.ok) throw new Error('Failed to reset demo');
+  return res.json();
+}
+
+export async function fetchTemplates(): Promise<{ templates: ConfigTemplate[]; total: number }> {
+  const res = await fetch(`${API_BASE}/templates`);
+  if (!res.ok) throw new Error('Failed to fetch templates');
+  return res.json();
+}
+
+export async function fetchTemplate(id: string): Promise<{ template: ConfigTemplate }> {
+  const res = await fetch(`${API_BASE}/templates/${id}`);
+  if (!res.ok) throw new Error('Failed to fetch template');
+  return res.json();
+}
+
+export async function createTemplate(template: Partial<ConfigTemplate>): Promise<{ template: ConfigTemplate; message: string }> {
+  const res = await fetch(`${API_BASE}/templates`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(template),
+  });
+  if (!res.ok) throw new Error('Failed to create template');
+  return res.json();
+}
+
+export async function updateTemplate(
+  id: string,
+  updates: Partial<ConfigTemplate>
+): Promise<{ template: ConfigTemplate; message: string }> {
+  const res = await fetch(`${API_BASE}/templates/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error('Failed to update template');
+  return res.json();
+}
+
+export async function deleteTemplate(id: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE}/templates/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete template');
+  return res.json();
+}
+
+export async function applyTemplateToDevice(params: {
+  device_id: string;
+  template_id: string;
+  resolved_variables: Record<string, string | number>;
+}): Promise<TemplateApplyResult> {
+  const res = await fetch(`${API_BASE}/templates/apply`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || 'Failed to apply template to device');
+  }
   return res.json();
 }

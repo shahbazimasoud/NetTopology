@@ -16,7 +16,8 @@ import {
   AlertCircle,
   Terminal,
   AlertTriangle,
-  Save
+  Save,
+  FileCode2
 } from 'lucide-react';
 import { Device, DeviceType } from '../types';
 
@@ -27,6 +28,7 @@ interface DeviceListViewProps {
   onDeleteDevice: (id: string) => Promise<void>;
   onInspectPorts: (device: Device) => void;
   onConnectTerminal?: (device: Device) => void;
+  onApplyTemplate?: (device: Device) => void;
   onWriteMemory?: (deviceId: string) => Promise<void>;
   onRefreshAll: () => void;
   isRefreshing: boolean;
@@ -39,6 +41,7 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
   onDeleteDevice,
   onInspectPorts,
   onConnectTerminal,
+  onApplyTemplate,
   onWriteMemory,
   onRefreshAll,
   isRefreshing,
@@ -417,6 +420,18 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                             >
                               <Terminal className="w-3.5 h-3.5 text-emerald-400" />
                               <span>کانکت</span>
+                            </button>
+                          )}
+
+                          {/* Apply Template button */}
+                          {onApplyTemplate && (
+                            <button
+                              onClick={() => onApplyTemplate(dev)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-sans text-xs font-medium shadow-[0_0_10px_rgba(6,182,212,0.15)] transition active:scale-95"
+                              title="اعمال تعاملی تمپلیت کانفیگ استاندارد روی این تجهیز"
+                            >
+                              <FileCode2 className="w-3.5 h-3.5 text-cyan-400" />
+                              <span>تمپلیت</span>
                             </button>
                           )}
 

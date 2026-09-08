@@ -13,7 +13,7 @@
       "unit": "اتاق سرور اصلی (Main Server Room)",
       "rack": "Rack-A01",
       "is_online": true,
-      "latency_ms": 3.2,
+      "latency_ms": 2.6,
       "packet_loss": 0,
       "uptime": "142 days, 6 hours",
       "cdp_enabled": true,
@@ -36,7 +36,7 @@
       "unit": "اتاق سرور اصلی (Main Server Room)",
       "rack": "Rack-A02",
       "is_online": true,
-      "latency_ms": 3.5,
+      "latency_ms": 2.7,
       "packet_loss": 0,
       "uptime": "210 days, 14 hours",
       "cdp_enabled": true,
@@ -59,7 +59,7 @@
       "unit": "رک شبکه اداری (Network Closet A2)",
       "rack": "Rack-B01",
       "is_online": true,
-      "latency_ms": 1.3,
+      "latency_ms": 2.9,
       "packet_loss": 0,
       "uptime": "89 days, 2 hours",
       "cdp_enabled": true,
@@ -82,7 +82,7 @@
       "unit": "واحد توسعه نرم‌افزار (Dev Unit 302)",
       "rack": "Wall-Rack-302",
       "is_online": true,
-      "latency_ms": 2.9,
+      "latency_ms": 3.1,
       "packet_loss": 0,
       "uptime": "45 days, 11 hours",
       "cdp_enabled": true,
@@ -105,7 +105,7 @@
       "unit": "مرکز داده فرعی (MDF Room)",
       "rack": "Rack-MDF-B1",
       "is_online": true,
-      "latency_ms": 1.2,
+      "latency_ms": 1.4,
       "packet_loss": 0,
       "uptime": "73 days, 19 hours",
       "cdp_enabled": true,
@@ -151,7 +151,7 @@
       "unit": "لابی و سالن همایش (Main Lobby)",
       "rack": "سقف کاذب لابی",
       "is_online": true,
-      "latency_ms": 1.4,
+      "latency_ms": 2.4,
       "packet_loss": 0,
       "uptime": "142 days, 5 hours",
       "cdp_enabled": true,
@@ -174,7 +174,7 @@
       "unit": "واحد توسعه نرم‌افزار (Dev Unit 302)",
       "rack": "سقف راهرو شرقی",
       "is_online": true,
-      "latency_ms": 1.8,
+      "latency_ms": 2.0,
       "packet_loss": 0,
       "uptime": "45 days, 8 hours",
       "cdp_enabled": true,
@@ -197,7 +197,7 @@
       "unit": "مرکز داده فرعی (MDF Room)",
       "rack": "دیواری ورودی مهندسی",
       "is_online": true,
-      "latency_ms": 2.3,
+      "latency_ms": 1.4,
       "packet_loss": 0,
       "uptime": "73 days, 16 hours",
       "cdp_enabled": true,
@@ -972,6 +972,198 @@
         "poe_power": 0,
         "description": "Port 28 Access"
       }
+    ],
+    "dev-router-gw": [
+      {
+        "port_id": "Gi1/0/1",
+        "name": "GigabitEthernet1/0/1",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "trunk",
+        "vlan": 1,
+        "allowed_vlans": "1,10,20,30,50",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Client-PC-1",
+        "connected_type": "Host",
+        "poe_status": "delivering",
+        "poe_power": 12.5,
+        "description": "Port 1 Access",
+        "port_security_enabled": false,
+        "port_security_max_mac": 1,
+        "port_security_mode": "sticky",
+        "port_security_configured_mac": "",
+        "port_security_violation": "shutdown",
+        "port_security_status": "disabled",
+        "port_security_learned_macs": []
+      },
+      {
+        "port_id": "Gi1/0/2",
+        "name": "GigabitEthernet1/0/2",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "trunk",
+        "vlan": 1,
+        "allowed_vlans": "1,10,20,30,50",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Client-PC-2",
+        "connected_type": "Host",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "Port 2 Access",
+        "port_security_enabled": false,
+        "port_security_max_mac": 1,
+        "port_security_mode": "configured",
+        "port_security_configured_mac": "",
+        "port_security_violation": "shutdown",
+        "port_security_status": "disabled",
+        "port_security_learned_macs": []
+      },
+      {
+        "port_id": "Gi1/0/3",
+        "name": "GigabitEthernet1/0/3",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 40,
+        "allowed_vlans": "40",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Client-PC-3",
+        "connected_type": "Host",
+        "poe_status": "delivering",
+        "poe_power": 12.5,
+        "description": "Port 3 Access",
+        "port_security_enabled": true,
+        "port_security_max_mac": 2,
+        "port_security_mode": "sticky",
+        "port_security_configured_mac": "",
+        "port_security_violation": "shutdown",
+        "port_security_status": "secure-up",
+        "port_security_learned_macs": [
+          "0050.56a1.03fe"
+        ]
+      },
+      {
+        "port_id": "Gi1/0/4",
+        "name": "GigabitEthernet1/0/4",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 10,
+        "allowed_vlans": "10",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Client-PC-4",
+        "connected_type": "Host",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "Port 4 Access",
+        "port_security_enabled": false,
+        "port_security_max_mac": 1,
+        "port_security_mode": "configured",
+        "port_security_configured_mac": "0050.56a1.0401",
+        "port_security_violation": "shutdown",
+        "port_security_status": "disabled",
+        "port_security_learned_macs": []
+      },
+      {
+        "port_id": "Gi1/0/5",
+        "name": "GigabitEthernet1/0/5",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 20,
+        "allowed_vlans": "20",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Client-PC-5",
+        "connected_type": "Host",
+        "poe_status": "delivering",
+        "poe_power": 12.5,
+        "description": "Port 5 Access",
+        "port_security_enabled": true,
+        "port_security_max_mac": 1,
+        "port_security_mode": "sticky",
+        "port_security_configured_mac": "",
+        "port_security_violation": "shutdown",
+        "port_security_status": "secure-up",
+        "port_security_learned_macs": [
+          "0050.56a1.05fe"
+        ]
+      },
+      {
+        "port_id": "Gi1/0/6",
+        "name": "GigabitEthernet1/0/6",
+        "status": "down",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 30,
+        "allowed_vlans": "30",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Disconnected",
+        "connected_type": "None",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "Port 6 Access",
+        "port_security_enabled": false,
+        "port_security_max_mac": 1,
+        "port_security_mode": "configured",
+        "port_security_configured_mac": "0050.56a1.0601",
+        "port_security_violation": "shutdown",
+        "port_security_status": "disabled",
+        "port_security_learned_macs": []
+      },
+      {
+        "port_id": "Gi1/0/7",
+        "name": "GigabitEthernet1/0/7",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 40,
+        "allowed_vlans": "40",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Client-PC-7",
+        "connected_type": "Host",
+        "poe_status": "delivering",
+        "poe_power": 12.5,
+        "description": "Port 7 Access",
+        "port_security_enabled": true,
+        "port_security_max_mac": 2,
+        "port_security_mode": "sticky",
+        "port_security_configured_mac": "",
+        "port_security_violation": "shutdown",
+        "port_security_status": "secure-up",
+        "port_security_learned_macs": [
+          "0050.56a1.07fe"
+        ]
+      },
+      {
+        "port_id": "Gi1/0/8",
+        "name": "GigabitEthernet1/0/8",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 10,
+        "allowed_vlans": "10",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Client-PC-8",
+        "connected_type": "Host",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "Port 8 Access",
+        "port_security_enabled": false,
+        "port_security_max_mac": 1,
+        "port_security_mode": "configured",
+        "port_security_configured_mac": "0050.56a1.0801",
+        "port_security_violation": "shutdown",
+        "port_security_status": "disabled",
+        "port_security_learned_macs": []
+      }
     ]
   },
   "cdp_lldp_neighbors": [
@@ -1182,6 +1374,574 @@
       "name": "Out-of-Band Network Mgmt",
       "subnet": "10.99.99.0/24",
       "color": "#ec4899"
+    }
+  ],
+  "templates": [
+    {
+      "id": "tmpl-cisco-access-std",
+      "name": "کانفیگ استاندارد سوئیچ لایه دسترسی سیسکو (Catalyst Access Switch)",
+      "vendor": "cisco",
+      "target_type": "switch",
+      "role": "Access Switch",
+      "description": "پیکربندی پایه سوئیچ‌های اکسس سیسکو شامل Hostname، SVI مدیریتی، Spanning-Tree، SSH v2، CDP/LLDP، NTP و خطوط VTY",
+      "default_cli_mode": "GLOBAL_CONFIG",
+      "is_builtin": true,
+      "commands": "enable\nconfigure terminal\nhostname {{DEVICE_NAME}}\nip domain-name {{DOMAIN_NAME}}\ncrypto key generate rsa modulus 2048\nip ssh version 2\nusername admin privilege 15 secret {{ADMIN_PASSWORD}}\nline vty 0 4\n transport input ssh\n login local\n exec-timeout 15 0\nexit\n! Management SVI\nvlan {{MANAGEMENT_VLAN}}\n name MGT_VLAN\nexit\ninterface vlan {{MANAGEMENT_VLAN}}\n description SVI - {{BUILDING}} {{FLOOR}} {{UNIT}}\n ip address {{IP_ADDRESS}} {{SUBNET_MASK}}\n no shutdown\nexit\nip default-gateway {{DEFAULT_GATEWAY}}\n! STP & Discovery Protocols\nspanning-tree mode rapid-pvst\ncdp run\nlldp run\n! Network Services\nntp server {{NTP_SERVER}}\nlogging host {{DEFAULT_GATEWAY}}\nservice timestamps log datetime msec\nsnmp-server community public RO\nsnmp-server location \"{{BUILDING}}, {{FLOOR}}, {{UNIT}}, {{RACK}}\"\nend\nwrite memory",
+      "variables": [
+        {
+          "name": "DEVICE_NAME",
+          "label": "نام تجهیز (Hostname)",
+          "description": "نام هاست دیوایس در شبکه",
+          "default_value": "SW-ACCESS-01",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "IP_ADDRESS",
+          "label": "آدرس آی‌پی مدیریتی (Management IP)",
+          "description": "آدرس IP جهت دسترسی و مدیریت سوئیچ",
+          "default_value": "192.168.1.50",
+          "required": true,
+          "type": "ip"
+        },
+        {
+          "name": "SUBNET_MASK",
+          "label": "ماسک شبکه (Subnet Mask)",
+          "description": "ماسک زیرشبکه آی‌پی",
+          "default_value": "255.255.255.0",
+          "required": true,
+          "type": "subnet"
+        },
+        {
+          "name": "DEFAULT_GATEWAY",
+          "label": "گیت‌وی پیش‌فرض (Default Gateway)",
+          "description": "آدرس روتر یا گیت‌وی خروجی",
+          "default_value": "192.168.1.254",
+          "required": true,
+          "type": "gateway"
+        },
+        {
+          "name": "MANAGEMENT_VLAN",
+          "label": "شماره ویلن مدیریت (Management VLAN)",
+          "description": "شناسه VLAN جهت ارتباط لایه ۳ SVI",
+          "default_value": "1",
+          "required": true,
+          "type": "vlan"
+        },
+        {
+          "name": "BUILDING",
+          "label": "ساختمان استقرار",
+          "description": "نام ساختمان محل نصب",
+          "default_value": "ساختمان مرکزی",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "FLOOR",
+          "label": "طبقه",
+          "description": "شماره یا نام طبقه",
+          "default_value": "طبقه ۱",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "UNIT",
+          "label": "واحد / اتاق",
+          "description": "واحد یا اتاق سرور",
+          "default_value": "اتاق رک",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "RACK",
+          "label": "شماره رک",
+          "description": "نام یا کد رک مستقر",
+          "default_value": "Rack-01",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "DOMAIN_NAME",
+          "label": "دامنه شبکه (Domain Name)",
+          "description": "دامنه مورد استفاده در SSH",
+          "default_value": "corp.local",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "ADMIN_PASSWORD",
+          "label": "رمز عبور SSH کاربر admin",
+          "description": "رمز عبور رمزنگاری شده کلاینت",
+          "default_value": "Cisco@2026!",
+          "required": true,
+          "type": "password"
+        },
+        {
+          "name": "NTP_SERVER",
+          "label": "سرور زمان (NTP Server)",
+          "description": "سرور هماهنگ‌سازی زمان شبکه",
+          "default_value": "192.168.1.254",
+          "required": false,
+          "type": "ip"
+        }
+      ]
+    },
+    {
+      "id": "tmpl-cisco-core-dist",
+      "name": "کانفیگ سوئیچ Core / Distribution سیسکو (Routing & Trunk Matrix)",
+      "vendor": "cisco",
+      "target_type": "switch",
+      "role": "Core Switch",
+      "description": "پیکربندی سوئیچ لایه ۳ هسته شامل مسیریابی بین ویلن‌ها (Inter-VLAN Routing)، OSPF، پورت‌های ترانک آپ‌لینک و تعاریف VLANهای سازمانی",
+      "default_cli_mode": "GLOBAL_CONFIG",
+      "is_builtin": true,
+      "commands": "enable\nconfigure terminal\nhostname {{DEVICE_NAME}}\nip routing\nip domain-name {{DOMAIN_NAME}}\ncrypto key generate rsa modulus 2048\nip ssh version 2\nusername admin privilege 15 secret {{ADMIN_PASSWORD}}\nline vty 0 4\n transport input ssh\n login local\nexit\n! Enterprise VLAN Definitions\nvlan 10\n name SERVERS_DMZ\nvlan 20\n name STAFF_DATA\nvlan 30\n name IP_TELEPHONY\nvlan {{MANAGEMENT_VLAN}}\n name NETWORK_MANAGEMENT\nexit\n! Routing SVIs\ninterface vlan 10\n description Gateway for Servers\n ip address 10.10.10.1 255.255.255.0\n no shutdown\nexit\ninterface vlan 20\n description Gateway for Staff Workstations\n ip address 10.20.20.1 255.255.255.0\n no shutdown\nexit\ninterface vlan {{MANAGEMENT_VLAN}}\n description Core Switch SVI - {{BUILDING}}\n ip address {{IP_ADDRESS}} {{SUBNET_MASK}}\n no shutdown\nexit\n! Dynamic Routing OSPF\nrouter ospf 1\n router-id {{IP_ADDRESS}}\n network 10.10.10.0 0.0.0.255 area 0\n network 10.20.20.0 0.0.0.255 area 0\n network {{IP_ADDRESS}} 0.0.0.0 area 0\nexit\n! Uplink Trunk Configuration\ninterface GigabitEthernet1/0/48\n description Trunk Uplink to Gateway {{DEFAULT_GATEWAY}}\n switchport mode trunk\n switchport trunk allowed vlan 10,20,30,{{MANAGEMENT_VLAN}}\n no shutdown\nexit\nspanning-tree mode rapid-pvst\nspanning-tree root primary\ncdp run\nlldp run\nend\nwrite memory",
+      "variables": [
+        {
+          "name": "DEVICE_NAME",
+          "label": "نام سوئیچ Core",
+          "description": "نام هاست سوئیچ کور",
+          "default_value": "SW-CORE-01",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "IP_ADDRESS",
+          "label": "آدرس آی‌پی مدیریتی SVI",
+          "description": "آدرس IP مدیریتی سوئیچ کور",
+          "default_value": "192.168.1.1",
+          "required": true,
+          "type": "ip"
+        },
+        {
+          "name": "SUBNET_MASK",
+          "label": "ماسک شبکه",
+          "description": "ماسک زیرشبکه",
+          "default_value": "255.255.255.0",
+          "required": true,
+          "type": "subnet"
+        },
+        {
+          "name": "DEFAULT_GATEWAY",
+          "label": "گیت‌وی روتر لبه",
+          "description": "آدرس IP روتر اصلی",
+          "default_value": "192.168.1.254",
+          "required": true,
+          "type": "gateway"
+        },
+        {
+          "name": "MANAGEMENT_VLAN",
+          "label": "ویلن مدیریت شبکه",
+          "description": "شناسه VLAN مدیریت",
+          "default_value": "1",
+          "required": true,
+          "type": "vlan"
+        },
+        {
+          "name": "BUILDING",
+          "label": "ساختمان",
+          "description": "ساختمان محل استقرار",
+          "default_value": "ساختمان مرکزی (Central Bldg)",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "DOMAIN_NAME",
+          "label": "دامنه شبکه",
+          "description": "دامنه احراز هویت",
+          "default_value": "corp.local",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "ADMIN_PASSWORD",
+          "label": "رمز عبور SSH",
+          "description": "رمز عبور کاربر ادمین",
+          "default_value": "CiscoCore@2026!",
+          "required": true,
+          "type": "password"
+        }
+      ]
+    },
+    {
+      "id": "tmpl-cisco-router-edge",
+      "name": "کانفیگ روتر لبه و شعبه سیسکو (Cisco ISR Edge Router - WAN/NAT/DHCP)",
+      "vendor": "cisco",
+      "target_type": "router",
+      "role": "Edge Gateway",
+      "description": "پیکربندی روتر شعبه یا مرزی سیسکو شامل تنظیمات اینترفیس WAN، LAN Gateway، NAT Overload، DHCP Pool و فایروال ACL",
+      "default_cli_mode": "GLOBAL_CONFIG",
+      "is_builtin": true,
+      "commands": "enable\nconfigure terminal\nhostname {{DEVICE_NAME}}\nip domain-name {{DOMAIN_NAME}}\nip ssh version 2\nusername admin privilege 15 secret {{ADMIN_PASSWORD}}\nline vty 0 4\n transport input ssh\n login local\nexit\n! WAN Internet Interface\ninterface GigabitEthernet0/0/0\n description WAN Internet Uplink - ISP\n ip address {{WAN_IP_ADDRESS}} 255.255.255.252\n ip nat outside\n no shutdown\nexit\n! LAN Gateway Interface\ninterface GigabitEthernet0/0/1\n description LAN Default Gateway - {{BUILDING}} {{FLOOR}}\n ip address {{IP_ADDRESS}} {{SUBNET_MASK}}\n ip nat inside\n no shutdown\nexit\n! Static Default Route to Internet\nip route 0.0.0.0 0.0.0.0 {{DEFAULT_GATEWAY}}\n! NAT Overload PAT\naccess-list 100 permit ip 192.168.0.0 0.0.255.255 any\nip nat inside source list 100 interface GigabitEthernet0/0/0 overload\n! LAN DHCP Service\nip dhcp pool LAN_CLIENTS\n network 192.168.1.0 255.255.255.0\n default-router {{IP_ADDRESS}}\n dns-server {{DNS_SERVER}} 1.1.1.1\n lease 1\nexit\nntp server {{NTP_SERVER}}\nservice timestamps log datetime msec\nlogging buffered 64000\nend\nwrite memory",
+      "variables": [
+        {
+          "name": "DEVICE_NAME",
+          "label": "نام روتر (Router Hostname)",
+          "description": "نام روتر در شبکه",
+          "default_value": "RT-EDGE-01",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "IP_ADDRESS",
+          "label": "آدرس آی‌پی گیت‌وی LAN (Gateway IP)",
+          "description": "آدرس اینترفیس داخلی که گیت‌وی کلاینت‌هاست",
+          "default_value": "192.168.1.254",
+          "required": true,
+          "type": "ip"
+        },
+        {
+          "name": "SUBNET_MASK",
+          "label": "ماسک شبکه LAN",
+          "description": "سابنت ماسک شبکه محلی",
+          "default_value": "255.255.255.0",
+          "required": true,
+          "type": "subnet"
+        },
+        {
+          "name": "WAN_IP_ADDRESS",
+          "label": "آدرس آی‌پی اینترفیس WAN",
+          "description": "آدرس IP استاتیک دریافت شده از پرووایدر ISP",
+          "default_value": "89.165.12.18",
+          "required": true,
+          "type": "ip"
+        },
+        {
+          "name": "DEFAULT_GATEWAY",
+          "label": "آدرس گیت‌وی اینترنت (ISP Gateway)",
+          "description": "Next-hop گیت‌وی متصل به ISP",
+          "default_value": "89.165.12.17",
+          "required": true,
+          "type": "gateway"
+        },
+        {
+          "name": "BUILDING",
+          "label": "ساختمان",
+          "description": "محل استقرار روتر",
+          "default_value": "ساختمان مرکزی (Central Bldg)",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "FLOOR",
+          "label": "طبقه",
+          "description": "طبقه استقرار روتر",
+          "default_value": "طبقه ۱ (Floor 1)",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "DNS_SERVER",
+          "label": "آدرس سرور DNS",
+          "description": "دی‌ان‌اس کلاینت‌ها",
+          "default_value": "8.8.8.8",
+          "required": true,
+          "type": "ip"
+        },
+        {
+          "name": "NTP_SERVER",
+          "label": "سرور زمان NTP",
+          "description": "آدرس تایم‌سرور",
+          "default_value": "pool.ntp.org",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "DOMAIN_NAME",
+          "label": "دامنه",
+          "description": "Domain name",
+          "default_value": "corp.local",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "ADMIN_PASSWORD",
+          "label": "رمز عبور ادمین",
+          "description": "رمز عبور امنیتی SSH",
+          "default_value": "Router@2026!",
+          "required": true,
+          "type": "password"
+        }
+      ]
+    },
+    {
+      "id": "tmpl-mikrotik-router-gateway",
+      "name": "کانفیگ روتر میکروتیک (MikroTik RouterOS Gateway & Firewall NAT)",
+      "vendor": "mikrotik",
+      "target_type": "router",
+      "role": "Router / Gateway",
+      "description": "پیکربندی کامل روتربورد میکروتیک شامل System Identity، بریج LAN، آی‌پی‌ها، روت دیفالت، فایروال Masquerade، FastTrack و DHCP Server",
+      "default_cli_mode": "ROUTEROS",
+      "is_builtin": true,
+      "commands": "# MikroTik RouterOS Configuration Script\n# Target: {{DEVICE_NAME}} - Location: {{BUILDING}} / {{FLOOR}}\n/system identity set name=\"{{DEVICE_NAME}}\"\n\n# Create LAN Bridge and Assign Ports\n/interface bridge add name=bridge-lan comment=\"Main Local Bridge - {{BUILDING}} {{FLOOR}}\"\n/interface bridge port add bridge=bridge-lan interface=ether2 comment=\"LAN Port 2\"\n/interface bridge port add bridge=bridge-lan interface=ether3 comment=\"LAN Port 3\"\n/interface bridge port add bridge=bridge-lan interface=ether4 comment=\"LAN Port 4\"\n/interface bridge port add bridge=bridge-lan interface=ether5 comment=\"LAN Port 5\"\n\n# IP Address Assignment\n/ip address add address={{IP_ADDRESS}}/{{SUBNET_CIDR}} interface=bridge-lan comment=\"LAN Gateway IP\"\n/ip address add address={{WAN_IP_ADDRESS}}/30 interface=ether1 comment=\"WAN ISP Uplink\"\n\n# Default Gateway Route\n/ip route add gateway={{DEFAULT_GATEWAY}} comment=\"Default Internet Gateway Route\"\n\n# DNS Resolution\n/ip dns set servers={{DNS_SERVER}},1.1.1.1 allow-remote-requests=yes\n\n# DHCP Server Setup\n/ip pool add name=dhcp-pool-lan ranges=192.168.1.100-192.168.1.200\n/ip dhcp-server add name=dhcp-lan interface=bridge-lan address-pool=dhcp-pool-lan disabled=no lease-time=12h\n/ip dhcp-server network add address=192.168.1.0/24 gateway={{IP_ADDRESS}} dns-server={{DNS_SERVER}} comment=\"LAN Clients Subnet\"\n\n# Firewall & NAT Masquerade\n/ip firewall nat add chain=srcnat out-interface=ether1 action=masquerade comment=\"WAN NAT Masquerade\"\n/ip firewall filter add chain=forward connection-state=established,related action=accept comment=\"FastTrack Established/Related\"\n/ip firewall filter add chain=forward connection-state=invalid action=drop comment=\"Drop Invalid Connections\"\n\n# Security Hardening\n/ip service set telnet disabled=yes ftp disabled=yes www disabled=no api disabled=yes api-ssl disabled=yes\n\n# Time and Localization\n/system clock set time-zone-name=Asia/Tehran\n/system ntp client set enabled=yes primary-ntp={{NTP_SERVER}}",
+      "variables": [
+        {
+          "name": "DEVICE_NAME",
+          "label": "نام روتربورد (System Identity)",
+          "description": "نام شناسه روتر در میکروتیک",
+          "default_value": "RB-CORE-GATEWAY",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "IP_ADDRESS",
+          "label": "آدرس آی‌پی بریج محلی (LAN Gateway)",
+          "description": "آدرس IP گیت‌وی LAN در اینترفیس bridge",
+          "default_value": "192.168.1.254",
+          "required": true,
+          "type": "ip"
+        },
+        {
+          "name": "SUBNET_CIDR",
+          "label": "پیشوند شبکه (CIDR Prefix)",
+          "description": "مثلا 24 برای 255.255.255.0",
+          "default_value": "24",
+          "required": true,
+          "type": "number"
+        },
+        {
+          "name": "WAN_IP_ADDRESS",
+          "label": "آدرس آی‌پی اینترفیس WAN",
+          "description": "آدرس IP روی اینترفیس ether1",
+          "default_value": "89.165.12.18",
+          "required": true,
+          "type": "ip"
+        },
+        {
+          "name": "DEFAULT_GATEWAY",
+          "label": "آدرس گیت‌وی اینترنت (ISP Gateway)",
+          "description": "گیت‌وی خروجی",
+          "default_value": "89.165.12.17",
+          "required": true,
+          "type": "gateway"
+        },
+        {
+          "name": "BUILDING",
+          "label": "ساختمان",
+          "description": "نام ساختمان",
+          "default_value": "ساختمان مرکزی",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "FLOOR",
+          "label": "طبقه",
+          "description": "طبقه استقرار",
+          "default_value": "طبقه ۱",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "DNS_SERVER",
+          "label": "سرور DNS",
+          "description": "آدرس سرور دی‌ان‌اس",
+          "default_value": "8.8.8.8",
+          "required": true,
+          "type": "ip"
+        },
+        {
+          "name": "NTP_SERVER",
+          "label": "سرور زمان NTP",
+          "description": "آی‌پی سرور زمان",
+          "default_value": "192.168.1.254",
+          "required": false,
+          "type": "ip"
+        }
+      ]
+    },
+    {
+      "id": "tmpl-mikrotik-crs-switch",
+      "name": "کانفیگ سوئیچ میکروتیک (MikroTik CRS Switch + VLAN Hardware Filtering)",
+      "vendor": "mikrotik",
+      "target_type": "switch",
+      "role": "Distribution Switch",
+      "description": "پیکربندی سوئیچ‌های سری CRS/CSS میکروتیک با Hardware VLAN Filtering روی Bridge، اینترفیس مدیریتی VLAN و آپ‌لینک‌های ترانک",
+      "default_cli_mode": "ROUTEROS",
+      "is_builtin": true,
+      "commands": "# MikroTik CRS Hardware VLAN Switch Configuration\n/system identity set name=\"{{DEVICE_NAME}}\"\n\n# Define Hardware Offloaded Bridge with VLAN Filtering\n/interface bridge add name=bridge-sw vlan-filtering=yes comment=\"Hardware VLAN Bridge - {{BUILDING}} {{FLOOR}}\"\n\n# Add Trunk Uplink Ports\n/interface bridge port add bridge=bridge-sw interface=sfp-sfpplus1 frame-types=admit-only-vlan-tagged comment=\"Trunk Uplink\"\n\n# Add Access Ports for Users\n/interface bridge port add bridge=bridge-sw interface=ether1 pvid=10 frame-types=admit-only-untagged-and-priority-tagged\n/interface bridge port add bridge=bridge-sw interface=ether2 pvid=10 frame-types=admit-only-untagged-and-priority-tagged\n/interface bridge port add bridge=bridge-sw interface=ether3 pvid=20 frame-types=admit-only-untagged-and-priority-tagged\n\n# Bridge VLAN Table\n/interface bridge vlan add bridge=bridge-sw tagged=bridge-sw,sfp-sfpplus1 vlan-ids={{MANAGEMENT_VLAN}} comment=\"Mgmt VLAN\"\n/interface bridge vlan add bridge=bridge-sw tagged=sfp-sfpplus1 untagged=ether1,ether2 vlan-ids=10 comment=\"Users\"\n/interface bridge vlan add bridge=bridge-sw tagged=sfp-sfpplus1 untagged=ether3 vlan-ids=20 comment=\"VoIP\"\n\n# Management Interface\n/interface vlan add name=vlan-mgmt vlan-id={{MANAGEMENT_VLAN}} interface=bridge-sw comment=\"Management SVI\"\n/ip address add address={{IP_ADDRESS}}/{{SUBNET_CIDR}} interface=vlan-mgmt comment=\"Management IP\"\n/ip route add gateway={{DEFAULT_GATEWAY}} comment=\"Default Management Gateway\"\n\n# Services\n/ip dns set servers={{DNS_SERVER}}\n/system ntp client set enabled=yes primary-ntp={{NTP_SERVER}}",
+      "variables": [
+        {
+          "name": "DEVICE_NAME",
+          "label": "نام سوئیچ میکروتیک (System Identity)",
+          "description": "نام هاست سوئیچ",
+          "default_value": "CRS-SW-01",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "IP_ADDRESS",
+          "label": "آدرس آی‌پی مدیریتی (Management IP)",
+          "description": "آدرس IP سوئیچ",
+          "default_value": "192.168.1.60",
+          "required": true,
+          "type": "ip"
+        },
+        {
+          "name": "SUBNET_CIDR",
+          "label": "پیشوند سابنت (CIDR)",
+          "description": "مثلا 24 برای 255.255.255.0",
+          "default_value": "24",
+          "required": true,
+          "type": "number"
+        },
+        {
+          "name": "DEFAULT_GATEWAY",
+          "label": "گیت‌وی پیش‌فرض",
+          "description": "آدرس روتر یا گیت‌وی شبکه",
+          "default_value": "192.168.1.254",
+          "required": true,
+          "type": "gateway"
+        },
+        {
+          "name": "MANAGEMENT_VLAN",
+          "label": "شماره ویلن مدیریت",
+          "description": "شناسه VLAN مدیریت سوئیچ",
+          "default_value": "1",
+          "required": true,
+          "type": "vlan"
+        },
+        {
+          "name": "BUILDING",
+          "label": "ساختمان",
+          "description": "ساختمان استقرار",
+          "default_value": "ساختمان مرکزی",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "FLOOR",
+          "label": "طبقه",
+          "description": "طبقه استقرار",
+          "default_value": "طبقه ۲",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "DNS_SERVER",
+          "label": "سرور DNS",
+          "description": "آدرس دی‌ان‌اس",
+          "default_value": "8.8.8.8",
+          "required": false,
+          "type": "ip"
+        },
+        {
+          "name": "NTP_SERVER",
+          "label": "سرور زمان NTP",
+          "description": "آدرس NTP",
+          "default_value": "192.168.1.254",
+          "required": false,
+          "type": "ip"
+        }
+      ]
+    },
+    {
+      "id": "tmpl-floor-access-cisco",
+      "name": "کانفیگ سوئیچ طبقات و واحدهای اداری (Building / Floor Customized Switch)",
+      "vendor": "cisco",
+      "target_type": "switch",
+      "role": "Access Switch",
+      "description": "پیکربندی اختصاصی متناسب با نام ساختمان، طبقه، شماره واحد، رک و بنر MOTD سازمانی استاندارد سیسکو",
+      "default_cli_mode": "GLOBAL_CONFIG",
+      "is_builtin": true,
+      "commands": "enable\nconfigure terminal\nhostname {{DEVICE_NAME}}\nbanner motd ^C\n********************************************************************\n* NOTICE: AUTHORIZED CORPORATE ACCESS ONLY                         *\n* LOCATION: {{BUILDING}} - {{FLOOR}} - {{UNIT}}                    *\n* RACK ID: {{RACK}} | MGMT IP: {{IP_ADDRESS}}                      *\n* ALL SESSIONS ARE MONITORED AND LOGGED.                           *\n********************************************************************\n^C\nip domain-name {{DOMAIN_NAME}}\nip ssh version 2\nusername admin privilege 15 secret {{ADMIN_PASSWORD}}\nline vty 0 4\n transport input ssh\n login local\n exec-timeout 10 0\nexit\ninterface vlan {{MANAGEMENT_VLAN}}\n description Floor Management - {{BUILDING}} {{FLOOR}}\n ip address {{IP_ADDRESS}} {{SUBNET_MASK}}\n no shutdown\nexit\nip default-gateway {{DEFAULT_GATEWAY}}\ncdp run\nlldp run\nntp server {{NTP_SERVER}}\nservice timestamps log datetime msec\nlogging buffered 32000\nsnmp-server community public RO\nsnmp-server location \"{{BUILDING}}, {{FLOOR}}, {{UNIT}}, {{RACK}}\"\nend\nwrite memory",
+      "variables": [
+        {
+          "name": "DEVICE_NAME",
+          "label": "نام تجهیز (Hostname)",
+          "description": "نام سوئیچ در شبکه",
+          "default_value": "SW-BLDG-B-FL1",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "IP_ADDRESS",
+          "label": "آدرس آی‌پی مدیریتی",
+          "description": "آدرس IP سوئیچ",
+          "default_value": "192.168.1.30",
+          "required": true,
+          "type": "ip"
+        },
+        {
+          "name": "SUBNET_MASK",
+          "label": "ماسک زیرشبکه",
+          "description": "Subnet mask",
+          "default_value": "255.255.255.0",
+          "required": true,
+          "type": "subnet"
+        },
+        {
+          "name": "DEFAULT_GATEWAY",
+          "label": "گیت‌وی پیش‌فرض",
+          "description": "گیت‌وی شبکه",
+          "default_value": "192.168.1.254",
+          "required": true,
+          "type": "gateway"
+        },
+        {
+          "name": "MANAGEMENT_VLAN",
+          "label": "شماره ویلن مدیریت",
+          "description": "VLAN ID",
+          "default_value": "1",
+          "required": true,
+          "type": "vlan"
+        },
+        {
+          "name": "BUILDING",
+          "label": "ساختمان استقرار",
+          "description": "نام ساختمان",
+          "default_value": "ساختمان اداری B",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "FLOOR",
+          "label": "طبقه",
+          "description": "شماره یا نام طبقه",
+          "default_value": "طبقه ۱ (Floor 1)",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "UNIT",
+          "label": "واحد / اتاق",
+          "description": "واحد استقرار",
+          "default_value": "واحد فناوری اطلاعات",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "RACK",
+          "label": "شماره رک",
+          "description": "کابینت یا رک",
+          "default_value": "Rack-B01",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "DOMAIN_NAME",
+          "label": "دامنه",
+          "description": "Domain Name",
+          "default_value": "corp.local",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "ADMIN_PASSWORD",
+          "label": "رمز عبور SSH",
+          "description": "Password",
+          "default_value": "Floor@2026!",
+          "required": true,
+          "type": "password"
+        },
+        {
+          "name": "NTP_SERVER",
+          "label": "سرور زمان NTP",
+          "description": "NTP IP",
+          "default_value": "192.168.1.254",
+          "required": false,
+          "type": "ip"
+        }
+      ]
     }
   ]
 }

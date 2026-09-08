@@ -6,9 +6,11 @@ import { DeviceListView } from './components/DeviceListView';
 import { SchematicTopologyView } from './components/SchematicTopologyView';
 import { PortManagementView } from './components/PortManagementView';
 import { CdpLldpScannerView } from './components/CdpLldpScannerView';
+import { TemplateManagementView } from './components/TemplateManagementView';
 import { AddDeviceModal } from './components/AddDeviceModal';
 import { PortInspectorModal } from './components/PortInspectorModal';
 import { CiscoTerminalModal } from './components/CiscoTerminalModal';
+import { ApplyTemplateModal } from './components/ApplyTemplateModal';
 import { ReleaseNotesModal } from './components/ReleaseNotesModal';
 import { APP_VERSION } from './version';
 import { Device, TopologyData } from './types';
@@ -67,6 +69,8 @@ export default function App() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [portInspectorDevice, setPortInspectorDevice] = useState<Device | null>(null);
   const [terminalDevice, setTerminalDevice] = useState<Device | null>(null);
+  const [applyTemplateDevice, setApplyTemplateDevice] = useState<Device | null>(null);
+  const [applyPreselectedTemplateId, setApplyPreselectedTemplateId] = useState<string | undefined>(undefined);
   const [isReleaseNotesOpen, setIsReleaseNotesOpen] = useState(false);
 
   // Initial load
@@ -158,9 +162,10 @@ export default function App() {
 
   // Add new device
   const handleAddDevice = async (newDev: Partial<Device>) => {
-    await addDevice(newDev);
+    const res = await addDevice(newDev);
     await loadData();
     showToast(`تجهیز جدید ${newDev.name} با موفقیت به شبکه افزوده شد.`);
+    return res.device;
   };
 
   // Delete device
@@ -260,9 +265,21 @@ export default function App() {
               onDeleteDevice={handleDeleteDevice}
               onInspectPorts={(dev) => setPortInspectorDevice(dev)}
               onConnectTerminal={(dev) => setTerminalDevice(dev)}
+              onApplyTemplate={(dev) => {
+                setApplyTemplateDevice(dev);
+                setApplyPreselectedTemplateId(undefined);
+              }}
               onWriteMemory={handleWriteMemory}
               onRefreshAll={handleRefreshAll}
               isRefreshing={isRefreshing}
+            />
+          )}
+
+          {activeTab === 'templates' && (
+            <TemplateManagementView
+              devices={devices}
+              onDeviceUpdated={loadData}
+              onOpenTerminal={(dev) => setTerminalDevice(dev)}
             />
           )}
 
@@ -337,6 +354,26 @@ export default function App() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddDevice}
+        onDeviceCreatedWithTemplate={(createdDevice, templateId) => {
+          setApplyTemplateDevice(createdDevice);
+          setApplyPreselectedTemplateId(templateId);
+        }}
+      />
+
+      {/* Apply Template Interactive Modal */}
+      <ApplyTemplateModal
+        isOpen={!!applyTemplateDevice}
+        onClose={() => {
+          setApplyTemplateDevice(null);
+          setApplyPreselectedTemplateId(undefined);
+        }}
+        targetDevice={applyTemplateDevice}
+        allDevices={devices}
+        preselectedTemplateId={applyPreselectedTemplateId}
+        onApplied={(updatedDevice) => {
+          loadData();
+          showToast(`کانفیگ تمپلیت با موفقیت بر روی «${updatedDevice.name}» اعمال گردید.`);
+        }}
       />
 
       {/* Port Inspector Modal */}
