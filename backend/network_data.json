@@ -21,7 +21,9 @@
       "snmp_community": "public",
       "firmware": "Cisco IOS-XE 17.09.03",
       "last_seen": "هم اکنون (Just now)",
-      "total_ports": 48
+      "total_ports": 48,
+      "has_unsaved_changes": false,
+      "last_modified_time": "09:54:55"
     },
     {
       "id": "dev-router-gw",
@@ -36,7 +38,7 @@
       "unit": "اتاق سرور اصلی (Main Server Room)",
       "rack": "Rack-A02",
       "is_online": true,
-      "latency_ms": 1.7,
+      "latency_ms": 1.8,
       "packet_loss": 0,
       "uptime": "210 days, 14 hours",
       "cdp_enabled": true,
@@ -59,7 +61,7 @@
       "unit": "رک شبکه اداری (Network Closet A2)",
       "rack": "Rack-B01",
       "is_online": true,
-      "latency_ms": 3.2,
+      "latency_ms": 1.5,
       "packet_loss": 0,
       "uptime": "89 days, 2 hours",
       "cdp_enabled": true,
@@ -82,7 +84,7 @@
       "unit": "واحد توسعه نرم‌افزار (Dev Unit 302)",
       "rack": "Wall-Rack-302",
       "is_online": true,
-      "latency_ms": 0.9,
+      "latency_ms": 1.3,
       "packet_loss": 0,
       "uptime": "45 days, 11 hours",
       "cdp_enabled": true,
@@ -105,7 +107,7 @@
       "unit": "مرکز داده فرعی (MDF Room)",
       "rack": "Rack-MDF-B1",
       "is_online": true,
-      "latency_ms": 3.4,
+      "latency_ms": 0.9,
       "packet_loss": 0,
       "uptime": "73 days, 19 hours",
       "cdp_enabled": true,
@@ -151,15 +153,17 @@
       "unit": "لابی و سالن همایش (Main Lobby)",
       "rack": "سقف کاذب لابی",
       "is_online": true,
-      "latency_ms": 2.8,
+      "latency_ms": 3.0,
       "packet_loss": 0,
       "uptime": "142 days, 5 hours",
       "cdp_enabled": true,
       "lldp_enabled": true,
       "snmp_community": "public",
       "firmware": "Capwap 8.10.162.0",
-      "last_seen": "هم اکنون (Just now)",
-      "total_ports": 2
+      "last_seen": "هم اکنون (اعمال شده با تمپلیت)",
+      "total_ports": 2,
+      "has_unsaved_changes": false,
+      "last_modified_time": "10:38:37"
     },
     {
       "id": "dev-ap-bldg-a-f3",
@@ -174,7 +178,7 @@
       "unit": "واحد توسعه نرم‌افزار (Dev Unit 302)",
       "rack": "سقف راهرو شرقی",
       "is_online": true,
-      "latency_ms": 1.9,
+      "latency_ms": 1.3,
       "packet_loss": 0,
       "uptime": "45 days, 8 hours",
       "cdp_enabled": true,
@@ -197,7 +201,7 @@
       "unit": "مرکز داده فرعی (MDF Room)",
       "rack": "دیواری ورودی مهندسی",
       "is_online": true,
-      "latency_ms": 1.6,
+      "latency_ms": 0.9,
       "packet_loss": 0,
       "uptime": "73 days, 16 hours",
       "cdp_enabled": true,
@@ -1164,6 +1168,54 @@
         "port_security_status": "disabled",
         "port_security_learned_macs": []
       }
+    ],
+    "dev-ap-bldg-a-f1": [
+      {
+        "port_id": "Gi1/0/1",
+        "name": "GigabitEthernet1/0/1",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "trunk",
+        "vlan": 1,
+        "allowed_vlans": "1,10,20,30,50",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Client-PC-1",
+        "connected_type": "Host",
+        "poe_status": "delivering",
+        "poe_power": 12.5,
+        "description": "Port 1 Access",
+        "port_security_enabled": false,
+        "port_security_max_mac": 1,
+        "port_security_mode": "sticky",
+        "port_security_configured_mac": "",
+        "port_security_violation": "shutdown",
+        "port_security_status": "disabled",
+        "port_security_learned_macs": []
+      },
+      {
+        "port_id": "Gi1/0/2",
+        "name": "GigabitEthernet1/0/2",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "trunk",
+        "vlan": 1,
+        "allowed_vlans": "1,10,20,30,50",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Client-PC-2",
+        "connected_type": "Host",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "Port 2 Access",
+        "port_security_enabled": false,
+        "port_security_max_mac": 1,
+        "port_security_mode": "configured",
+        "port_security_configured_mac": "",
+        "port_security_violation": "shutdown",
+        "port_security_status": "disabled",
+        "port_security_learned_macs": []
+      }
     ]
   },
   "cdp_lldp_neighbors": [
@@ -1178,7 +1230,7 @@
       "capabilities": "Router",
       "vlan": 1,
       "holdtime": 180,
-      "timestamp": "11:49:57"
+      "timestamp": "09:49:05"
     },
     {
       "local_device_id": "dev-core-01",
@@ -1191,7 +1243,7 @@
       "capabilities": "Switch",
       "vlan": 1,
       "holdtime": 180,
-      "timestamp": "11:49:57"
+      "timestamp": "09:49:05"
     },
     {
       "local_device_id": "dev-core-01",
@@ -1204,7 +1256,7 @@
       "capabilities": "Switch",
       "vlan": 1,
       "holdtime": 180,
-      "timestamp": "11:49:57"
+      "timestamp": "09:49:05"
     },
     {
       "local_device_id": "dev-core-01",
@@ -1217,7 +1269,7 @@
       "capabilities": "Switch",
       "vlan": 1,
       "holdtime": 180,
-      "timestamp": "11:49:57"
+      "timestamp": "09:49:05"
     },
     {
       "local_device_id": "dev-core-01",
@@ -1230,7 +1282,7 @@
       "capabilities": "WLAN AP",
       "vlan": 50,
       "holdtime": 180,
-      "timestamp": "11:49:57"
+      "timestamp": "09:49:05"
     },
     {
       "local_device_id": "dev-core-01",
@@ -1243,7 +1295,7 @@
       "capabilities": "WLAN AP",
       "vlan": 50,
       "holdtime": 180,
-      "timestamp": "11:49:57"
+      "timestamp": "09:49:05"
     },
     {
       "local_device_id": "dev-core-01",
@@ -1256,12 +1308,12 @@
       "capabilities": "WLAN AP",
       "vlan": 50,
       "holdtime": 180,
-      "timestamp": "11:49:57"
+      "timestamp": "09:49:05"
     }
   ],
   "topology_links": [
     {
-      "id": "scanned-dev-router-gw-1788781797",
+      "id": "scanned-dev-router-gw-1788860945",
       "source": "dev-core-01",
       "target": "dev-router-gw",
       "source_port": "Te0/1",
@@ -1272,7 +1324,7 @@
       "status": "active"
     },
     {
-      "id": "scanned-dev-dist-bldg-a-1788781797",
+      "id": "scanned-dev-dist-bldg-a-1788860945",
       "source": "dev-core-01",
       "target": "dev-dist-bldg-a",
       "source_port": "Te0/2",
@@ -1283,7 +1335,7 @@
       "status": "active"
     },
     {
-      "id": "scanned-dev-acc-bldg-a-f3-1788781797",
+      "id": "scanned-dev-acc-bldg-a-f3-1788860945",
       "source": "dev-core-01",
       "target": "dev-acc-bldg-a-f3",
       "source_port": "Te0/3",
@@ -1294,7 +1346,7 @@
       "status": "active"
     },
     {
-      "id": "scanned-dev-dist-bldg-b-1788781797",
+      "id": "scanned-dev-dist-bldg-b-1788860945",
       "source": "dev-core-01",
       "target": "dev-dist-bldg-b",
       "source_port": "Te0/4",
@@ -1305,7 +1357,7 @@
       "status": "active"
     },
     {
-      "id": "scanned-dev-ap-bldg-a-f1-1788781797",
+      "id": "scanned-dev-ap-bldg-a-f1-1788860945",
       "source": "dev-core-01",
       "target": "dev-ap-bldg-a-f1",
       "source_port": "Te0/5",
@@ -1316,18 +1368,18 @@
       "status": "active"
     },
     {
-      "id": "scanned-dev-ap-bldg-a-f3-1788781797",
+      "id": "scanned-dev-ap-bldg-a-f3-1788860945",
       "source": "dev-core-01",
       "target": "dev-ap-bldg-a-f3",
       "source_port": "Te0/6",
       "target_port": "Uplink-Gi1",
       "type": "access",
       "speed": "1G",
-      "protocol": "LLDP",
+      "protocol": "CDP",
       "status": "active"
     },
     {
-      "id": "scanned-dev-ap-bldg-b-f1-1788781797",
+      "id": "scanned-dev-ap-bldg-b-f1-1788860945",
       "source": "dev-core-01",
       "target": "dev-ap-bldg-b-f1",
       "source_port": "Te0/7",
@@ -1392,7 +1444,7 @@
           "name": "DEVICE_NAME",
           "label": "نام تجهیز (Hostname)",
           "description": "نام هاست دیوایس در شبکه",
-          "default_value": "SW-ACCESS-01",
+          "default_value": "SW-ACCESS-02",
           "required": true,
           "type": "text"
         },
@@ -1484,7 +1536,8 @@
           "required": false,
           "type": "ip"
         }
-      ]
+      ],
+      "updated_at": "2026-09-08 10:38:01"
     },
     {
       "id": "tmpl-cisco-core-dist",
@@ -2053,6 +2106,118 @@
       "author": "Network Administrator",
       "created_at": "2026-09-08 08:48:41",
       "updated_at": "2026-09-08 08:48:41",
+      "is_builtin": false
+    },
+    {
+      "id": "tmpl-cisco-8f8775",
+      "name": "کانفیگ استاندارد سوئیچ لایبلبلبیلبیبیبیلیقب",
+      "vendor": "cisco",
+      "target_type": "switch",
+      "role": "Access Switch",
+      "description": "پیکربندی پایه سوئیچ‌های اکسس سیسکو شامل Hostname، SVI مدیریتی، Spanning-Tree، SSH v2، CDP/LLDP، NTP و خطوط VTY (نسخه سفارشی‌شده)",
+      "default_cli_mode": "GLOBAL_CONFIG",
+      "commands": "enable\nconfigure terminal\nhostname {{DEVICE_NAME}}\nip domain-name {{DOMAIN_NAME}}\ncrypto key generate rsa modulus 2048\nip ssh version 2\nusername admin privilege 15 secret {{ADMIN_PASSWORD}}\nline vty 0 4\n transport input ssh\n login local\n exec-timeout 15 0\nexit\n! Management SVI\nvlan {{MANAGEMENT_VLAN}}\n name MGT_VLAN\nexit\ninterface vlan {{MANAGEMENT_VLAN}}\n description SVI - {{BUILDING}} {{FLOOR}} {{UNIT}}\n ip address {{IP_ADDRESS}} {{SUBNET_MASK}}\n no shutdown\nexit\nip default-gateway {{DEFAULT_GATEWAY}}\n! STP & Discovery Protocols\nspanning-tree mode rapid-pvst\ncdp run\nlldp run\n! Network Services\nntp server {{NTP_SERVER}}\nlogging host {{DEFAULT_GATEWAY}}\nservice timestamps log datetime msec\nsnmp-server community public RO\nsnmp-server location \"{{BUILDING}}, {{FLOOR}}, {{UNIT}}, {{RACK}}\"\nend\nwrite memory",
+      "variables": [
+        {
+          "name": "DEVICE_NAME",
+          "label": "نام تجهیز (Hostname)",
+          "description": "نام هاست دیوایس در شبکه",
+          "default_value": "SW-ACCESS-02",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "IP_ADDRESS",
+          "label": "آدرس آی‌پی مدیریتی (Management IP)",
+          "description": "آدرس IP جهت دسترسی و مدیریت سوئیچ",
+          "default_value": "192.168.1.150",
+          "required": true,
+          "type": "ip"
+        },
+        {
+          "name": "SUBNET_MASK",
+          "label": "ماسک شبکه (Subnet Mask)",
+          "description": "ماسک زیرشبکه آی‌پی",
+          "default_value": "255.255.255.0",
+          "required": true,
+          "type": "subnet"
+        },
+        {
+          "name": "DEFAULT_GATEWAY",
+          "label": "گیت‌وی پیش‌فرض (Default Gateway)",
+          "description": "آدرس روتر یا گیت‌وی خروجی",
+          "default_value": "192.168.1.254",
+          "required": true,
+          "type": "gateway"
+        },
+        {
+          "name": "MANAGEMENT_VLAN",
+          "label": "شماره ویلن مدیریت (Management VLAN)",
+          "description": "شناسه VLAN جهت ارتباط لایه ۳ SVI",
+          "default_value": "1",
+          "required": true,
+          "type": "vlan"
+        },
+        {
+          "name": "BUILDING",
+          "label": "ساختمان استقرار",
+          "description": "نام ساختمان محل نصب",
+          "default_value": "ساختمان مرکزی",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "FLOOR",
+          "label": "طبقه",
+          "description": "شماره یا نام طبقه",
+          "default_value": "طبقه 2",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "UNIT",
+          "label": "واحد / اتاق",
+          "description": "واحد یا اتاق سرور",
+          "default_value": "اتاق رک",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "RACK",
+          "label": "شماره رک",
+          "description": "نام یا کد رک مستقر",
+          "default_value": "Rack-01",
+          "required": false,
+          "type": "text"
+        },
+        {
+          "name": "DOMAIN_NAME",
+          "label": "دامنه شبکه (Domain Name)",
+          "description": "دامنه مورد استفاده در SSH",
+          "default_value": "corp.local",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "ADMIN_PASSWORD",
+          "label": "رمز عبور SSH کاربر admin",
+          "description": "رمز عبور رمزنگاری شده کلاینت",
+          "default_value": "Cisco@2026!",
+          "required": true,
+          "type": "password"
+        },
+        {
+          "name": "NTP_SERVER",
+          "label": "سرور زمان (NTP Server)",
+          "description": "سرور هماهنگ‌سازی زمان شبکه",
+          "default_value": "192.168.1.254",
+          "required": false,
+          "type": "ip"
+        }
+      ],
+      "author": "Network Administrator",
+      "created_at": "2026-09-08 09:54:35",
+      "updated_at": "2026-09-08 09:54:35",
       "is_builtin": false
     }
   ]
