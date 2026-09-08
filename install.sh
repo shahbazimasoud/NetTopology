@@ -22,7 +22,7 @@ echo -e "${CYAN}${BOLD}"
 echo "╔══════════════════════════════════════════════════════════════════╗"
 echo "║                                                                  ║"
 echo "║     🌐  NetTopology - Enterprise Network Management Panel        ║"
-echo "║     🚀  Version: 1.3.2 (Production Stable)                       ║"
+echo "║     🚀  Version: 1.3.3 (Production Stable)                       ║"
 echo "║     🛡️  Cisco Port Security & CDP/LLDP Topology Visualizer       ║"
 echo "║     🎨  Spatial Cyber Neon & Multi-Theme Network Studio          ║"
 echo "║                                                                  ║"
@@ -48,40 +48,49 @@ cd "$APP_DIR"
 
 echo -e "${GREEN}✓ مسیر ریشه پنل:${NC} $APP_DIR"
 
-echo -e "\n${YELLOW}>>> لطفاً تنظیمات پورت فرانت‌اند و بک‌اند را مشخص کنید:${NC}"
+# Detect Local & Public IP
+LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "127.0.0.1")
+[ -z "$LOCAL_IP" ] && LOCAL_IP="127.0.0.1"
+
+echo -e "\n${YELLOW}>>> لطفاً تنظیمات شبکه و پورت امن SSL را مشخص کنید:${NC}"
+read -p "آدرس دامنه یا آی‌پی سرور جهت صدور گواهی SSL [پیش‌فرض: $LOCAL_IP]: " PANEL_DOMAIN
+PANEL_DOMAIN="${PANEL_DOMAIN:-$LOCAL_IP}"
+
 while true; do
-  read -p "پورت فرانت‌اند (رابط کاربری و وب‌پنل) [پیش‌فرض: 3000]: " FRONTEND_PORT
-  FRONTEND_PORT="${FRONTEND_PORT:-3000}"
-  if [[ "$FRONTEND_PORT" =~ ^[0-9]+$ ]] && [ "$FRONTEND_PORT" -ge 1 ] && [ "$FRONTEND_PORT" -le 65535 ]; then
+  read -p "پورت امن HTTPS / SSL برای دسترسی به پنل NetTopology [پیش‌فرض: 8443]: " PANEL_SSL_PORT
+  PANEL_SSL_PORT="${PANEL_SSL_PORT:-8443}"
+  if [[ "$PANEL_SSL_PORT" =~ ^[0-9]+$ ]] && [ "$PANEL_SSL_PORT" -ge 1 ] && [ "$PANEL_SSL_PORT" -le 65535 ]; then
     break
   else
     echo -e "${RED}پورت نامعتبر است. یک عدد بین 1 تا 65535 وارد کنید.${NC}"
   fi
 done
 
-while true; do
-  read -p "پورت بک‌اند (موتور پایتون و API سیسکو) [پیش‌فرض: 5001]: " BACKEND_PORT
-  BACKEND_PORT="${BACKEND_PORT:-5001}"
-  if [[ "$BACKEND_PORT" =~ ^[0-9]+$ ]] && [ "$BACKEND_PORT" -ge 1 ] && [ "$BACKEND_PORT" -le 65535 ]; then
-    if [ "$BACKEND_PORT" -eq "$FRONTEND_PORT" ]; then
-      echo -e "${RED}تداخل پورت! پورت بک‌اند ($BACKEND_PORT) نمی‌تواند با پورت فرانت‌اند ($FRONTEND_PORT) یکسان باشد.${NC}"
-    else
-      break
-    fi
-  else
-    echo -e "${RED}پورت نامعتبر است. یک عدد بین 1 تا 65535 وارد کنید.${NC}"
-  fi
-done
+# Internal loopback ports for Node and Python (isolated from external network)
+INTERNAL_NODE_PORT="3000"
+INTERNAL_BACKEND_PORT="5001"
+if [ "$PANEL_SSL_PORT" -eq "$INTERNAL_NODE_PORT" ]; then
+  INTERNAL_NODE_PORT="13000"
+fi
+if [ "$PANEL_SSL_PORT" -eq "$INTERNAL_BACKEND_PORT" ]; then
+  INTERNAL_BACKEND_PORT="15001"
+fi
 
-echo -e "${CYAN}✓ پل ارتباطی خودکار: فرانت‌اند روی پورت $FRONTEND_PORT تمام ریکوئست‌های /api/* را به بک‌اند روی پورت $BACKEND_PORT ارسال می‌کند.${NC}\n"
+echo -e "${CYAN}✓ معماری امنیتی SSL تنظیم شد:${NC}"
+echo -e "  • دسترسی عمومی: صرفاً از طریق HTTPS با پورت $PANEL_SSL_PORT و گواهی Self-Signed"
+echo -e "  • جداسازی داخلی: سرویس‌های Node.js و Python به لوپ‌بک محلی (127.0.0.1) محدود شدند.\n"
 
 # ذخیره تنظیمات در فایل .env
 cat << EOF > "$APP_DIR/.env"
 NODE_ENV=production
-PORT=$FRONTEND_PORT
-FRONTEND_PORT=$FRONTEND_PORT
-BACKEND_PORT=$BACKEND_PORT
-PYTHON_PORT=$BACKEND_PORT
+HOST=127.0.0.1
+PYTHON_HOST=127.0.0.1
+PORT=$INTERNAL_NODE_PORT
+FRONTEND_PORT=$INTERNAL_NODE_PORT
+BACKEND_PORT=$INTERNAL_BACKEND_PORT
+PYTHON_PORT=$INTERNAL_BACKEND_PORT
+PANEL_SSL_PORT=$PANEL_SSL_PORT
+PANEL_DOMAIN=$PANEL_DOMAIN
 EOF
 
 # ------------------------------------------------------------------------------
@@ -250,10 +259,12 @@ ExecStart=$NODE_BIN $APP_DIR/dist/server.cjs
 Restart=always
 RestartSec=3
 Environment=NODE_ENV=production
-Environment=PORT=$FRONTEND_PORT
-Environment=FRONTEND_PORT=$FRONTEND_PORT
-Environment=BACKEND_PORT=$BACKEND_PORT
-Environment=PYTHON_PORT=$BACKEND_PORT
+Environment=HOST=127.0.0.1
+Environment=PYTHON_HOST=127.0.0.1
+Environment=PORT=$INTERNAL_NODE_PORT
+Environment=FRONTEND_PORT=$INTERNAL_NODE_PORT
+Environment=BACKEND_PORT=$INTERNAL_BACKEND_PORT
+Environment=PYTHON_PORT=$INTERNAL_BACKEND_PORT
 
 [Install]
 WantedBy=multi-user.target
@@ -270,32 +281,104 @@ if ! systemctl is-active --quiet nettopology.service; then
   journalctl -u nettopology.service -n 25 --no-pager || true
 fi
 
-# Firewall Check (Optional ufw)
-if command -v ufw &>/dev/null && ufw status | grep -q "Status: active"; then
-  ufw allow "$FRONTEND_PORT/tcp" comment 'NetTopology Frontend' 2>/dev/null || true
-  ufw allow "$BACKEND_PORT/tcp" comment 'NetTopology Backend' 2>/dev/null || true
+# Configure Nginx Reverse Proxy with Strict Self-Signed SSL Only
+echo ""
+echo -e "${BLUE}[6/6]${NC} ${BOLD}پیکربندی Nginx و گواهی امنیتی Self-Signed SSL روی پورت $PANEL_SSL_PORT...${NC}"
+if command -v apt-get &>/dev/null; then
+  DEBIAN_FRONTEND=noninteractive apt-get install -y nginx openssl < /dev/null || true
+elif command -v dnf &>/dev/null; then
+  dnf install -y nginx openssl || true
 fi
 
-# Detect Local & Public IP
-LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "127.0.0.1")
+# Remove default site
+rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+
+mkdir -p /etc/nginx/ssl
+SSL_CERT="/etc/nginx/ssl/nettopology.crt"
+SSL_KEY="/etc/nginx/ssl/nettopology.key"
+
+if [ ! -f "$SSL_CERT" ] || [ ! -f "$SSL_KEY" ]; then
+  echo -e "${CYAN}در حال صدور گواهی 10 ساله Self-Signed SSL برای $PANEL_DOMAIN...${NC}"
+  openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+    -keyout "$SSL_KEY" \
+    -out "$SSL_CERT" \
+    -subj "/CN=$PANEL_DOMAIN/O=NetTopology/OU=Enterprise Network Security" 2>/dev/null || true
+  chmod 600 "$SSL_KEY"
+fi
+
+NGINX_CONF="/etc/nginx/sites-available/nettopology.conf"
+mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
+cat << EOF > "$NGINX_CONF"
+# NetTopology - Enterprise Cisco Topology & Management Panel
+# Strict HTTPS / Self-Signed SSL Mode (Port $PANEL_SSL_PORT)
+server {
+    listen $PANEL_SSL_PORT ssl http2;
+    listen [::]:$PANEL_SSL_PORT ssl http2;
+    server_name $PANEL_DOMAIN _;
+
+    ssl_certificate $SSL_CERT;
+    ssl_certificate_key $SSL_KEY;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    client_max_body_size 50M;
+
+    error_page 497 301 =301 https://\$host:$PANEL_SSL_PORT\$request_uri;
+
+    location / {
+        proxy_pass http://127.0.0.1:$INTERNAL_NODE_PORT;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:$INTERNAL_NODE_PORT/api/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 300s;
+    }
+}
+EOF
+
+ln -sf "$NGINX_CONF" "/etc/nginx/sites-enabled/nettopology.conf"
+if nginx -t &>/dev/null; then
+  systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || true
+fi
+
+# Firewall Check (UFW)
+if command -v ufw &>/dev/null && ufw status | grep -q "Status: active"; then
+  ufw allow "$PANEL_SSL_PORT/tcp" comment 'NetTopology Secure HTTPS SSL' 2>/dev/null || true
+  ufw delete allow 3000/tcp 2>/dev/null || true
+  ufw delete allow 5001/tcp 2>/dev/null || true
+  ufw delete allow 80/tcp 2>/dev/null || true
+fi
 
 echo ""
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}${BOLD} 🎉  نصب و راه‌اندازی با موفقیت کامل انجام شد!                     ${NC}"
+echo -e "${GREEN}${BOLD} 🎉  نصب و پیکربندی امنیتی با موفقیت کامل انجام شد!                 ${NC}"
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════════════════════════════${NC}"
 echo ""
-echo -e "🔹 ${BOLD}آدرس‌های دسترسی به پنل و سرویس‌ها:${NC}"
-echo -e "   🌐 رابط کاربری فرانت‌اند: ${CYAN}${BOLD}http://${LOCAL_IP}:${FRONTEND_PORT}${NC}"
-echo -e "   ⚙️  موتور API پایتون:    ${BLUE}${BOLD}http://${LOCAL_IP}:${BACKEND_PORT}/api/topology${NC}"
-echo -e "   🌉 پل ارتباطی:           ${PURPLE}${BOLD}فعال (پورت ${FRONTEND_PORT} تمام ریکوئست‌ها را به پورت ${BACKEND_PORT} می‌فرستد)${NC}"
+echo -e "🔒 ${BOLD}آدرس امن دسترسی به پنل (Strict Self-Signed SSL):${NC}"
+echo -e "   ${GREEN}${BOLD}https://${PANEL_DOMAIN}:${PANEL_SSL_PORT}${NC}"
+echo ""
+echo -e "🛡️  ${BOLD}وضعیت معماری امنیتی:${NC}"
+echo -e "   • حالت: ${PURPLE}${BOLD}فقط SSL / HTTPS فعال است (پورت ${PANEL_SSL_PORT})${NC}"
+echo -e "   • پورت‌های داخلی: ${BLUE}روی 127.0.0.1 ایزوله و محافظت شده‌اند${NC}"
+echo -e "   • گواهی SSL: ${YELLOW}/etc/nginx/ssl/nettopology.crt${NC}"
 echo ""
 echo -e "🔹 ${BOLD}دستورات مدیریت پنل:${NC}"
 echo -e "   • وضعیت سرویس:          ${YELLOW}sudo systemctl status nettopology${NC}"
-echo -e "   • ری‌استارت سرویس:        ${YELLOW}sudo systemctl restart nettopology${NC}"
-echo -e "   • متوقف کردن سرویس:     ${YELLOW}sudo systemctl stop nettopology${NC}"
+echo -e "   • ری‌استارت سرویس:        ${YELLOW}sudo systemctl restart nettopology && sudo systemctl restart nginx${NC}"
+echo -e "   • متوقف کردن سرویس:     ${YELLOW}sudo systemctl stop nettopology && sudo systemctl stop nginx${NC}"
 echo -e "   • مشاهده لاگ‌های زنده:    ${YELLOW}sudo journalctl -u nettopology -f${NC}"
-echo ""
-echo -e "🔹 ${BOLD}اسکریپت‌های کمکی در پوشه پروژه:${NC}"
-echo -e "   • ${CYAN}./start.sh${NC}   |  ${CYAN}./stop.sh${NC}   |  ${CYAN}./restart.sh${NC}"
 echo ""
 echo -e "${PURPLE}${BOLD}از استفاده از پنل مدیریت و امنیت شبکه سیسکو لذت ببرید! 🚀${NC}"

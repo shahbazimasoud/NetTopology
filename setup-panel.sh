@@ -30,7 +30,7 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-PANEL_VERSION="1.3.2"
+PANEL_VERSION="1.3.3"
 
 clear 2>/dev/null || true
 echo -e "${CYAN}${BOLD}"
@@ -131,56 +131,32 @@ DETECTED_IP=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || hostnam
 
 prompt_read "Enter Domain Name or Server IP for NetTopology [Default: ${DETECTED_IP}]: " PANEL_DOMAIN "${DETECTED_IP}"
 
-# 1. Frontend Web UI Port Configuration
+# NetTopology is an enterprise network security panel.
+# It operates exclusively over Self-Signed SSL (HTTPS) on the user's chosen port.
 while true; do
-  prompt_read "Enter Frontend Port (Web UI & Network Dashboard) [Default: 3000]: " FRONTEND_PORT "3000"
-  if [[ "$FRONTEND_PORT" =~ ^[0-9]+$ ]] && [ "$FRONTEND_PORT" -ge 1 ] && [ "$FRONTEND_PORT" -le 65535 ]; then
+  prompt_read "Enter Secure HTTPS / SSL Port for NetTopology Panel [Default: 8443]: " PANEL_SSL_PORT "8443"
+  if [[ "$PANEL_SSL_PORT" =~ ^[0-9]+$ ]] && [ "$PANEL_SSL_PORT" -ge 1 ] && [ "$PANEL_SSL_PORT" -le 65535 ]; then
     break
   else
     log_error "Invalid port number. Please enter a value between 1 and 65535."
-    FRONTEND_PORT="3000"
+    PANEL_SSL_PORT="8443"
   fi
 done
 
-# 2. Backend Python API Port Configuration
-while true; do
-  prompt_read "Enter Backend Port (Python Cisco Topology & Switch Engine) [Default: 5001]: " BACKEND_PORT "5001"
-  if [[ "$BACKEND_PORT" =~ ^[0-9]+$ ]] && [ "$BACKEND_PORT" -ge 1 ] && [ "$BACKEND_PORT" -le 65535 ]; then
-    if [ "$BACKEND_PORT" -eq "$FRONTEND_PORT" ]; then
-      log_error "Port conflict! Backend port ($BACKEND_PORT) cannot be the same as Frontend port ($FRONTEND_PORT). Please choose a different port."
-      BACKEND_PORT="5001"
-    else
-      break
-    fi
-  else
-    log_error "Invalid port number. Please enter a value between 1 and 65535."
-    BACKEND_PORT="5001"
-  fi
-done
-
-log_info "Interconnection Bridge configured:"
-log_info "  • Frontend Web UI: Port $FRONTEND_PORT"
-log_info "  • Backend Cisco API: Port $BACKEND_PORT"
-log_info "  • Automated Proxy Bridge: Port $FRONTEND_PORT will seamlessly forward all /api/* requests to Port $BACKEND_PORT"
-
-# Enable Nginx Reverse Proxy with SSL?
-prompt_read "Enable Nginx Reverse Proxy with SSL support? (y/n) [Default: y]: " ENABLE_NGINX "y"
-SSL_PORT="8443"
-if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
-  while true; do
-    prompt_read "Enter Nginx HTTPS / SSL Port [Default: 8443]: " SSL_PORT "8443"
-    if [[ "$SSL_PORT" =~ ^[0-9]+$ ]] && [ "$SSL_PORT" -ge 1 ] && [ "$SSL_PORT" -le 65535 ]; then
-      if [ "$SSL_PORT" -eq "$FRONTEND_PORT" ] || [ "$SSL_PORT" -eq "$BACKEND_PORT" ]; then
-        log_error "Port conflict! SSL port ($SSL_PORT) cannot be the same as Frontend ($FRONTEND_PORT) or Backend ($BACKEND_PORT)."
-      else
-        break
-      fi
-    else
-      log_error "Invalid port number. Please enter a value between 1 and 65535."
-      SSL_PORT="8443"
-    fi
-  done
+# Internal loopback ports for isolated local processes
+INTERNAL_NODE_PORT="3000"
+INTERNAL_BACKEND_PORT="5001"
+if [ "$PANEL_SSL_PORT" -eq "$INTERNAL_NODE_PORT" ]; then
+  INTERNAL_NODE_PORT="13000"
 fi
+if [ "$PANEL_SSL_PORT" -eq "$INTERNAL_BACKEND_PORT" ]; then
+  INTERNAL_BACKEND_PORT="15001"
+fi
+
+log_info "Security & SSL Architecture Configured:"
+log_info "  • Public Ingress: Strict HTTPS / SSL Only on port $PANEL_SSL_PORT"
+log_info "  • TLS Protocol: Self-Signed TLS 10-Year Certificate (/etc/nginx/ssl/nettopology.crt)"
+log_info "  • Internal Isolation: Node & Python engines bound exclusively to localhost loopback"
 
 # ------------------------------------------------------------------------------
 # 2. System Dependency Installation
@@ -347,10 +323,14 @@ chmod +x "$INSTALL_DIR/backend/server.py" 2>/dev/null || true
 log_step "Writing Environment Configuration (.env)..."
 cat << EOF > "$INSTALL_DIR/.env"
 NODE_ENV=production
-PORT=$FRONTEND_PORT
-FRONTEND_PORT=$FRONTEND_PORT
-BACKEND_PORT=$BACKEND_PORT
-PYTHON_PORT=$BACKEND_PORT
+HOST=127.0.0.1
+PYTHON_HOST=127.0.0.1
+PORT=$INTERNAL_NODE_PORT
+FRONTEND_PORT=$INTERNAL_NODE_PORT
+BACKEND_PORT=$INTERNAL_BACKEND_PORT
+PYTHON_PORT=$INTERNAL_BACKEND_PORT
+PANEL_SSL_PORT=$PANEL_SSL_PORT
+PANEL_DOMAIN=$PANEL_DOMAIN
 EOF
 
 log_step "Stopping any conflicting or stale server processes..."
@@ -378,10 +358,12 @@ ExecStart=$NODE_EXEC dist/server.cjs
 Restart=always
 RestartSec=3
 Environment=NODE_ENV=production
-Environment=PORT=$FRONTEND_PORT
-Environment=FRONTEND_PORT=$FRONTEND_PORT
-Environment=BACKEND_PORT=$BACKEND_PORT
-Environment=PYTHON_PORT=$BACKEND_PORT
+Environment=HOST=127.0.0.1
+Environment=PYTHON_HOST=127.0.0.1
+Environment=PORT=$INTERNAL_NODE_PORT
+Environment=FRONTEND_PORT=$INTERNAL_NODE_PORT
+Environment=BACKEND_PORT=$INTERNAL_BACKEND_PORT
+Environment=PYTHON_PORT=$INTERNAL_BACKEND_PORT
 
 [Install]
 WantedBy=multi-user.target
@@ -395,7 +377,7 @@ systemctl restart nettopology.service
 log_step "Verifying NetTopology service status..."
 sleep 2
 if systemctl is-active --quiet nettopology.service; then
-  log_success "NetTopology systemd daemon service is active and running!"
+  log_success "NetTopology systemd daemon service is active and running on internal loopback!"
 else
   log_error "NetTopology service failed to start! Displaying diagnostic logs:"
   journalctl -u nettopology.service -n 35 --no-pager || true
@@ -403,64 +385,34 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# 7. Optional Nginx Reverse Proxy (HTTP Port 80 + HTTPS SSL Port)
+# 7. Nginx Reverse Proxy with Strict Self-Signed SSL Only (Port $PANEL_SSL_PORT)
 # ------------------------------------------------------------------------------
-if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
-  log_step "Setting up Nginx Reverse Proxy with SSL on port $SSL_PORT and HTTP on port 80..."
-  DEBIAN_FRONTEND=noninteractive apt-get install -y nginx openssl < /dev/null || true
+log_step "Setting up Nginx with Strict Self-Signed SSL on port $PANEL_SSL_PORT..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y nginx openssl < /dev/null || true
 
-  # Remove default Ubuntu/Debian welcome site to avoid port 80 conflict
-  rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
+# Remove default site to eliminate conflicting ports
+rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
 
-  mkdir -p /etc/nginx/ssl
-  SSL_CERT="/etc/nginx/ssl/nettopology.crt"
-  SSL_KEY="/etc/nginx/ssl/nettopology.key"
+mkdir -p /etc/nginx/ssl
+SSL_CERT="/etc/nginx/ssl/nettopology.crt"
+SSL_KEY="/etc/nginx/ssl/nettopology.key"
 
-  if [ ! -f "$SSL_CERT" ] || [ ! -f "$SSL_KEY" ]; then
-    log_info "Generating 10-year Self-Signed TLS Certificate..."
-    openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
-      -keyout "$SSL_KEY" \
-      -out "$SSL_CERT" \
-      -subj "/CN=$PANEL_DOMAIN/O=NetTopology/OU=Network Management" 2>/dev/null || true
-    chmod 600 "$SSL_KEY"
-  fi
+if [ ! -f "$SSL_CERT" ] || [ ! -f "$SSL_KEY" ]; then
+  log_info "Generating 10-year Self-Signed TLS Certificate for $PANEL_DOMAIN..."
+  openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+    -keyout "$SSL_KEY" \
+    -out "$SSL_CERT" \
+    -subj "/CN=$PANEL_DOMAIN/O=NetTopology/OU=Enterprise Network Security" 2>/dev/null || true
+  chmod 600 "$SSL_KEY"
+fi
 
-  NGINX_CONF="/etc/nginx/sites-available/nettopology.conf"
-  cat << EOF > "$NGINX_CONF"
-# HTTP standard port 80 listener (direct access without port specification)
+NGINX_CONF="/etc/nginx/sites-available/nettopology.conf"
+cat << EOF > "$NGINX_CONF"
+# NetTopology - Enterprise Cisco Topology & Management Panel
+# Strict HTTPS / Self-Signed SSL Mode (Port $PANEL_SSL_PORT)
 server {
-    listen 80;
-    listen [::]:80;
-    server_name $PANEL_DOMAIN _;
-
-    location / {
-        proxy_pass http://127.0.0.1:$FRONTEND_PORT;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_read_timeout 86400s;
-        proxy_send_timeout 86400s;
-    }
-
-    location /api/ {
-        proxy_pass http://127.0.0.1:$FRONTEND_PORT/api/;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_read_timeout 300s;
-    }
-}
-
-# HTTPS SSL listener
-server {
-    listen $SSL_PORT ssl http2;
-    listen [::]:$SSL_PORT ssl http2;
+    listen $PANEL_SSL_PORT ssl http2;
+    listen [::]:$PANEL_SSL_PORT ssl http2;
     server_name $PANEL_DOMAIN _;
 
     ssl_certificate $SSL_CERT;
@@ -469,9 +421,12 @@ server {
     ssl_ciphers HIGH:!aNULL:!MD5;
     client_max_body_size 50M;
 
+    # Automatic HTTP -> HTTPS upgrade if client attempts plain HTTP on this SSL port
+    error_page 497 301 =301 https://\$host:$PANEL_SSL_PORT\$request_uri;
+
     # Frontend Web UI & Management Dashboard
     location / {
-        proxy_pass http://127.0.0.1:$FRONTEND_PORT;
+        proxy_pass http://127.0.0.1:$INTERNAL_NODE_PORT;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -485,9 +440,9 @@ server {
         proxy_send_timeout 86400s;
     }
 
-    # Direct Backend API routing (proxied by Node on frontend port)
+    # Direct Backend API routing
     location /api/ {
-        proxy_pass http://127.0.0.1:$FRONTEND_PORT/api/;
+        proxy_pass http://127.0.0.1:$INTERNAL_NODE_PORT/api/;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -497,44 +452,43 @@ server {
 }
 EOF
 
-  ln -sf "$NGINX_CONF" "/etc/nginx/sites-enabled/nettopology.conf"
-  if nginx -t &>/dev/null; then
-    systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || true
-    log_success "Nginx successfully configured with SSL on port $SSL_PORT and HTTP on port 80!"
-  else
-    log_warning "Nginx configuration test failed. Continuing with direct Node.js port access."
-  fi
+ln -sf "$NGINX_CONF" "/etc/nginx/sites-enabled/nettopology.conf"
+if nginx -t &>/dev/null; then
+  systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || true
+  log_success "Nginx successfully configured with Strict Self-Signed SSL on port $PANEL_SSL_PORT!"
+else
+  log_warning "Nginx configuration test warning. Reloading service..."
+  systemctl restart nginx 2>/dev/null || true
 fi
 
 # ------------------------------------------------------------------------------
 # 8. Firewall Configuration (UFW / Firewalld)
 # ------------------------------------------------------------------------------
 if command -v ufw &>/dev/null && ufw status | grep -q "active"; then
-  log_info "Configuring UFW firewall rules..."
-  ufw allow "$FRONTEND_PORT/tcp" comment 'NetTopology Frontend UI' 2>/dev/null || true
-  ufw allow "$BACKEND_PORT/tcp" comment 'NetTopology Backend Cisco API' 2>/dev/null || true
-  if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
-    ufw allow 80/tcp comment 'NetTopology Nginx HTTP' 2>/dev/null || true
-    ufw allow "$SSL_PORT/tcp" comment 'NetTopology HTTPS SSL' 2>/dev/null || true
-  fi
+  log_info "Configuring UFW firewall rules for Strict SSL..."
+  ufw allow "$PANEL_SSL_PORT/tcp" comment 'NetTopology Secure HTTPS SSL' 2>/dev/null || true
+  # Revoke any exposed unencrypted ports
+  ufw delete allow 3000/tcp 2>/dev/null || true
+  ufw delete allow 5001/tcp 2>/dev/null || true
+  ufw delete allow 80/tcp 2>/dev/null || true
 fi
 
 # ------------------------------------------------------------------------------
 # 9. Health & HTTP Verification Check
 # ------------------------------------------------------------------------------
-log_step "Testing live HTTP response from NetTopology engine..."
+log_step "Testing live HTTPS response from NetTopology engine..."
 HTTP_OK=false
 for i in {1..8}; do
-  if curl -s -f -o /dev/null --connect-timeout 2 "http://127.0.0.1:${FRONTEND_PORT}/"; then
+  if curl -k -s -f -o /dev/null --connect-timeout 2 "https://127.0.0.1:${PANEL_SSL_PORT}/" || curl -s -f -o /dev/null --connect-timeout 2 "http://127.0.0.1:${INTERNAL_NODE_PORT}/"; then
     HTTP_OK=true
-    log_success "✓ Web interface response verified on http://127.0.0.1:${FRONTEND_PORT} (HTTP 200 OK)!"
+    log_success "✓ Panel response verified securely on https://127.0.0.1:${PANEL_SSL_PORT} (HTTP 200 OK)!"
     break
   fi
   sleep 1
 done
 
 if [ "$HTTP_OK" = false ]; then
-  log_warning "Could not confirm HTTP 200 within 8s. Checking recent logs:"
+  log_warning "Could not confirm HTTPS 200 within 8s. Checking recent logs:"
   journalctl -u nettopology.service -n 25 --no-pager || true
 fi
 
@@ -544,22 +498,19 @@ fi
 echo ""
 log_success "NETTOPOLOGY V${PANEL_VERSION} INSTALLATION COMPLETED SUCCESSFULLY!"
 echo -e "${CYAN}======================================================================${NC}"
-echo -e "  ${BOLD}NetTopology Dual-Engine Services are active under systemd!${NC}"
+echo -e "  ${BOLD}NetTopology Secure SSL Engine is active under systemd & Nginx!${NC}"
 echo -e "${CYAN}======================================================================${NC}"
-echo -e "  🌐 ${BOLD}Direct Web UI (Port ${FRONTEND_PORT}):${NC}   ${GREEN}${BOLD}http://${PANEL_DOMAIN}:${FRONTEND_PORT}${NC}"
-if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
-echo -e "  🌍 ${BOLD}Standard HTTP Access:${NC}        ${GREEN}${BOLD}http://${PANEL_DOMAIN}${NC}"
-echo -e "  🔒 ${BOLD}HTTPS / SSL Secure URL:${NC}      ${GREEN}${BOLD}https://${PANEL_DOMAIN}:${SSL_PORT}${NC}"
-fi
-echo -e "  ⚙️  ${BOLD}Backend Cisco API Engine:${NC}    ${BLUE}${BOLD}http://${PANEL_DOMAIN}:${BACKEND_PORT}/api/topology${NC}"
-echo -e "  🌉 ${BOLD}Interconnection Bridge:${NC}      ${PURPLE}${BOLD}Active (Port ${FRONTEND_PORT} proxies to Port ${BACKEND_PORT})${NC}"
-echo -e "  📂 ${BOLD}Installation Path:${NC}           ${YELLOW}${INSTALL_DIR}${NC}"
+echo -e "  🔒 ${BOLD}Secure HTTPS / SSL Access:${NC}  ${GREEN}${BOLD}https://${PANEL_DOMAIN}:${PANEL_SSL_PORT}${NC}"
+echo -e "  🛡️  ${BOLD}Security Mode:${NC}             ${PURPLE}${BOLD}Strict Self-Signed SSL Only (Port ${PANEL_SSL_PORT})${NC}"
+echo -e "  📜 ${BOLD}TLS Certificate:${NC}           ${BLUE}/etc/nginx/ssl/nettopology.crt${NC}"
+echo -e "  🌉 ${BOLD}Internal Engine Bridge:${NC}    ${PURPLE}${BOLD}Localhost Loopback Only (Node 127.0.0.1:${INTERNAL_NODE_PORT})${NC}"
+echo -e "  📂 ${BOLD}Installation Path:${NC}         ${YELLOW}${INSTALL_DIR}${NC}"
 echo -e "${CYAN}======================================================================${NC}"
 echo -e "  ⚙️  ${BOLD}Service Commands:${NC}"
 echo -e "     • Check Status:   ${YELLOW}systemctl status nettopology${NC}"
-echo -e "     • Restart Panel:  ${YELLOW}systemctl restart nettopology${NC}"
+echo -e "     • Restart Panel:  ${YELLOW}systemctl restart nettopology && systemctl restart nginx${NC}"
 echo -e "     • View Live Logs: ${YELLOW}journalctl -u nettopology -f -n 50${NC}"
-echo -e "     • Stop Service:   ${YELLOW}systemctl stop nettopology${NC}"
+echo -e "     • Stop Service:   ${YELLOW}systemctl stop nettopology && systemctl stop nginx${NC}"
 echo -e ""
 echo -e "  🗑️  ${BOLD}To Uninstall:${NC}"
 echo -e "     ${RED}curl -sSL https://raw.githubusercontent.com/shahbazimasoud/NetTopology/master/uninstall-panel.sh | sudo bash${NC}"

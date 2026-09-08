@@ -129,8 +129,9 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Node/Express frontend + proxy running on http://0.0.0.0:${PORT}`);
+  const HOST = process.env.HOST || '0.0.0.0';
+  app.listen(PORT, HOST, () => {
+    console.log(`Node/Express frontend + proxy running on http://${HOST}:${PORT}`);
   });
 }
 

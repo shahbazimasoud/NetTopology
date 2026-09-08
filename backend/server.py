@@ -1405,7 +1405,9 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
 
         self._send_json(404, {"error": "Endpoint not found"})
 
-def run_server(port=5001, host='0.0.0.0'):
+def run_server(port=5001, host=None):
+    if host is None:
+        host = os.environ.get("PYTHON_HOST") or os.environ.get("HOST") or '0.0.0.0'
     server_address = (host, port)
     httpd = HTTPServer(server_address, NetworkAPIHandler)
     print(f"[Python Network Engine] Server running on http://{host}:{port}")
@@ -1417,6 +1419,7 @@ def run_server(port=5001, host='0.0.0.0'):
 
 if __name__ == "__main__":
     port = 5001
+    host = os.environ.get("PYTHON_HOST") or os.environ.get("HOST") or '0.0.0.0'
     if len(sys.argv) > 1:
         try:
             port = int(sys.argv[1])
@@ -1427,4 +1430,4 @@ if __name__ == "__main__":
             port = int(os.environ.get("BACKEND_PORT") or os.environ.get("PYTHON_PORT"))
         except ValueError:
             pass
-    run_server(port)
+    run_server(port, host)

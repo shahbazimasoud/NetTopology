@@ -3,6 +3,7 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  Minimize2,
   RefreshCw,
   Server,
   Router as RouterIcon,
@@ -107,8 +108,52 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const [filterBuilding, setFilterBuilding] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showPortLabels, setShowPortLabels] = useState(true);
+  const [isFullMode, setIsFullMode] = useState(false);
+  const [showToolbarInFullMode, setShowToolbarInFullMode] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Toggle Full Mode (Hides header, sidebar, top menu, and maximizes map to full browser viewport)
+  const toggleFullMode = useCallback(() => {
+    setIsFullMode((prev) => {
+      const next = !prev;
+      if (next) {
+        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      } else {
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+      return next;
+    });
+  }, []);
+
+  // Listen for Escape key and browser fullscreen change events
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullMode) {
+        setIsFullMode(false);
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    };
+
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isFullMode) {
+        setIsFullMode(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [isFullMode]);
 
   // Save viewport changes to localStorage
   const saveViewport = useCallback((newZoom: number, newPan: { x: number; y: number }) => {
@@ -393,142 +438,159 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   }
 
   return (
-    <div className="flex flex-col h-full min-h-[500px] bg-transparent text-right overflow-hidden text-slate-100">
+    <div
+      className={`text-right overflow-hidden text-slate-100 transition-all duration-300 ${
+        isFullMode
+          ? 'fixed inset-0 z-[99999] w-screen h-screen bg-slate-950 flex flex-col m-0 p-0 shadow-2xl'
+          : 'flex flex-col h-full min-h-[500px] bg-transparent'
+      }`}
+    >
       {/* Top Toolbar */}
-      <div className="p-2 sm:px-4 spatial-glass border-b border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs z-20 shadow-xl backdrop-blur-xl">
-        {/* View Switcher */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center bg-slate-900/60 rounded-xl p-1 border border-white/10">
-            <button
-              onClick={() => setViewMode('schematic')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                viewMode === 'schematic'
-                  ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md font-semibold'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>نقشه شماتیک توپولوژی</span>
-            </button>
-            <button
-              onClick={() => setViewMode('physical')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                viewMode === 'physical'
-                  ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md font-semibold'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>محیط شماتیک ساختمانی (مکان فیزیکی)</span>
-            </button>
-          </div>
-
-          <label className="hidden md:flex items-center gap-1.5 text-slate-300 text-xs cursor-pointer mr-2">
-            <input
-              type="checkbox"
-              checked={showPortLabels}
-              onChange={(e) => setShowPortLabels(e.target.checked)}
-              className="w-3.5 h-3.5 rounded text-indigo-500 bg-slate-900 border-white/20 focus:ring-indigo-500"
-            />
-            <span>نمایش پورت‌های اتصال</span>
-          </label>
-        </div>
-
-        {/* Filters & Actions */}
-        <div className="flex items-center flex-wrap gap-2">
-          {/* Status Indicator for Custom Positions */}
-          {viewMode === 'schematic' && hasSavedPositions && (
-            <div className="hidden lg:flex items-center gap-1 text-[11px] font-mono text-cyan-300 bg-cyan-500/10 px-2 py-1 rounded-lg border border-cyan-500/20">
-              <Check className="w-3 h-3 text-cyan-400" />
-              <span>چیدمان سفارشی ذخیره است</span>
+      {(!isFullMode || showToolbarInFullMode) && (
+        <div className="p-2 sm:px-4 spatial-glass border-b border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs z-20 shadow-xl backdrop-blur-xl">
+          {/* View Switcher */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-slate-900/60 rounded-xl p-1 border border-white/10">
+              <button
+                onClick={() => setViewMode('schematic')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                  viewMode === 'schematic'
+                    ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md font-semibold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>نقشه شماتیک توپولوژی</span>
+              </button>
+              <button
+                onClick={() => setViewMode('physical')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                  viewMode === 'physical'
+                    ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md font-semibold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>محیط شماتیک ساختمانی (مکان فیزیکی)</span>
+              </button>
             </div>
-          )}
 
-          {/* Search */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="جستجوی تجهیز، IP یا واحد..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-3 py-1.5 pr-8 rounded-xl bg-slate-900/70 border border-white/15 text-slate-100 text-xs placeholder-slate-500 focus:outline-none focus:border-indigo-400 w-44 sm:w-52"
-            />
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2" />
+            <label className="hidden md:flex items-center gap-1.5 text-slate-300 text-xs cursor-pointer mr-2">
+              <input
+                type="checkbox"
+                checked={showPortLabels}
+                onChange={(e) => setShowPortLabels(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-indigo-500 bg-slate-900 border-white/20 focus:ring-indigo-500"
+              />
+              <span>نمایش پورت‌های اتصال</span>
+            </label>
           </div>
 
-          {/* Building Filter */}
-          <select
-            value={filterBuilding}
-            onChange={(e) => setFilterBuilding(e.target.value)}
-            className="px-3 py-1.5 rounded-xl bg-slate-900/70 border border-white/15 text-slate-200 text-xs focus:outline-none focus:border-indigo-400"
-          >
-            <option value="all">تمام ساختمان‌ها</option>
-            {topology?.buildings?.map((b: any, index: number) => {
-              const bldgName = typeof b === 'string' ? b : b?.name || `ساختمان ${index + 1}`;
-              return (
-                <option key={`bldg-${index}-${bldgName}`} value={bldgName}>
-                  {bldgName}
-                </option>
-              );
-            })}
-          </select>
+          {/* Filters & Actions */}
+          <div className="flex items-center flex-wrap gap-2">
+            {/* Status Indicator for Custom Positions */}
+            {viewMode === 'schematic' && hasSavedPositions && (
+              <div className="hidden lg:flex items-center gap-1 text-[11px] font-mono text-cyan-300 bg-cyan-500/10 px-2 py-1 rounded-lg border border-cyan-500/20">
+                <Check className="w-3 h-3 text-cyan-400" />
+                <span>چیدمان سفارشی ذخیره است</span>
+              </div>
+            )}
 
-          {/* Run CDP/LLDP Scan */}
-          <button
-            onClick={onScanCdpLldp}
-            disabled={isScanning}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-medium shadow-md transition disabled:opacity-50 active:scale-95"
-            title="پویش و استخراج همسایگی‌ها با پروتکل‌های CDP و LLDP"
-          >
-            <Zap className={`w-3.5 h-3.5 text-cyan-300 ${isScanning ? 'animate-spin' : ''}`} />
-            <span>{isScanning ? 'در حال اسکن...' : 'اسکن CDP/LLDP'}</span>
-          </button>
+            {/* Search */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="جستجوی تجهیز، IP یا واحد..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="px-3 py-1.5 pr-8 rounded-xl bg-slate-900/70 border border-white/15 text-slate-100 text-xs placeholder-slate-500 focus:outline-none focus:border-indigo-400 w-44 sm:w-52"
+              />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2" />
+            </div>
 
-          {/* Canvas Controls */}
-          {viewMode === 'schematic' && (
-            <div className="flex items-center gap-1 bg-slate-900/60 border border-white/10 rounded-xl p-1">
-              <button
-                onClick={() => {
-                  const newZoom = Math.min(zoom + 0.15, 3.0);
-                  setZoom(parseFloat(newZoom.toFixed(2)));
-                  saveViewport(newZoom, pan);
-                }}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
-                title="بزرگنمایی (یا با اسکرول ماوس)"
-              >
-                <ZoomIn className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => {
-                  const newZoom = Math.max(zoom - 0.15, 0.2);
-                  setZoom(parseFloat(newZoom.toFixed(2)));
-                  saveViewport(newZoom, pan);
-                }}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
-                title="کوچکنمایی (یا با اسکرول ماوس)"
-              >
-                <ZoomOut className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={handleResetView}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
-                title="بازنشانی زوم و مرکز صفحه"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-              </button>
-              {hasSavedPositions && (
+            {/* Building Filter */}
+            <select
+              value={filterBuilding}
+              onChange={(e) => setFilterBuilding(e.target.value)}
+              className="px-3 py-1.5 rounded-xl bg-slate-900/70 border border-white/15 text-slate-200 text-xs focus:outline-none focus:border-indigo-400"
+            >
+              <option value="all">تمام ساختمان‌ها</option>
+              {topology?.buildings?.map((b: any, index: number) => {
+                const bldgName = typeof b === 'string' ? b : b?.name || `ساختمان ${index + 1}`;
+                return (
+                  <option key={`bldg-${index}-${bldgName}`} value={bldgName}>
+                    {bldgName}
+                  </option>
+                );
+              })}
+            </select>
+
+            {/* Run CDP/LLDP Scan */}
+            <button
+              onClick={onScanCdpLldp}
+              disabled={isScanning}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-medium shadow-md transition disabled:opacity-50 active:scale-95"
+              title="پویش و استخراج همسایگی‌ها با پروتکل‌های CDP و LLDP"
+            >
+              <Zap className={`w-3.5 h-3.5 text-cyan-300 ${isScanning ? 'animate-spin' : ''}`} />
+              <span>{isScanning ? 'در حال اسکن...' : 'اسکن CDP/LLDP'}</span>
+            </button>
+
+            {/* Canvas Controls */}
+            {viewMode === 'schematic' && (
+              <div className="flex items-center gap-1 bg-slate-900/60 border border-white/10 rounded-xl p-1">
                 <button
-                  onClick={handleResetPositions}
-                  className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition border-r border-white/10 pr-1.5 mr-0.5"
-                  title="بازگردانی چیدمان نودها به حالت خودکار اولیه"
+                  onClick={() => {
+                    const newZoom = Math.min(zoom + 0.15, 3.0);
+                    setZoom(parseFloat(newZoom.toFixed(2)));
+                    saveViewport(newZoom, pan);
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
+                  title="بزرگنمایی (یا با اسکرول ماوس)"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <ZoomIn className="w-3.5 h-3.5" />
                 </button>
-              )}
-            </div>
-          )}
+                <button
+                  onClick={() => {
+                    const newZoom = Math.max(zoom - 0.15, 0.2);
+                    setZoom(parseFloat(newZoom.toFixed(2)));
+                    saveViewport(newZoom, pan);
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
+                  title="کوچکنمایی (یا با اسکرول ماوس)"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={handleResetView}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
+                  title="بازنشانی زوم و مرکز صفحه"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={toggleFullMode}
+                  className={`p-1.5 rounded-lg transition ${
+                    isFullMode ? 'text-amber-300 bg-amber-500/20' : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="حالت فول"
+                >
+                  {isFullMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                </button>
+                {hasSavedPositions && (
+                  <button
+                    onClick={handleResetPositions}
+                    className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition border-r border-white/10 pr-1.5 mr-0.5"
+                    title="بازگردانی چیدمان نودها به حالت خودکار اولیه"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 relative overflow-hidden flex">
@@ -549,6 +611,50 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
               backgroundSize: `${Math.round(24 * Math.max(0.6, Math.min(zoom, 1.4)))}px ${Math.round(24 * Math.max(0.6, Math.min(zoom, 1.4)))}px`,
             }}
           >
+            {/* Top-Left Floating Controls: Fullscreen Toggle & Tools */}
+            <div className="absolute top-4 left-4 z-40 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleFullMode}
+                className={`group relative flex items-center justify-center p-2.5 rounded-xl border backdrop-blur-xl shadow-2xl transition-all duration-200 active:scale-95 ${
+                  isFullMode
+                    ? 'bg-gradient-to-r from-amber-500/25 to-rose-500/25 border-amber-500/50 text-amber-300 hover:bg-amber-500/35 shadow-[0_0_25px_rgba(245,158,11,0.4)]'
+                    : 'bg-slate-900/85 hover:bg-slate-800 border-white/20 hover:border-cyan-400/50 text-slate-200 hover:text-cyan-300 shadow-[0_0_20px_rgba(0,0,0,0.5)]'
+                }`}
+                title="حالت فول"
+                aria-label="حالت فول"
+              >
+                {isFullMode ? (
+                  <Minimize2 className="w-5 h-5 text-amber-300" />
+                ) : (
+                  <Maximize2 className="w-5 h-5 text-cyan-300 group-hover:scale-110 transition-transform" />
+                )}
+
+                {/* Tooltip on hover: "حالت فول" */}
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2.5 px-3 py-1.5 rounded-lg bg-slate-900/95 border border-white/20 text-white text-xs font-medium whitespace-nowrap shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  {isFullMode ? 'خروج از حالت فول (Esc)' : 'حالت فول'}
+                </div>
+              </button>
+
+              {isFullMode && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowToolbarInFullMode((prev) => !prev)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/85 hover:bg-slate-800 border border-white/20 hover:border-white/30 text-xs text-slate-300 hover:text-white shadow-xl backdrop-blur-xl transition active:scale-95"
+                    title={showToolbarInFullMode ? 'مخفی کردن نوار ابزار' : 'نمایش نوار ابزار'}
+                  >
+                    <span>{showToolbarInFullMode ? 'مخفی‌سازی ابزارها' : 'نمایش ابزارها'}</span>
+                  </button>
+
+                  <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono backdrop-blur-md">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span>حالت تمام‌صفحه نقشه (کلید Esc برای خروج)</span>
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* SVG Schematic Canvas - Unbounded Infinite Viewport */}
             <svg
               className="w-full h-full absolute inset-0 select-none overflow-visible pointer-events-auto"
@@ -851,6 +957,15 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   نمایش محل استقرار هر سوئیچ، روتر و اکسس‌پوینت بر اساس ساختمان، طبقه، واحد و رک
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={toggleFullMode}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-white/15 text-xs text-slate-200 transition active:scale-95"
+                title={isFullMode ? 'خروج از حالت فول (Esc)' : 'حالت فول'}
+              >
+                {isFullMode ? <Minimize2 className="w-4 h-4 text-amber-300" /> : <Maximize2 className="w-4 h-4 text-cyan-300" />}
+                <span>{isFullMode ? 'خروج از حالت فول' : 'حالت فول'}</span>
+              </button>
             </div>
 
             {/* Buildings Grid */}

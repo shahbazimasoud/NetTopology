@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.3.2-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.3.3-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۳.۲
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.3.2
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۳.۳
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.3.3
 
 ---
 
@@ -98,6 +98,18 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 - **جداسازی کامل کانتینر اسکرول:** استفاده از ساختار کانتینر مستقل در `App.tsx` با کنترل سرریز و اسکرول داخلی (`overflow-y-auto`) در محدوده محتوا (`<main>`) و پین شدن سایدبار در ارتفاع کامل نما (`h-full sticky top-14`).
 - **اسکرول‌بار اختصاصی و ظریف (`custom-scrollbar`):** اسکرول روان و مینی‌مال در منوی سایدبار برای نمایش بدون نقص در مانیتورها و تبلت‌های با ابعاد عمودی فشرده.
 - **کنتراست استاندارد در تم لایت:** استایل‌دهی شفاف به آیتم‌های فعال و هاور سایدبار در تم روشن با رنگ‌بندی دقیق و خوانا.
+
+### ۱۰. حالت تمام‌صفحه نقشه شماتیک توپولوژی (Fullscreen Topology Mode)
+- **دکمه اختصاصی در بالا سمت چپ نقشه:** دکمه شناور با ترنزیشن نرم و افکت نورانی که در زمان هاور با برچسب «حالت فول» راهنمای کاربر است.
+- **مخفی‌سازی کامل اجزای اضافی:** با فعال‌سازی حالت فول، تمامی عناصر محیط کاربری شامل هدر بالای نرم‌افزار، سایدبار دسترسی راست و منوهای بالا به‌طور کامل مخفی شده و نقشه تمام مساحت مانیتور را پوشش می‌دهد.
+- **پشتیبانی از کلید میانبر Esc:** امکان خروج آنی و روان از حالت تمام‌صفحه با فشردن کلید Escape یا کلیک مجدد روی دکمه.
+- **مدیریت نوار ابزار در حالت فول:** دکمه سوئیچ سریع جهت مخفی‌سازی یا آشکارسازی نوار ابزار نقشه برای دستیابی به ۱۰۰٪ مساحت خالص نقشه شبکه.
+
+### ۱۱. معماری انحصاری و امن Self-Signed SSL (Strict HTTPS Setup)
+- **فعال‌سازی اختصاصی SSL با پورت دلخواه:** در پروسه نصب سروری، سامانه صرفاً بر روی پورت انتخابی شما با گواهی معتبر ۱۰ ساله Self-Signed SSL بر بستر امن HTTPS کانفیگ می‌شود.
+- **حذف کامل پورت‌های ناامن HTTP:** پورت 80 و پورت‌های مستقیم وب و بک‌اند کاملاً از اینترنت و شبکه عمومی حذف شده و صرفاً بر روی لوپ‌بک داخلی سرور (`127.0.0.1`) بایند می‌شوند.
+- **بازهدایت هوشمند خطای 497:** در صورت تلاش اشتباه برای باز کردن پورت امن با پروتکل `http://`، وب‌سرور Nginx به صورت خودکار درخواست را به `https://` بازهدایت می‌کند.
+- **ایزوله‌سازی فایروال UFW:** مسدودسازی پورت‌های داخلی 3000 و 5001 و باز نگه‌داشتن صرف پورت امن SSL تعیین‌شده توسط ادمین.
 
 ---
 
@@ -258,6 +270,19 @@ npm start
 - **Decoupled Scroll Architecture:** Re-architected viewport scrolling inside `App.tsx` by isolating vertical scroll (`overflow-y-auto`) exclusively to the main content container (`<main>`) while pinning the sidebar at full view height (`h-full sticky top-14`).
 - **Sleek Custom Scrollbar (`custom-scrollbar`):** Provides a minimal, non-intrusive scrollbar for the sidebar navigation items to fit seamlessly across smaller laptop and tablet viewports.
 - **Light Theme High-Contrast Consistency:** Ensures crystal-clear selection, hover, and active states for sidebar navigation buttons in light mode.
+
+### 10. Fullscreen Schematic Topology Mode
+- **Dedicated Top-Left Floating Control:** Instant fullscreen toggle positioned at the top-left of the topology canvas with hover tooltip indication ("حالت فول" / Full Mode).
+- **Total UI Concealment:** Completely masks all application navigation chrome—including the top header, sidebar navigation, top tabs, and footer—allocating 100% of the viewport strictly to the interactive SVG network canvas.
+- **Escape Key & Native Fullscreen Sync:** Exit seamlessly at any time with the `Esc` keyboard shortcut or via the top-left toggle button.
+- **In-Canvas Toolbar Toggle:** Allows toggling the internal filter/search bar on or off in full mode for an uninterrupted, edge-to-edge network map experience.
+
+### 11. Strict Self-Signed SSL Architecture (HTTPS-Only Installation)
+- **User-Defined SSL Port Enforcement:** Setup scripts exclusively deploy the application under TLS/HTTPS with a 10-year self-signed certificate on the administrator's chosen port.
+- **Complete Elimination of Unencrypted HTTP:** Port 80 and raw frontend/backend ports are eradicated from public exposure.
+- **Loopback Isolation:** Node.js frontend and Python backend engines are bound strictly to internal loopback (`127.0.0.1`), terminating all incoming client connections via Nginx SSL reverse proxy.
+- **Automated 497 Redirect Handling:** Standard HTTP requests mistakenly sent to the SSL port automatically redirect to secure HTTPS without browser error.
+- **Firewall Hardening:** UFW firewall rules permit only the designated SSL port, blocking direct access to ports 3000 and 5001.
 
 ---
 
