@@ -8,9 +8,19 @@ export interface ReleaseNote {
   changes: string[];
 }
 
-export const APP_VERSION = '1.1.0';
+export const APP_VERSION = '1.1.1';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.1.1',
+    releaseDate: '2026-09-08',
+    type: 'patch',
+    title: 'رفع خطای کلید در فیلتر ساختمان‌های نقشه شماتیک',
+    changes: [
+      'اصلاح ساختار کلیدهای منحصربه‌فرد (unique key prop) در لیست ساختمان‌های فیلتر نقشه شماتیک',
+      'پشتیبانی جامع و ایمن از ساختار آرایه‌ای داده‌های ساختمان‌های ارسال شده از سرور',
+    ],
+  },
   {
     version: '1.1.0',
     releaseDate: '2026-09-08',

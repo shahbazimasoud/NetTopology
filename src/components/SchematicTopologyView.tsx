@@ -462,11 +462,14 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             className="px-3 py-1.5 rounded-xl bg-slate-900/70 border border-white/15 text-slate-200 text-xs focus:outline-none focus:border-indigo-400"
           >
             <option value="all">تمام ساختمان‌ها</option>
-            {topology?.buildings.map((b) => (
-              <option key={b.name} value={b.name}>
-                {b.name}
-              </option>
-            ))}
+            {topology?.buildings?.map((b: any, index: number) => {
+              const bldgName = typeof b === 'string' ? b : b?.name || `ساختمان ${index + 1}`;
+              return (
+                <option key={`bldg-${index}-${bldgName}`} value={bldgName}>
+                  {bldgName}
+                </option>
+              );
+            })}
           </select>
 
           {/* Run CDP/LLDP Scan */}
