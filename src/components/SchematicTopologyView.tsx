@@ -407,8 +407,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     setTimeout(() => setFeedbackToast(null), 3000);
   };
 
-  const handleAddUnit = (building: string, floor: string) => {
-    const unitName = newUnitInput.trim();
+  const handleAddUnit = (building: string, floor: string, customInput?: string) => {
+    const unitName = (customInput !== undefined ? customInput : newUnitInput).trim();
     if (!unitName) return;
     const key = `${building}:::${floor}`;
     const updatedUnits = {
@@ -426,8 +426,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     setTimeout(() => setFeedbackToast(null), 3000);
   };
 
-  const handleAddRack = (building: string, floor: string) => {
-    const rackName = newRackInput.trim();
+  const handleAddRack = (building: string, floor: string, customInput?: string) => {
+    const rackName = (customInput !== undefined ? customInput : newRackInput).trim();
     if (!rackName) return;
     const key = `${building}:::${floor}`;
     const updatedRacks = {
@@ -480,9 +480,9 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       Object.entries(updatedUnits).forEach(([k, v]) => {
         if (k.startsWith(`${currentName}:::`)) {
           const rest = k.slice(`${currentName}:::`.length);
-          newUnitsObj[`${trimmed}:::${rest}`] = v;
+          newUnitsObj[`${trimmed}:::${rest}`] = v as string[];
         } else {
-          newUnitsObj[k] = v;
+          newUnitsObj[k] = v as string[];
         }
       });
       updatedUnits = newUnitsObj;
@@ -491,9 +491,9 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       Object.entries(updatedRacks).forEach(([k, v]) => {
         if (k.startsWith(`${currentName}:::`)) {
           const rest = k.slice(`${currentName}:::`.length);
-          newRacksObj[`${trimmed}:::${rest}`] = v;
+          newRacksObj[`${trimmed}:::${rest}`] = v as string[];
         } else {
-          newRacksObj[k] = v;
+          newRacksObj[k] = v as string[];
         }
       });
       updatedRacks = newRacksObj;
@@ -608,12 +608,12 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       delete updatedFloors[building];
       const newUnits: Record<string, string[]> = {};
       Object.entries(updatedUnits).forEach(([k, v]) => {
-        if (!k.startsWith(`${building}:::`)) newUnits[k] = v;
+        if (!k.startsWith(`${building}:::`)) newUnits[k] = v as string[];
       });
       updatedUnits = newUnits;
       const newRacks: Record<string, string[]> = {};
       Object.entries(updatedRacks).forEach(([k, v]) => {
-        if (!k.startsWith(`${building}:::`)) newRacks[k] = v;
+        if (!k.startsWith(`${building}:::`)) newRacks[k] = v as string[];
       });
       updatedRacks = newRacks;
     } else if (type === 'floor' && item) {
@@ -1043,7 +1043,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       const [b, f] = key.split(':::');
       if (b && f) {
         const floorData = ensureFloor(b, f);
-        unitList.forEach((u) => {
+        (unitList as string[]).forEach((u) => {
           if (!floorData.units[u]) floorData.units[u] = [];
         });
       }
@@ -1054,7 +1054,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       const [b, f] = key.split(':::');
       if (b && f) {
         const floorData = ensureFloor(b, f);
-        rackList.forEach((r) => {
+        (rackList as string[]).forEach((r) => {
           if (!floorData.racks[r]) floorData.racks[r] = [];
         });
       }
@@ -2068,8 +2068,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                           !dragOverTarget?.rack;
                         const isAnyDragging = draggedDevice !== null;
 
-                        const unitEntries = Object.entries(floorData.units);
-                        const rackEntries = Object.entries(floorData.racks);
+                        const unitEntries = Object.entries(floorData.units) as [string, TopologyNode[]][];
+                        const rackEntries = Object.entries(floorData.racks) as [string, TopologyNode[]][];
                         const hasNestedStructures = unitEntries.length > 0 || rackEntries.length > 0;
 
                         return (
