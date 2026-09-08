@@ -30,7 +30,7 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-PANEL_VERSION="1.5.0"
+PANEL_VERSION="1.6.0"
 
 clear 2>/dev/null || true
 echo -e "${CYAN}${BOLD}"
@@ -43,7 +43,7 @@ cat << "EOF"
   ██║ ╚████║███████╗   ██║      ██║   ╚██████╔╝██║     ╚██████╔╝
   ╚═╝  ╚═══╝╚══════╝   ╚═╝      ╚═╝    ╚═════╝ ╚═╝      ╚═════╝ 
         CISCO NETWORK TOPOLOGY & PORT SECURITY MANAGEMENT PANEL
-        Version: 1.5.0 (Production Stable)
+        Version: 1.6.0 (Production Stable)
         Developer: Masoud Shahbazi (https://www.linkedin.com/in/masoudshahbazi/)
         Repository: https://github.com/shahbazimasoud/NetTopology
 ======================================================================
@@ -143,18 +143,33 @@ while true; do
   fi
 done
 
+while true; do
+  prompt_read "Enter Backend Port for NetTopology (API & Python Engine) [Default: 5001]: " BACKEND_PORT_INPUT "5001"
+  if [[ "$BACKEND_PORT_INPUT" =~ ^[0-9]+$ ]] && [ "$BACKEND_PORT_INPUT" -ge 1 ] && [ "$BACKEND_PORT_INPUT" -le 65535 ]; then
+    if [ "$BACKEND_PORT_INPUT" -eq "$PANEL_SSL_PORT" ]; then
+      log_error "Backend port cannot conflict with public HTTPS ingress port ($PANEL_SSL_PORT)."
+    else
+      INTERNAL_BACKEND_PORT="$BACKEND_PORT_INPUT"
+      break
+    fi
+  else
+    log_error "Invalid port number. Please enter a value between 1 and 65535."
+    BACKEND_PORT_INPUT="5001"
+  fi
+done
+
 # Internal loopback ports for isolated local processes
 INTERNAL_NODE_PORT="3000"
-INTERNAL_BACKEND_PORT="5001"
-if [ "$PANEL_SSL_PORT" -eq "$INTERNAL_NODE_PORT" ]; then
+if [ "$PANEL_SSL_PORT" -eq "$INTERNAL_NODE_PORT" ] || [ "$INTERNAL_BACKEND_PORT" -eq "$INTERNAL_NODE_PORT" ]; then
   INTERNAL_NODE_PORT="13000"
-fi
-if [ "$PANEL_SSL_PORT" -eq "$INTERNAL_BACKEND_PORT" ]; then
-  INTERNAL_BACKEND_PORT="15001"
+  if [ "$PANEL_SSL_PORT" -eq "$INTERNAL_NODE_PORT" ] || [ "$INTERNAL_BACKEND_PORT" -eq "$INTERNAL_NODE_PORT" ]; then
+    INTERNAL_NODE_PORT="13001"
+  fi
 fi
 
 log_info "Security & SSL Architecture Configured:"
 log_info "  • Public Ingress: Strict HTTPS / SSL Only on port $PANEL_SSL_PORT"
+log_info "  • Backend Service: API & Python Engine bound to port $INTERNAL_BACKEND_PORT (127.0.0.1)"
 log_info "  • TLS Protocol: Self-Signed TLS 10-Year Certificate (/etc/nginx/ssl/nettopology.crt)"
 log_info "  • Internal Isolation: Node & Python engines bound exclusively to localhost loopback"
 
@@ -502,6 +517,7 @@ echo -e "  ${BOLD}NetTopology Secure SSL Engine is active under systemd & Nginx!
 echo -e "${CYAN}======================================================================${NC}"
 echo -e "  🔒 ${BOLD}Secure HTTPS / SSL Access:${NC}  ${GREEN}${BOLD}https://${PANEL_DOMAIN}:${PANEL_SSL_PORT}${NC}"
 echo -e "  🛡️  ${BOLD}Security Mode:${NC}             ${PURPLE}${BOLD}Strict Self-Signed SSL Only (Port ${PANEL_SSL_PORT})${NC}"
+echo -e "  🐍 ${BOLD}Backend Service Port:${NC}      ${GREEN}${BOLD}Port ${INTERNAL_BACKEND_PORT} (Loopback 127.0.0.1)${NC}"
 echo -e "  📜 ${BOLD}TLS Certificate:${NC}           ${BLUE}/etc/nginx/ssl/nettopology.crt${NC}"
 echo -e "  🌉 ${BOLD}Internal Engine Bridge:${NC}    ${PURPLE}${BOLD}Localhost Loopback Only (Node 127.0.0.1:${INTERNAL_NODE_PORT})${NC}"
 echo -e "  📂 ${BOLD}Installation Path:${NC}         ${YELLOW}${INSTALL_DIR}${NC}"

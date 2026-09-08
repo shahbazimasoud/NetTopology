@@ -32,7 +32,11 @@ import {
   AlertCircle,
   Loader2,
   ArrowRight,
-  ArrowLeft
+  ArrowLeft,
+  Edit2,
+  Trash2,
+  Box,
+  Boxes
 } from 'lucide-react';
 import { TopologyData, Device, TopologyLink, TopologyNode } from '../types';
 import { useLanguage } from '../i18n';
@@ -139,9 +143,73 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     }
   }, [topology?.nodes]);
 
-  // Custom added buildings and floors
-  const [customBuildings, setCustomBuildings] = useState<string[]>([]);
-  const [customFloors, setCustomFloors] = useState<Record<string, string[]>>({});
+  // Storage key for custom physical hierarchy persistence
+  const HIERARCHY_STORAGE_KEY = 'nettopology_physical_hierarchy_v2';
+
+  // Custom added buildings, floors, units, and racks with localStorage initialization
+  const [customBuildings, setCustomBuildings] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(HIERARCHY_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed.buildings)) return parsed.buildings;
+      }
+    } catch (e) {}
+    return [];
+  });
+
+  const [customFloors, setCustomFloors] = useState<Record<string, string[]>>(() => {
+    try {
+      const saved = localStorage.getItem(HIERARCHY_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.floors && typeof parsed.floors === 'object') return parsed.floors;
+      }
+    } catch (e) {}
+    return {};
+  });
+
+  const [customUnits, setCustomUnits] = useState<Record<string, string[]>>(() => {
+    try {
+      const saved = localStorage.getItem(HIERARCHY_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.units && typeof parsed.units === 'object') return parsed.units;
+      }
+    } catch (e) {}
+    return {};
+  });
+
+  const [customRacks, setCustomRacks] = useState<Record<string, string[]>>(() => {
+    try {
+      const saved = localStorage.getItem(HIERARCHY_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.racks && typeof parsed.racks === 'object') return parsed.racks;
+      }
+    } catch (e) {}
+    return {};
+  });
+
+  // Helper to persist hierarchy state in localStorage
+  const saveHierarchyState = (
+    buildings: string[],
+    floors: Record<string, string[]>,
+    units: Record<string, string[]>,
+    racks: Record<string, string[]>
+  ) => {
+    try {
+      localStorage.setItem(
+        HIERARCHY_STORAGE_KEY,
+        JSON.stringify({
+          buildings,
+          floors,
+          units,
+          racks,
+        })
+      );
+    } catch (e) {}
+  };
 
   // Drag and drop states for Physical view
   const [draggedDevice, setDraggedDevice] = useState<{
@@ -150,11 +218,15 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     type: string;
     fromBuilding: string;
     fromFloor: string;
+    fromUnit?: string;
+    fromRack?: string;
   } | null>(null);
 
   const [dragOverTarget, setDragOverTarget] = useState<{
     building: string;
     floor: string;
+    unit?: string;
+    rack?: string;
   } | null>(null);
 
   const [movingDeviceId, setMovingDeviceId] = useState<string | null>(null);
@@ -163,37 +235,80 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     message: string;
   } | null>(null);
 
-  // Modals for adding floor/building and manual relocation
+  // Modals for adding floor/building, unit/rack, rename, delete, and manual relocation
   const [addFloorBuilding, setAddFloorBuilding] = useState<string | null>(null);
   const [newFloorInput, setNewFloorInput] = useState('');
   const [showAddBuildingModal, setShowAddBuildingModal] = useState(false);
   const [newBuildingInput, setNewBuildingInput] = useState('');
+
+  const [addUnitModal, setAddUnitModal] = useState<{ building: string; floor: string } | null>(null);
+  const [newUnitInput, setNewUnitInput] = useState('');
+
+  const [addRackModal, setAddRackModal] = useState<{ building: string; floor: string } | null>(null);
+  const [newRackInput, setNewRackInput] = useState('');
+
+  const [renameModal, setRenameModal] = useState<{
+    type: 'building' | 'floor' | 'unit' | 'rack';
+    building: string;
+    floor?: string;
+    item?: string;
+    currentName: string;
+    newName: string;
+  } | null>(null);
+
+  const [deleteModal, setDeleteModal] = useState<{
+    type: 'building' | 'floor' | 'unit' | 'rack';
+    building: string;
+    floor?: string;
+    item?: string;
+    deviceCount: number;
+  } | null>(null);
+
   const [relocateDevice, setRelocateDevice] = useState<TopologyNode | null>(null);
   const [relocateTargetBuilding, setRelocateTargetBuilding] = useState('');
   const [relocateTargetFloor, setRelocateTargetFloor] = useState('');
+  const [relocateTargetUnit, setRelocateTargetUnit] = useState('');
+  const [relocateTargetRack, setRelocateTargetRack] = useState('');
   const [customRelocateBuilding, setCustomRelocateBuilding] = useState('');
   const [customRelocateFloor, setCustomRelocateFloor] = useState('');
+  const [customRelocateUnit, setCustomRelocateUnit] = useState('');
+  const [customRelocateRack, setCustomRelocateRack] = useState('');
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleMoveDevice = async (deviceId: string, targetBuilding: string, targetFloor: string) => {
+  const handleMoveDevice = async (
+    deviceId: string,
+    targetBuilding: string,
+    targetFloor: string,
+    targetUnit?: string,
+    targetRack?: string
+  ) => {
     const dev = localNodes.find((n) => n.id === deviceId);
     if (!dev) return;
 
     const trimmedBuilding = targetBuilding.trim();
     const trimmedFloor = targetFloor.trim();
+    const trimmedUnit = targetUnit !== undefined ? targetUnit.trim() : (dev.unit || '');
+    const trimmedRack = targetRack !== undefined ? targetRack.trim() : (dev.rack || '');
 
     if (!trimmedBuilding || !trimmedFloor) return;
 
     const currentBuilding = dev.building || (isEn ? 'Other Buildings' : 'سایر ساختمان‌ها');
     const currentFloor = dev.floor || (isEn ? 'Unassigned Floor' : 'طبقه نامشخص');
+    const currentUnit = dev.unit || '';
+    const currentRack = dev.rack || '';
 
-    if (currentBuilding === trimmedBuilding && currentFloor === trimmedFloor) {
+    if (
+      currentBuilding === trimmedBuilding &&
+      currentFloor === trimmedFloor &&
+      currentUnit === trimmedUnit &&
+      currentRack === trimmedRack
+    ) {
       setFeedbackToast({
         type: 'info',
         message: isEn
-          ? `Device "${dev.name}" is already situated in ${trimmedBuilding} > ${trimmedFloor}.`
-          : `تجهیز «${dev.name}» هم‌اکنون در ${trimmedBuilding} > ${trimmedFloor} مستقر است.`,
+          ? `Device "${dev.name}" is already situated here.`
+          : `تجهیز «${dev.name}» هم‌اکنون در همین موقعیت مستقر است.`,
       });
       setTimeout(() => setFeedbackToast(null), 3500);
       return;
@@ -204,7 +319,13 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     setLocalNodes((prev) =>
       prev.map((n) =>
         n.id === deviceId
-          ? { ...n, building: trimmedBuilding, floor: trimmedFloor }
+          ? {
+              ...n,
+              building: trimmedBuilding,
+              floor: trimmedFloor,
+              unit: trimmedUnit,
+              rack: trimmedRack,
+            }
           : n
       )
     );
@@ -214,6 +335,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       await updateDevice(deviceId, {
         building: trimmedBuilding,
         floor: trimmedFloor,
+        unit: trimmedUnit,
+        rack: trimmedRack,
       });
 
       setFeedbackToast({
@@ -248,25 +371,324 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const handleAddFloor = (building: string) => {
     const floorName = newFloorInput.trim();
     if (!floorName) return;
-    setCustomFloors((prev) => ({
-      ...prev,
-      [building]: Array.from(new Set([...(prev[building] || []), floorName])),
-    }));
+    const updatedFloors = {
+      ...customFloors,
+      [building]: Array.from(new Set([...(customFloors[building] || []), floorName])),
+    };
+    setCustomFloors(updatedFloors);
+    saveHierarchyState(customBuildings, updatedFloors, customUnits, customRacks);
     setAddFloorBuilding(null);
     setNewFloorInput('');
+    setFeedbackToast({
+      type: 'success',
+      message: isEn ? `Floor "${floorName}" added` : `طبقه «${floorName}» اضافه شد`,
+    });
+    setTimeout(() => setFeedbackToast(null), 3000);
   };
 
   const handleAddBuilding = () => {
     const bldgName = newBuildingInput.trim();
     if (!bldgName) return;
-    setCustomBuildings((prev) => Array.from(new Set([...prev, bldgName])));
+    const updatedBuildings = Array.from(new Set([...customBuildings, bldgName]));
     const defaultFloor = isEn ? 'Floor 1' : 'طبقه ۱';
-    setCustomFloors((prev) => ({
-      ...prev,
-      [bldgName]: Array.from(new Set([...(prev[bldgName] || []), defaultFloor])),
-    }));
+    const updatedFloors = {
+      ...customFloors,
+      [bldgName]: Array.from(new Set([...(customFloors[bldgName] || []), defaultFloor])),
+    };
+    setCustomBuildings(updatedBuildings);
+    setCustomFloors(updatedFloors);
+    saveHierarchyState(updatedBuildings, updatedFloors, customUnits, customRacks);
     setShowAddBuildingModal(false);
     setNewBuildingInput('');
+    setFeedbackToast({
+      type: 'success',
+      message: isEn ? `Building "${bldgName}" created` : `ساختمان «${bldgName}» ایجاد شد`,
+    });
+    setTimeout(() => setFeedbackToast(null), 3000);
+  };
+
+  const handleAddUnit = (building: string, floor: string) => {
+    const unitName = newUnitInput.trim();
+    if (!unitName) return;
+    const key = `${building}:::${floor}`;
+    const updatedUnits = {
+      ...customUnits,
+      [key]: Array.from(new Set([...(customUnits[key] || []), unitName])),
+    };
+    setCustomUnits(updatedUnits);
+    saveHierarchyState(customBuildings, customFloors, updatedUnits, customRacks);
+    setAddUnitModal(null);
+    setNewUnitInput('');
+    setFeedbackToast({
+      type: 'success',
+      message: isEn ? `Unit "${unitName}" created` : `واحد «${unitName}» ایجاد شد`,
+    });
+    setTimeout(() => setFeedbackToast(null), 3000);
+  };
+
+  const handleAddRack = (building: string, floor: string) => {
+    const rackName = newRackInput.trim();
+    if (!rackName) return;
+    const key = `${building}:::${floor}`;
+    const updatedRacks = {
+      ...customRacks,
+      [key]: Array.from(new Set([...(customRacks[key] || []), rackName])),
+    };
+    setCustomRacks(updatedRacks);
+    saveHierarchyState(customBuildings, customFloors, customUnits, updatedRacks);
+    setAddRackModal(null);
+    setNewRackInput('');
+    setFeedbackToast({
+      type: 'success',
+      message: isEn ? `Rack "${rackName}" created` : `رک «${rackName}» ایجاد شد`,
+    });
+    setTimeout(() => setFeedbackToast(null), 3000);
+  };
+
+  const handleRenameSubmit = async () => {
+    if (!renameModal) return;
+    const { type, building, floor, currentName, newName } = renameModal;
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === currentName) {
+      setRenameModal(null);
+      return;
+    }
+
+    let updatedBuildings = [...customBuildings];
+    let updatedFloors = { ...customFloors };
+    let updatedUnits = { ...customUnits };
+    let updatedRacks = { ...customRacks };
+
+    if (type === 'building') {
+      const affectedDevices = localNodes.filter((n) => n.building === currentName);
+      setLocalNodes((prev) =>
+        prev.map((n) => (n.building === currentName ? { ...n, building: trimmed } : n))
+      );
+      for (const dev of affectedDevices) {
+        try {
+          await updateDevice(dev.id, { building: trimmed });
+        } catch (err) {}
+      }
+
+      updatedBuildings = updatedBuildings.map((b) => (b === currentName ? trimmed : b));
+      if (updatedFloors[currentName]) {
+        updatedFloors[trimmed] = updatedFloors[currentName];
+        delete updatedFloors[currentName];
+      }
+
+      const newUnitsObj: Record<string, string[]> = {};
+      Object.entries(updatedUnits).forEach(([k, v]) => {
+        if (k.startsWith(`${currentName}:::`)) {
+          const rest = k.slice(`${currentName}:::`.length);
+          newUnitsObj[`${trimmed}:::${rest}`] = v;
+        } else {
+          newUnitsObj[k] = v;
+        }
+      });
+      updatedUnits = newUnitsObj;
+
+      const newRacksObj: Record<string, string[]> = {};
+      Object.entries(updatedRacks).forEach(([k, v]) => {
+        if (k.startsWith(`${currentName}:::`)) {
+          const rest = k.slice(`${currentName}:::`.length);
+          newRacksObj[`${trimmed}:::${rest}`] = v;
+        } else {
+          newRacksObj[k] = v;
+        }
+      });
+      updatedRacks = newRacksObj;
+    } else if (type === 'floor') {
+      const affectedDevices = localNodes.filter(
+        (n) => n.building === building && n.floor === currentName
+      );
+      setLocalNodes((prev) =>
+        prev.map((n) =>
+          n.building === building && n.floor === currentName ? { ...n, floor: trimmed } : n
+        )
+      );
+      for (const dev of affectedDevices) {
+        try {
+          await updateDevice(dev.id, { floor: trimmed });
+        } catch (err) {}
+      }
+
+      if (updatedFloors[building]) {
+        updatedFloors[building] = updatedFloors[building].map((f) =>
+          f === currentName ? trimmed : f
+        );
+      }
+      const oldKey = `${building}:::${currentName}`;
+      const newKey = `${building}:::${trimmed}`;
+      if (updatedUnits[oldKey]) {
+        updatedUnits[newKey] = updatedUnits[oldKey];
+        delete updatedUnits[oldKey];
+      }
+      if (updatedRacks[oldKey]) {
+        updatedRacks[newKey] = updatedRacks[oldKey];
+        delete updatedRacks[oldKey];
+      }
+    } else if (type === 'unit' && floor) {
+      const affectedDevices = localNodes.filter(
+        (n) => n.building === building && n.floor === floor && n.unit === currentName
+      );
+      setLocalNodes((prev) =>
+        prev.map((n) =>
+          n.building === building && n.floor === floor && n.unit === currentName
+            ? { ...n, unit: trimmed }
+            : n
+        )
+      );
+      for (const dev of affectedDevices) {
+        try {
+          await updateDevice(dev.id, { unit: trimmed });
+        } catch (err) {}
+      }
+
+      const key = `${building}:::${floor}`;
+      if (updatedUnits[key]) {
+        updatedUnits[key] = updatedUnits[key].map((u) => (u === currentName ? trimmed : u));
+      }
+    } else if (type === 'rack' && floor) {
+      const affectedDevices = localNodes.filter(
+        (n) => n.building === building && n.floor === floor && n.rack === currentName
+      );
+      setLocalNodes((prev) =>
+        prev.map((n) =>
+          n.building === building && n.floor === floor && n.rack === currentName
+            ? { ...n, rack: trimmed }
+            : n
+        )
+      );
+      for (const dev of affectedDevices) {
+        try {
+          await updateDevice(dev.id, { rack: trimmed });
+        } catch (err) {}
+      }
+
+      const key = `${building}:::${floor}`;
+      if (updatedRacks[key]) {
+        updatedRacks[key] = updatedRacks[key].map((r) => (r === currentName ? trimmed : r));
+      }
+    }
+
+    setCustomBuildings(updatedBuildings);
+    setCustomFloors(updatedFloors);
+    setCustomUnits(updatedUnits);
+    setCustomRacks(updatedRacks);
+    saveHierarchyState(updatedBuildings, updatedFloors, updatedUnits, updatedRacks);
+    setRenameModal(null);
+    setFeedbackToast({
+      type: 'success',
+      message: isEn ? `Renamed to "${trimmed}"` : `نام به «${trimmed}» تغییر یافت`,
+    });
+    setTimeout(() => setFeedbackToast(null), 3000);
+    onRefresh();
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteModal) return;
+    const { type, building, floor, item } = deleteModal;
+
+    let updatedBuildings = [...customBuildings];
+    let updatedFloors = { ...customFloors };
+    let updatedUnits = { ...customUnits };
+    let updatedRacks = { ...customRacks };
+
+    if (type === 'building') {
+      const affectedDevices = localNodes.filter((n) => n.building === building);
+      setLocalNodes((prev) =>
+        prev.map((n) => (n.building === building ? { ...n, building: '' } : n))
+      );
+      for (const dev of affectedDevices) {
+        try {
+          await updateDevice(dev.id, { building: '' });
+        } catch (err) {}
+      }
+      updatedBuildings = updatedBuildings.filter((b) => b !== building);
+      delete updatedFloors[building];
+      const newUnits: Record<string, string[]> = {};
+      Object.entries(updatedUnits).forEach(([k, v]) => {
+        if (!k.startsWith(`${building}:::`)) newUnits[k] = v;
+      });
+      updatedUnits = newUnits;
+      const newRacks: Record<string, string[]> = {};
+      Object.entries(updatedRacks).forEach(([k, v]) => {
+        if (!k.startsWith(`${building}:::`)) newRacks[k] = v;
+      });
+      updatedRacks = newRacks;
+    } else if (type === 'floor' && item) {
+      const affectedDevices = localNodes.filter(
+        (n) => n.building === building && n.floor === item
+      );
+      setLocalNodes((prev) =>
+        prev.map((n) =>
+          n.building === building && n.floor === item ? { ...n, floor: '' } : n
+        )
+      );
+      for (const dev of affectedDevices) {
+        try {
+          await updateDevice(dev.id, { floor: '' });
+        } catch (err) {}
+      }
+      if (updatedFloors[building]) {
+        updatedFloors[building] = updatedFloors[building].filter((f) => f !== item);
+      }
+      delete updatedUnits[`${building}:::${item}`];
+      delete updatedRacks[`${building}:::${item}`];
+    } else if (type === 'unit' && floor && item) {
+      const affectedDevices = localNodes.filter(
+        (n) => n.building === building && n.floor === floor && n.unit === item
+      );
+      setLocalNodes((prev) =>
+        prev.map((n) =>
+          n.building === building && n.floor === floor && n.unit === item
+            ? { ...n, unit: '' }
+            : n
+        )
+      );
+      for (const dev of affectedDevices) {
+        try {
+          await updateDevice(dev.id, { unit: '' });
+        } catch (err) {}
+      }
+      const key = `${building}:::${floor}`;
+      if (updatedUnits[key]) {
+        updatedUnits[key] = updatedUnits[key].filter((u) => u !== item);
+      }
+    } else if (type === 'rack' && floor && item) {
+      const affectedDevices = localNodes.filter(
+        (n) => n.building === building && n.floor === floor && n.rack === item
+      );
+      setLocalNodes((prev) =>
+        prev.map((n) =>
+          n.building === building && n.floor === floor && n.rack === item
+            ? { ...n, rack: '' }
+            : n
+        )
+      );
+      for (const dev of affectedDevices) {
+        try {
+          await updateDevice(dev.id, { rack: '' });
+        } catch (err) {}
+      }
+      const key = `${building}:::${floor}`;
+      if (updatedRacks[key]) {
+        updatedRacks[key] = updatedRacks[key].filter((r) => r !== item);
+      }
+    }
+
+    setCustomBuildings(updatedBuildings);
+    setCustomFloors(updatedFloors);
+    setCustomUnits(updatedUnits);
+    setCustomRacks(updatedRacks);
+    saveHierarchyState(updatedBuildings, updatedFloors, updatedUnits, updatedRacks);
+    setDeleteModal(null);
+    setFeedbackToast({
+      type: 'success',
+      message: isEn ? 'Item deleted successfully' : 'مکان فیزیکی با موفقیت حذف شد',
+    });
+    setTimeout(() => setFeedbackToast(null), 3000);
+    onRefresh();
   };
 
   // Toggle Full Mode (Hides header, sidebar, top menu, and maximizes map to full browser viewport)
@@ -582,7 +1004,27 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
   // Grouped hierarchy for Physical View
   const physicalHierarchy = useMemo(() => {
-    const groups: Record<string, Record<string, TopologyNode[]>> = {};
+    interface FloorHierarchyData {
+      allDevices: TopologyNode[];
+      units: Record<string, TopologyNode[]>;
+      racks: Record<string, TopologyNode[]>;
+      general: TopologyNode[];
+    }
+
+    const groups: Record<string, Record<string, FloorHierarchyData>> = {};
+
+    const ensureFloor = (b: string, f: string): FloorHierarchyData => {
+      if (!groups[b]) groups[b] = {};
+      if (!groups[b][f]) {
+        groups[b][f] = {
+          allDevices: [],
+          units: {},
+          racks: {},
+          general: [],
+        };
+      }
+      return groups[b][f];
+    };
 
     // 1. Prepopulate custom added buildings
     customBuildings.forEach((b) => {
@@ -591,23 +1033,53 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
     // 2. Prepopulate custom added floors
     Object.entries(customFloors).forEach(([b, floors]) => {
-      if (!groups[b]) groups[b] = {};
       (floors as string[]).forEach((f) => {
-        if (!groups[b][f]) groups[b][f] = [];
+        ensureFloor(b, f);
       });
     });
 
-    // 3. Populate from localNodes
+    // 3. Prepopulate custom added units
+    Object.entries(customUnits).forEach(([key, unitList]) => {
+      const [b, f] = key.split(':::');
+      if (b && f) {
+        const floorData = ensureFloor(b, f);
+        unitList.forEach((u) => {
+          if (!floorData.units[u]) floorData.units[u] = [];
+        });
+      }
+    });
+
+    // 4. Prepopulate custom added racks
+    Object.entries(customRacks).forEach(([key, rackList]) => {
+      const [b, f] = key.split(':::');
+      if (b && f) {
+        const floorData = ensureFloor(b, f);
+        rackList.forEach((r) => {
+          if (!floorData.racks[r]) floorData.racks[r] = [];
+        });
+      }
+    });
+
+    // 5. Populate from localNodes
     localNodes.forEach((d) => {
       const b = d.building || (isEn ? 'Other Buildings' : 'سایر ساختمان‌ها');
       const f = d.floor || (isEn ? 'Unassigned Floor' : 'طبقه نامشخص');
-      if (!groups[b]) groups[b] = {};
-      if (!groups[b][f]) groups[b][f] = [];
-      groups[b][f].push(d);
+      const floorData = ensureFloor(b, f);
+      floorData.allDevices.push(d);
+
+      if (d.unit) {
+        if (!floorData.units[d.unit]) floorData.units[d.unit] = [];
+        floorData.units[d.unit].push(d);
+      } else if (d.rack) {
+        if (!floorData.racks[d.rack]) floorData.racks[d.rack] = [];
+        floorData.racks[d.rack].push(d);
+      } else {
+        floorData.general.push(d);
+      }
     });
 
     return groups;
-  }, [localNodes, customBuildings, customFloors, isEn]);
+  }, [localNodes, customBuildings, customFloors, customUnits, customRacks, isEn]);
 
   // Helper list of all buildings for manual relocation
   const allBuildingOptions = useMemo(() => {
@@ -640,6 +1112,234 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     }
     return Array.from(set);
   }, [relocateTargetBuilding, allBuildingOptions, localNodes, customFloors, isEn]);
+
+  // Helper list of units for selected building + floor in relocation modal
+  const allUnitOptionsForSelectedFloor = useMemo(() => {
+    const targetBldg =
+      relocateTargetBuilding === '__CUSTOM__'
+        ? customRelocateBuilding
+        : relocateTargetBuilding || allBuildingOptions[0] || '';
+    const targetFl =
+      relocateTargetFloor === '__CUSTOM__'
+        ? customRelocateFloor
+        : relocateTargetFloor || allFloorOptionsForSelectedBuilding[0] || '';
+    const set = new Set<string>();
+    localNodes
+      .filter((n) => n.building === targetBldg && n.floor === targetFl)
+      .forEach((n) => {
+        if (n.unit) set.add(n.unit);
+      });
+    const key = `${targetBldg}:::${targetFl}`;
+    if (customUnits[key]) {
+      customUnits[key].forEach((u) => set.add(u));
+    }
+    return Array.from(set);
+  }, [
+    relocateTargetBuilding,
+    customRelocateBuilding,
+    relocateTargetFloor,
+    customRelocateFloor,
+    allBuildingOptions,
+    allFloorOptionsForSelectedBuilding,
+    localNodes,
+    customUnits,
+  ]);
+
+  // Helper list of racks for selected building + floor in relocation modal
+  const allRackOptionsForSelectedFloor = useMemo(() => {
+    const targetBldg =
+      relocateTargetBuilding === '__CUSTOM__'
+        ? customRelocateBuilding
+        : relocateTargetBuilding || allBuildingOptions[0] || '';
+    const targetFl =
+      relocateTargetFloor === '__CUSTOM__'
+        ? customRelocateFloor
+        : relocateTargetFloor || allFloorOptionsForSelectedBuilding[0] || '';
+    const set = new Set<string>();
+    localNodes
+      .filter((n) => n.building === targetBldg && n.floor === targetFl)
+      .forEach((n) => {
+        if (n.rack) set.add(n.rack);
+      });
+    const key = `${targetBldg}:::${targetFl}`;
+    if (customRacks[key]) {
+      customRacks[key].forEach((r) => set.add(r));
+    }
+    return Array.from(set);
+  }, [
+    relocateTargetBuilding,
+    customRelocateBuilding,
+    relocateTargetFloor,
+    customRelocateFloor,
+    allBuildingOptions,
+    allFloorOptionsForSelectedBuilding,
+    localNodes,
+    customRacks,
+  ]);
+
+  // Render a device card inside physical view (used in units, racks, and general floor)
+  const renderDeviceCard = (
+    device: TopologyNode,
+    bldgName: string,
+    floorName: string,
+    unitName?: string,
+    rackName?: string
+  ) => {
+    const isBeingDragged = draggedDevice?.id === device.id;
+    const isCurrentlyMoving = movingDeviceId === device.id;
+
+    return (
+      <div
+        key={device.id}
+        draggable={!movingDeviceId}
+        onDragStart={(e) => {
+          e.stopPropagation();
+          e.dataTransfer.setData('text/plain', device.id);
+          e.dataTransfer.setData(
+            'application/json',
+            JSON.stringify({
+              deviceId: device.id,
+              fromBuilding: bldgName,
+              fromFloor: floorName,
+              fromUnit: unitName || '',
+              fromRack: rackName || '',
+            })
+          );
+          e.dataTransfer.effectAllowed = 'move';
+          setDraggedDevice({
+            id: device.id,
+            name: device.name,
+            type: device.type,
+            fromBuilding: bldgName,
+            fromFloor: floorName,
+            fromUnit: unitName,
+            fromRack: rackName,
+          });
+        }}
+        onDragEnd={(e) => {
+          e.stopPropagation();
+          setDraggedDevice(null);
+          setDragOverTarget(null);
+        }}
+        onClick={() => setSelectedNodeId(device.id)}
+        className={`p-3 rounded-xl border transition shadow-lg backdrop-blur-xl select-none ${
+          isBeingDragged
+            ? 'opacity-30 border-dashed border-cyan-400 ring-2 ring-cyan-400/40 scale-95 cursor-grabbing'
+            : selectedNodeId === device.id
+            ? 'spatial-glass border-cyan-400 ring-2 ring-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-grab hover:shadow-2xl'
+            : device.is_online
+            ? 'spatial-glass spatial-glass-hover border-white/10 cursor-grab hover:shadow-2xl'
+            : 'spatial-glass border-rose-500/30 bg-rose-950/20 cursor-grab'
+        }`}
+      >
+        {/* Card Header with Grip Handle */}
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div
+              className="text-slate-400 hover:text-cyan-300 p-0.5 cursor-grab active:cursor-grabbing"
+              title={t('topology_physical_drag_hint')}
+            >
+              <GripVertical className="w-3.5 h-3.5" />
+            </div>
+            <div
+              className={`p-1.5 rounded-lg ${
+                device.type === 'switch'
+                  ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                  : device.type === 'router'
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+              }`}
+            >
+              {device.type === 'switch' ? (
+                <Server className="w-3 h-3" />
+              ) : device.type === 'router' ? (
+                <RouterIcon className="w-3 h-3" />
+              ) : (
+                <Wifi className="w-3 h-3" />
+              )}
+            </div>
+            <span className="font-bold text-xs text-white truncate font-mono">
+              {device.name}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            {isCurrentlyMoving ? (
+              <span className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                <span>Moving...</span>
+              </span>
+            ) : (
+              <span
+                className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
+                  device.is_online
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                }`}
+              >
+                {device.is_online ? 'ONLINE' : 'OFFLINE'}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="text-[11px] font-mono font-bold text-indigo-300 mb-1">
+          {device.ip}
+        </div>
+
+        <div className="text-[10px] text-slate-400 space-y-0.5">
+          {device.unit && (
+            <div className="flex items-center gap-1">
+              <Box className="w-2.5 h-2.5 text-indigo-400" />
+              <span>{t('topology_unit_label')} {device.unit}</span>
+            </div>
+          )}
+          {device.rack && (
+            <div className="flex items-center gap-1 text-slate-300 font-mono">
+              <Server className="w-2.5 h-2.5 text-cyan-400" />
+              <span>{t('topology_rack_label')} {device.rack}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons: Inspect Ports & Manual Relocate */}
+        <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px]">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onInspectPorts(device as unknown as Device);
+            }}
+            className="text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 font-medium cursor-pointer"
+          >
+            <Cable className="w-3 h-3" />
+            <span>{t('topology_inspect_ports_btn')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setRelocateDevice(device);
+              setRelocateTargetBuilding(bldgName);
+              setRelocateTargetFloor(floorName);
+              setRelocateTargetUnit(device.unit || '__NONE__');
+              setRelocateTargetRack(device.rack || '__NONE__');
+              setCustomRelocateBuilding('');
+              setCustomRelocateFloor('');
+              setCustomRelocateUnit('');
+              setCustomRelocateRack('');
+            }}
+            className="text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1 font-medium cursor-pointer"
+            title={t('topology_physical_relocate_btn')}
+          >
+            <Move className="w-3 h-3" />
+            <span>{t('topology_physical_relocate_btn')}</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -1288,7 +1988,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {Object.entries(physicalHierarchy).map(([bldgName, floors]) => {
                 const totalDevicesInBldg = Object.values(floors).reduce(
-                  (acc, devs) => acc + devs.length,
+                  (acc, floorData) => acc + floorData.allDevices.length,
                   0
                 );
 
@@ -1297,14 +1997,47 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     key={bldgName}
                     className="spatial-glass border border-white/10 rounded-xl p-4 shadow-xl space-y-3"
                   >
-                    {/* Building Title & Add Floor */}
-                    <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+                    {/* Building Title & Management Actions */}
+                    <div className="flex items-center justify-between pb-2.5 border-b border-white/10 flex-wrap gap-2">
                       <div className="flex items-center gap-2.5">
                         <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                           <Building2 className="w-4 h-4" />
                         </div>
                         <div>
-                          <h4 className="text-sm font-bold text-white">{bldgName}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-bold text-white">{bldgName}</h4>
+                            <div className="flex items-center gap-1 opacity-80 hover:opacity-100">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setRenameModal({
+                                    type: 'building',
+                                    building: bldgName,
+                                    currentName: bldgName,
+                                    newName: bldgName,
+                                  })
+                                }
+                                className="p-1 rounded text-slate-400 hover:text-cyan-300 hover:bg-white/5 transition"
+                                title={t('topology_physical_edit')}
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDeleteModal({
+                                    type: 'building',
+                                    building: bldgName,
+                                    deviceCount: totalDevicesInBldg,
+                                  })
+                                }
+                                className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-white/5 transition"
+                                title={t('topology_physical_delete')}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
                           <span className="text-[11px] text-slate-400">
                             {t('topology_devices_in_building', { count: totalDevicesInBldg })}
                           </span>
@@ -1327,11 +2060,17 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
                     {/* Floors in this building */}
                     <div className="space-y-3">
-                      {Object.entries(floors).map(([floorName, devices]) => {
-                        const isDropHovered =
+                      {Object.entries(floors).map(([floorName, floorData]) => {
+                        const isFloorDropHovered =
                           dragOverTarget?.building === bldgName &&
-                          dragOverTarget?.floor === floorName;
+                          dragOverTarget?.floor === floorName &&
+                          !dragOverTarget?.unit &&
+                          !dragOverTarget?.rack;
                         const isAnyDragging = draggedDevice !== null;
+
+                        const unitEntries = Object.entries(floorData.units);
+                        const rackEntries = Object.entries(floorData.racks);
+                        const hasNestedStructures = unitEntries.length > 0 || rackEntries.length > 0;
 
                         return (
                           <div
@@ -1353,7 +2092,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                                 e.clientY >= rect.bottom
                               ) {
                                 setDragOverTarget((prev) =>
-                                  prev?.building === bldgName && prev?.floor === floorName
+                                  prev?.building === bldgName && prev?.floor === floorName && !prev?.unit && !prev?.rack
                                     ? null
                                     : prev
                                 );
@@ -1376,31 +2115,95 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                               }
 
                               if (deviceId) {
-                                handleMoveDevice(deviceId, bldgName, floorName);
+                                handleMoveDevice(deviceId, bldgName, floorName, '', '');
                               }
                               setDragOverTarget(null);
                             }}
-                            className={`rounded-xl p-3.5 space-y-2.5 transition-all duration-200 border ${
-                              isDropHovered
+                            className={`rounded-xl p-3.5 space-y-3 transition-all duration-200 border ${
+                              isFloorDropHovered
                                 ? 'bg-cyan-950/50 border-cyan-400 ring-2 ring-cyan-400/50 shadow-[0_0_25px_rgba(6,182,212,0.35)] scale-[1.01]'
                                 : isAnyDragging
                                 ? 'bg-slate-900/60 border-dashed border-cyan-500/40 hover:border-cyan-400 hover:bg-cyan-950/20'
                                 : 'bg-slate-900/50 border-white/5'
                             }`}
                           >
-                            {/* Floor Label */}
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-1.5 font-semibold text-cyan-400">
-                                <Layers className="w-3.5 h-3.5" />
-                                <span>{floorName}</span>
+                            {/* Floor Header & Control Actions */}
+                            <div className="flex items-center justify-between text-xs flex-wrap gap-2">
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 font-bold text-cyan-400">
+                                  <Layers className="w-3.5 h-3.5" />
+                                  <span>{floorName}</span>
+                                </div>
+                                <div className="flex items-center gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setRenameModal({
+                                        type: 'floor',
+                                        building: bldgName,
+                                        item: floorName,
+                                        currentName: floorName,
+                                        newName: floorName,
+                                      })
+                                    }
+                                    className="p-1 rounded text-slate-400 hover:text-cyan-300 hover:bg-white/5 transition"
+                                    title={t('topology_physical_edit')}
+                                  >
+                                    <Edit2 className="w-2.5 h-2.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setDeleteModal({
+                                        type: 'floor',
+                                        building: bldgName,
+                                        item: floorName,
+                                        deviceCount: floorData.allDevices.length,
+                                      })
+                                    }
+                                    className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-white/5 transition"
+                                    title={t('topology_physical_delete')}
+                                  >
+                                    <Trash2 className="w-2.5 h-2.5" />
+                                  </button>
+                                </div>
                               </div>
-                              <span className="text-[10px] text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded-lg border border-white/10 font-mono">
-                                {t('topology_devices_on_floor', { count: devices.length })}
-                              </span>
+
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAddUnitModal({ building: bldgName, floor: floorName });
+                                    setNewUnitInput('');
+                                  }}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 hover:text-indigo-200 border border-indigo-500/30 text-[11px] transition cursor-pointer"
+                                  title={t('topology_physical_add_unit_btn')}
+                                >
+                                  <Boxes className="w-3 h-3 text-indigo-400" />
+                                  <span>{t('topology_physical_add_unit_btn')}</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAddRackModal({ building: bldgName, floor: floorName });
+                                    setNewRackInput('');
+                                  }}
+                                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 hover:text-cyan-200 border border-cyan-500/30 text-[11px] transition cursor-pointer"
+                                  title={t('topology_physical_add_rack_btn')}
+                                >
+                                  <Server className="w-3 h-3 text-cyan-400" />
+                                  <span>{t('topology_physical_add_rack_btn')}</span>
+                                </button>
+
+                                <span className="text-[10px] text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded-lg border border-white/10 font-mono">
+                                  {t('topology_devices_on_floor', { count: floorData.allDevices.length })}
+                                </span>
+                              </div>
                             </div>
 
-                            {/* Drop Zone Active Banner */}
-                            {isDropHovered && draggedDevice && (
+                            {/* Drop Zone Active Banner for Floor */}
+                            {isFloorDropHovered && draggedDevice && (
                               <div className="flex items-center justify-center gap-2 p-2 rounded-lg bg-cyan-500/20 border border-cyan-400 text-cyan-200 text-xs font-medium animate-pulse">
                                 <CheckCircle className="w-4 h-4 text-cyan-300" />
                                 <span>
@@ -1409,167 +2212,322 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                               </div>
                             )}
 
-                            {/* Empty Floor Drop Target */}
-                            {devices.length === 0 && (
-                              <div
-                                className={`p-4 rounded-xl border border-dashed text-center flex flex-col items-center justify-center gap-1.5 transition-all ${
-                                  isDropHovered
-                                    ? 'border-cyan-400 bg-cyan-500/20 text-cyan-200'
-                                    : 'border-white/10 text-slate-400 bg-black/10'
-                                }`}
-                              >
-                                <Move className="w-4 h-4 text-cyan-400 opacity-60" />
-                                <span className="text-xs">
-                                  {t('topology_physical_dropzone_empty')}
-                                </span>
-                              </div>
-                            )}
+                            {/* Nested Units Section */}
+                            {unitEntries.length > 0 && (
+                              <div className="space-y-2 pt-1">
+                                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-300 uppercase tracking-wider">
+                                  <Boxes className="w-3.5 h-3.5 text-indigo-400" />
+                                  <span>{t('topology_physical_units_title')}</span>
+                                </div>
+                                <div className="grid grid-cols-1 gap-2.5">
+                                  {unitEntries.map(([unitName, unitDevices]) => {
+                                    const isUnitDropHovered =
+                                      dragOverTarget?.building === bldgName &&
+                                      dragOverTarget?.floor === floorName &&
+                                      dragOverTarget?.unit === unitName;
 
-                            {/* Devices inside Floor */}
-                            {devices.length > 0 && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                {devices.map((device) => {
-                                  const isBeingDragged = draggedDevice?.id === device.id;
-                                  const isCurrentlyMoving = movingDeviceId === device.id;
+                                    return (
+                                      <div
+                                        key={unitName}
+                                        onDragOver={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          e.dataTransfer.dropEffect = 'move';
+                                        }}
+                                        onDragEnter={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setDragOverTarget({
+                                            building: bldgName,
+                                            floor: floorName,
+                                            unit: unitName,
+                                          });
+                                        }}
+                                        onDragLeave={(e) => {
+                                          e.stopPropagation();
+                                          const rect = e.currentTarget.getBoundingClientRect();
+                                          if (
+                                            e.clientX <= rect.left ||
+                                            e.clientX >= rect.right ||
+                                            e.clientY <= rect.top ||
+                                            e.clientY >= rect.bottom
+                                          ) {
+                                            setDragOverTarget((prev) =>
+                                              prev?.unit === unitName ? null : prev
+                                            );
+                                          }
+                                        }}
+                                        onDrop={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          let deviceId = '';
+                                          try {
+                                            const raw = e.dataTransfer.getData('application/json');
+                                            if (raw) {
+                                              const parsed = JSON.parse(raw);
+                                              deviceId = parsed.deviceId;
+                                            }
+                                          } catch (err) {}
+                                          if (!deviceId) {
+                                            deviceId =
+                                              e.dataTransfer.getData('text/plain') ||
+                                              (draggedDevice ? draggedDevice.id : '');
+                                          }
 
-                                  return (
-                                    <div
-                                      key={device.id}
-                                      draggable={!movingDeviceId}
-                                      onDragStart={(e) => {
-                                        e.dataTransfer.setData('text/plain', device.id);
-                                        e.dataTransfer.setData(
-                                          'application/json',
-                                          JSON.stringify({
-                                            deviceId: device.id,
-                                            fromBuilding: bldgName,
-                                            fromFloor: floorName,
-                                          })
-                                        );
-                                        e.dataTransfer.effectAllowed = 'move';
-                                        setDraggedDevice({
-                                          id: device.id,
-                                          name: device.name,
-                                          type: device.type,
-                                          fromBuilding: bldgName,
-                                          fromFloor: floorName,
-                                        });
-                                      }}
-                                      onDragEnd={() => {
-                                        setDraggedDevice(null);
-                                        setDragOverTarget(null);
-                                      }}
-                                      onClick={() => setSelectedNodeId(device.id)}
-                                      className={`p-3 rounded-xl border transition shadow-lg backdrop-blur-xl select-none ${
-                                        isBeingDragged
-                                          ? 'opacity-30 border-dashed border-cyan-400 ring-2 ring-cyan-400/40 scale-95 cursor-grabbing'
-                                          : selectedNodeId === device.id
-                                          ? 'spatial-glass border-cyan-400 ring-2 ring-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-grab hover:shadow-2xl'
-                                          : device.is_online
-                                          ? 'spatial-glass spatial-glass-hover border-white/10 cursor-grab hover:shadow-2xl'
-                                          : 'spatial-glass border-rose-500/30 bg-rose-950/20 cursor-grab'
-                                      }`}
-                                    >
-                                      {/* Card Header with Grip Handle */}
-                                      <div className="flex items-center justify-between mb-1.5">
-                                        <div className="flex items-center gap-1.5 min-w-0">
-                                          <div
-                                            className="text-slate-400 hover:text-cyan-300 p-0.5 cursor-grab active:cursor-grabbing"
-                                            title={t('topology_physical_drag_hint')}
-                                          >
-                                            <GripVertical className="w-3.5 h-3.5" />
+                                          if (deviceId) {
+                                            handleMoveDevice(deviceId, bldgName, floorName, unitName, '');
+                                          }
+                                          setDragOverTarget(null);
+                                        }}
+                                        className={`p-3 rounded-xl border transition-all duration-200 ${
+                                          isUnitDropHovered
+                                            ? 'bg-indigo-950/60 border-indigo-400 ring-2 ring-indigo-400/60 shadow-[0_0_20px_rgba(99,102,241,0.35)]'
+                                            : 'bg-indigo-950/20 border-indigo-500/20 hover:border-indigo-500/30'
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between pb-2 mb-2 border-b border-indigo-500/20">
+                                          <div className="flex items-center gap-2">
+                                            <Box className="w-3.5 h-3.5 text-indigo-400" />
+                                            <span className="font-bold text-xs text-indigo-200">
+                                              {unitName}
+                                            </span>
+                                            <div className="flex items-center gap-0.5">
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  setRenameModal({
+                                                    type: 'unit',
+                                                    building: bldgName,
+                                                    floor: floorName,
+                                                    item: unitName,
+                                                    currentName: unitName,
+                                                    newName: unitName,
+                                                  })
+                                                }
+                                                className="p-1 rounded text-slate-400 hover:text-indigo-300 transition"
+                                                title={t('topology_physical_edit')}
+                                              >
+                                                <Edit2 className="w-2.5 h-2.5" />
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  setDeleteModal({
+                                                    type: 'unit',
+                                                    building: bldgName,
+                                                    floor: floorName,
+                                                    item: unitName,
+                                                    deviceCount: unitDevices.length,
+                                                  })
+                                                }
+                                                className="p-1 rounded text-slate-400 hover:text-rose-400 transition"
+                                                title={t('topology_physical_delete')}
+                                              >
+                                                <Trash2 className="w-2.5 h-2.5" />
+                                              </button>
+                                            </div>
                                           </div>
-                                          <div
-                                            className={`p-1.5 rounded-lg ${
-                                              device.type === 'switch'
-                                                ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                                                : device.type === 'router'
-                                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                                : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                                            }`}
-                                          >
-                                            {device.type === 'switch' ? (
-                                              <Server className="w-3 h-3" />
-                                            ) : device.type === 'router' ? (
-                                              <RouterIcon className="w-3 h-3" />
-                                            ) : (
-                                              <Wifi className="w-3 h-3" />
-                                            )}
-                                          </div>
-                                          <span className="font-bold text-xs text-white truncate font-mono">
-                                            {device.name}
+                                          <span className="text-[10px] text-indigo-300/80 font-mono bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                                            {t('topology_devices_in_building', { count: unitDevices.length })}
                                           </span>
                                         </div>
 
-                                        <div className="flex items-center gap-1">
-                                          {isCurrentlyMoving ? (
-                                            <span className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                                              <span>Moving...</span>
+                                        {unitDevices.length === 0 ? (
+                                          <div className="p-3 rounded-lg border border-dashed border-indigo-500/30 text-center text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
+                                            <Move className="w-3 h-3 text-indigo-400 opacity-70" />
+                                            <span>
+                                              {isEn
+                                                ? 'Drop devices here to assign to this unit'
+                                                : 'برای انتساب به این واحد تجهیزات را اینجا رها کنید'}
                                             </span>
-                                          ) : (
-                                            <span
-                                              className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
-                                                device.is_online
-                                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                                              }`}
-                                            >
-                                              {device.is_online ? 'ONLINE' : 'OFFLINE'}
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-
-                                      <div className="text-[11px] font-mono font-bold text-indigo-300 mb-1">
-                                        {device.ip}
-                                      </div>
-
-                                      <div className="text-[10px] text-slate-400 space-y-0.5">
-                                        <div>
-                                          {t('topology_unit_label')} {device.unit}
-                                        </div>
-                                        {device.rack && (
-                                          <div className="text-slate-400 font-mono">
-                                            {t('topology_rack_label')} {device.rack}
+                                          </div>
+                                        ) : (
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                            {unitDevices.map((dev) =>
+                                              renderDeviceCard(dev, bldgName, floorName, unitName, '')
+                                            )}
                                           </div>
                                         )}
                                       </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
 
-                                      {/* Action Buttons: Inspect Ports & Manual Relocate */}
-                                      <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px]">
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            onInspectPorts(device as unknown as Device);
-                                          }}
-                                          className="text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 font-medium cursor-pointer"
-                                        >
-                                          <Cable className="w-3 h-3" />
-                                          <span>{t('topology_inspect_ports_btn')}</span>
-                                        </button>
+                            {/* Nested Racks Section */}
+                            {rackEntries.length > 0 && (
+                              <div className="space-y-2 pt-1">
+                                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-cyan-300 uppercase tracking-wider">
+                                  <Server className="w-3.5 h-3.5 text-cyan-400" />
+                                  <span>{t('topology_physical_racks_title')}</span>
+                                </div>
+                                <div className="grid grid-cols-1 gap-2.5">
+                                  {rackEntries.map(([rackName, rackDevices]) => {
+                                    const isRackDropHovered =
+                                      dragOverTarget?.building === bldgName &&
+                                      dragOverTarget?.floor === floorName &&
+                                      dragOverTarget?.rack === rackName;
 
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setRelocateDevice(device);
-                                            setRelocateTargetBuilding(bldgName);
-                                            setRelocateTargetFloor(floorName);
-                                            setCustomRelocateBuilding('');
-                                            setCustomRelocateFloor('');
-                                          }}
-                                          className="text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1 font-medium cursor-pointer"
-                                          title={t('topology_physical_relocate_btn')}
-                                        >
-                                          <Move className="w-3 h-3" />
-                                          <span>{t('topology_physical_relocate_btn')}</span>
-                                        </button>
+                                    return (
+                                      <div
+                                        key={rackName}
+                                        onDragOver={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          e.dataTransfer.dropEffect = 'move';
+                                        }}
+                                        onDragEnter={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setDragOverTarget({
+                                            building: bldgName,
+                                            floor: floorName,
+                                            rack: rackName,
+                                          });
+                                        }}
+                                        onDragLeave={(e) => {
+                                          e.stopPropagation();
+                                          const rect = e.currentTarget.getBoundingClientRect();
+                                          if (
+                                            e.clientX <= rect.left ||
+                                            e.clientX >= rect.right ||
+                                            e.clientY <= rect.top ||
+                                            e.clientY >= rect.bottom
+                                          ) {
+                                            setDragOverTarget((prev) =>
+                                              prev?.rack === rackName ? null : prev
+                                            );
+                                          }
+                                        }}
+                                        onDrop={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          let deviceId = '';
+                                          try {
+                                            const raw = e.dataTransfer.getData('application/json');
+                                            if (raw) {
+                                              const parsed = JSON.parse(raw);
+                                              deviceId = parsed.deviceId;
+                                            }
+                                          } catch (err) {}
+                                          if (!deviceId) {
+                                            deviceId =
+                                              e.dataTransfer.getData('text/plain') ||
+                                              (draggedDevice ? draggedDevice.id : '');
+                                          }
+
+                                          if (deviceId) {
+                                            handleMoveDevice(deviceId, bldgName, floorName, '', rackName);
+                                          }
+                                          setDragOverTarget(null);
+                                        }}
+                                        className={`p-3 rounded-xl border transition-all duration-200 ${
+                                          isRackDropHovered
+                                            ? 'bg-slate-950 border-cyan-400 ring-2 ring-cyan-400/60 shadow-[0_0_20px_rgba(6,182,212,0.35)]'
+                                            : 'bg-slate-950/60 border-cyan-500/20 hover:border-cyan-500/30'
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between pb-2 mb-2 border-b border-cyan-500/20">
+                                          <div className="flex items-center gap-2">
+                                            <Server className="w-3.5 h-3.5 text-cyan-400" />
+                                            <span className="font-bold text-xs text-cyan-200 font-mono">
+                                              {rackName}
+                                            </span>
+                                            <div className="flex items-center gap-0.5">
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  setRenameModal({
+                                                    type: 'rack',
+                                                    building: bldgName,
+                                                    floor: floorName,
+                                                    item: rackName,
+                                                    currentName: rackName,
+                                                    newName: rackName,
+                                                  })
+                                                }
+                                                className="p-1 rounded text-slate-400 hover:text-cyan-300 transition"
+                                                title={t('topology_physical_edit')}
+                                              >
+                                                <Edit2 className="w-2.5 h-2.5" />
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  setDeleteModal({
+                                                    type: 'rack',
+                                                    building: bldgName,
+                                                    floor: floorName,
+                                                    item: rackName,
+                                                    deviceCount: rackDevices.length,
+                                                  })
+                                                }
+                                                className="p-1 rounded text-slate-400 hover:text-rose-400 transition"
+                                                title={t('topology_physical_delete')}
+                                              >
+                                                <Trash2 className="w-2.5 h-2.5" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                          <span className="text-[10px] text-cyan-300/80 font-mono bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                                            {t('topology_devices_in_building', { count: rackDevices.length })}
+                                          </span>
+                                        </div>
+
+                                        {rackDevices.length === 0 ? (
+                                          <div className="p-3 rounded-lg border border-dashed border-cyan-500/30 text-center text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
+                                            <Move className="w-3 h-3 text-cyan-400 opacity-70" />
+                                            <span>
+                                              {isEn
+                                                ? 'Rack empty. Drop devices here to mount in rack.'
+                                                : 'رک خالی است. تجهیزات را جهت نصب درون رک اینجا رها کنید.'}
+                                            </span>
+                                          </div>
+                                        ) : (
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                            {rackDevices.map((dev) =>
+                                              renderDeviceCard(dev, bldgName, floorName, '', rackName)
+                                            )}
+                                          </div>
+                                        )}
                                       </div>
-                                    </div>
-                                  );
-                                })}
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* General / Standalone Equipment Section */}
+                            {(floorData.general.length > 0 || !hasNestedStructures) && (
+                              <div className="space-y-2 pt-1">
+                                {hasNestedStructures && (
+                                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                                    <Layers className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>{t('topology_physical_general_title')}</span>
+                                  </div>
+                                )}
+
+                                {floorData.allDevices.length === 0 ? (
+                                  <div
+                                    className={`p-4 rounded-xl border border-dashed text-center flex flex-col items-center justify-center gap-1.5 transition-all ${
+                                      isFloorDropHovered
+                                        ? 'border-cyan-400 bg-cyan-500/20 text-cyan-200'
+                                        : 'border-white/10 text-slate-400 bg-black/10'
+                                    }`}
+                                  >
+                                    <Move className="w-4 h-4 text-cyan-400 opacity-60" />
+                                    <span className="text-xs">
+                                      {t('topology_physical_dropzone_empty')}
+                                    </span>
+                                  </div>
+                                ) : floorData.general.length > 0 ? (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    {floorData.general.map((device) =>
+                                      renderDeviceCard(device, bldgName, floorName)
+                                    )}
+                                  </div>
+                                ) : null}
                               </div>
                             )}
                           </div>
@@ -1978,6 +2936,80 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   />
                 )}
               </div>
+
+              {/* Target Unit / Room Selector */}
+              <div>
+                <label className="block font-medium text-slate-300 mb-1.5">
+                  {t('topology_physical_select_target_unit')}
+                </label>
+                <select
+                  value={relocateTargetUnit}
+                  onChange={(e) => {
+                    setRelocateTargetUnit(e.target.value);
+                    setCustomRelocateUnit('');
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white focus:outline-none focus:border-cyan-400"
+                >
+                  <option value="__NONE__" className="bg-slate-900 text-slate-400">
+                    {isEn ? '-- None / General Floor --' : '-- بدون واحد / فضای عمومی طبقه --'}
+                  </option>
+                  {allUnitOptionsForSelectedFloor.map((u) => (
+                    <option key={u} value={u} className="bg-slate-900 text-white">
+                      {u}
+                    </option>
+                  ))}
+                  <option value="__CUSTOM__" className="bg-slate-900 text-indigo-400">
+                    {isEn ? '+ Custom Unit / Section...' : '+ بخش یا واحد سفارشی...'}
+                  </option>
+                </select>
+
+                {relocateTargetUnit === '__CUSTOM__' && (
+                  <input
+                    type="text"
+                    value={customRelocateUnit}
+                    onChange={(e) => setCustomRelocateUnit(e.target.value)}
+                    placeholder={isEn ? 'Enter unit or room name' : 'نام واحد یا اتاق را وارد کنید'}
+                    className="w-full mt-2 px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400"
+                  />
+                )}
+              </div>
+
+              {/* Target Rack Selector */}
+              <div>
+                <label className="block font-medium text-slate-300 mb-1.5">
+                  {t('topology_physical_select_target_rack')}
+                </label>
+                <select
+                  value={relocateTargetRack}
+                  onChange={(e) => {
+                    setRelocateTargetRack(e.target.value);
+                    setCustomRelocateRack('');
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white focus:outline-none focus:border-cyan-400"
+                >
+                  <option value="__NONE__" className="bg-slate-900 text-slate-400">
+                    {isEn ? '-- None / Standalone Equipment --' : '-- بدون رک / تجهیزات آزاد --'}
+                  </option>
+                  {allRackOptionsForSelectedFloor.map((r) => (
+                    <option key={r} value={r} className="bg-slate-900 text-white">
+                      {r}
+                    </option>
+                  ))}
+                  <option value="__CUSTOM__" className="bg-slate-900 text-cyan-400">
+                    {isEn ? '+ Custom Rack...' : '+ رک سفارشی...'}
+                  </option>
+                </select>
+
+                {relocateTargetRack === '__CUSTOM__' && (
+                  <input
+                    type="text"
+                    value={customRelocateRack}
+                    onChange={(e) => setCustomRelocateRack(e.target.value)}
+                    placeholder={isEn ? 'e.g. Rack-A1, Server Cabinet' : 'مانند رک اصلی، کابینت سرور ۱'}
+                    className="w-full mt-2 px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
+                  />
+                )}
+              </div>
             </div>
 
             {/* Footer */}
@@ -2000,21 +3032,335 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     relocateTargetFloor === '__CUSTOM__'
                       ? customRelocateFloor.trim()
                       : relocateTargetFloor;
+                  const finalUnit =
+                    relocateTargetUnit === '__CUSTOM__'
+                      ? customRelocateUnit.trim()
+                      : relocateTargetUnit === '__NONE__'
+                      ? ''
+                      : relocateTargetUnit;
+                  const finalRack =
+                    relocateTargetRack === '__CUSTOM__'
+                      ? customRelocateRack.trim()
+                      : relocateTargetRack === '__NONE__'
+                      ? ''
+                      : relocateTargetRack;
 
                   if (finalBldg && finalFloor && relocateDevice) {
-                    handleMoveDevice(relocateDevice.id, finalBldg, finalFloor);
+                    handleMoveDevice(relocateDevice.id, finalBldg, finalFloor, finalUnit, finalRack);
                     setRelocateDevice(null);
                   }
                 }}
                 disabled={
                   (relocateTargetBuilding === '__CUSTOM__' && !customRelocateBuilding.trim()) ||
                   (relocateTargetFloor === '__CUSTOM__' && !customRelocateFloor.trim()) ||
+                  (relocateTargetUnit === '__CUSTOM__' && !customRelocateUnit.trim()) ||
+                  (relocateTargetRack === '__CUSTOM__' && !customRelocateRack.trim()) ||
                   !relocateTargetBuilding ||
                   !relocateTargetFloor
                 }
                 className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-40 transition shadow-lg cursor-pointer"
               >
                 {t('topology_physical_confirm_relocate')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 4: Add Unit Modal */}
+      {addUnitModal && (
+        <div
+          data-modal-backdrop="true"
+          className="fixed inset-0 z-[100000] flex items-center justify-center p-4 modal-backdrop-blur"
+          onClick={() => setAddUnitModal(null)}
+        >
+          <div
+            className="relative w-full max-w-md flex flex-col rounded-2xl bg-slate-900 border border-white/20 text-slate-100 shadow-2xl overflow-hidden my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-slate-800/60">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                  <Boxes className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {t('topology_physical_add_unit_btn')}
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    {addUnitModal.building} &gt; {addUnitModal.floor}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddUnitModal(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  {t('topology_physical_new_unit_name')}
+                </label>
+                <input
+                  type="text"
+                  value={newUnitInput}
+                  onChange={(e) => setNewUnitInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newUnitInput.trim()) {
+                      handleAddUnit(addUnitModal.building, addUnitModal.floor, newUnitInput);
+                    }
+                  }}
+                  placeholder={isEn ? 'e.g. IT Department, Server Room 102, Finance' : 'مانند واحد فناوری اطلاعات، اتاق سرور ۱۰۲، مالی'}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 bg-slate-950/40 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setAddUnitModal(null)}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5 border border-white/10 transition cursor-pointer"
+              >
+                {t('topology_physical_cancel_btn')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAddUnit(addUnitModal.building, addUnitModal.floor, newUnitInput)}
+                disabled={!newUnitInput.trim()}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 disabled:opacity-40 transition shadow-lg cursor-pointer"
+              >
+                {t('topology_physical_create_btn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 5: Add Rack Modal */}
+      {addRackModal && (
+        <div
+          data-modal-backdrop="true"
+          className="fixed inset-0 z-[100000] flex items-center justify-center p-4 modal-backdrop-blur"
+          onClick={() => setAddRackModal(null)}
+        >
+          <div
+            className="relative w-full max-w-md flex flex-col rounded-2xl bg-slate-900 border border-white/20 text-slate-100 shadow-2xl overflow-hidden my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-slate-800/60">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                  <Server className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {t('topology_physical_add_rack_btn')}
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    {addRackModal.building} &gt; {addRackModal.floor}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddRackModal(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  {t('topology_physical_new_rack_name')}
+                </label>
+                <input
+                  type="text"
+                  value={newRackInput}
+                  onChange={(e) => setNewRackInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newRackInput.trim()) {
+                      handleAddRack(addRackModal.building, addRackModal.floor, newRackInput);
+                    }
+                  }}
+                  placeholder={isEn ? 'e.g. Rack-A1, 42U-Core-Rack, Distribution-B' : 'مانند رک اصلی سرور، Rack-A1، رک توزیع طبقه'}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 bg-slate-950/40 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setAddRackModal(null)}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5 border border-white/10 transition cursor-pointer"
+              >
+                {t('topology_physical_cancel_btn')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAddRack(addRackModal.building, addRackModal.floor, newRackInput)}
+                disabled={!newRackInput.trim()}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-40 transition shadow-lg cursor-pointer"
+              >
+                {t('topology_physical_create_btn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 6: Rename Entity Modal (Building, Floor, Unit, Rack) */}
+      {renameModal && (
+        <div
+          data-modal-backdrop="true"
+          className="fixed inset-0 z-[100000] flex items-center justify-center p-4 modal-backdrop-blur"
+          onClick={() => setRenameModal(null)}
+        >
+          <div
+            className="relative w-full max-w-md flex flex-col rounded-2xl bg-slate-900 border border-white/20 text-slate-100 shadow-2xl overflow-hidden my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-slate-800/60">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {t('topology_physical_rename_modal_title')}
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    {renameModal.type.toUpperCase()}: {renameModal.currentName}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRenameModal(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  {t('topology_physical_new_name_label')}
+                </label>
+                <input
+                  type="text"
+                  value={renameModal.newName}
+                  onChange={(e) =>
+                    setRenameModal({ ...renameModal, newName: e.target.value })
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && renameModal.newName.trim()) {
+                      handleRenameSubmit();
+                    }
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 bg-slate-950/40 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setRenameModal(null)}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5 border border-white/10 transition cursor-pointer"
+              >
+                {t('topology_physical_cancel_btn')}
+              </button>
+              <button
+                type="button"
+                onClick={handleRenameSubmit}
+                disabled={!renameModal.newName.trim()}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-40 transition shadow-lg cursor-pointer"
+              >
+                {t('topology_physical_save_btn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 7: Delete Entity Confirmation Modal */}
+      {deleteModal && (
+        <div
+          data-modal-backdrop="true"
+          className="fixed inset-0 z-[100000] flex items-center justify-center p-4 modal-backdrop-blur"
+          onClick={() => setDeleteModal(null)}
+        >
+          <div
+            className="relative w-full max-w-md flex flex-col rounded-2xl bg-slate-900 border border-rose-500/30 text-slate-100 shadow-2xl overflow-hidden my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-rose-500/20 bg-rose-950/40">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {t('topology_physical_delete_modal_title')}
+                  </h3>
+                  <p className="text-[11px] text-rose-300/80 font-mono">
+                    {deleteModal.type.toUpperCase()}: {deleteModal.item || deleteModal.building}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteModal(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-3 text-xs">
+              <p className="text-slate-200">
+                {t('topology_physical_delete_confirm', {
+                  name: deleteModal.item || deleteModal.building,
+                })}
+              </p>
+              {deleteModal.deviceCount > 0 && (
+                <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-200 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  <span>
+                    {t('topology_physical_delete_warning', { count: deleteModal.deviceCount })}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 bg-slate-950/40 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setDeleteModal(null)}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5 border border-white/10 transition cursor-pointer"
+              >
+                {t('topology_physical_cancel_btn')}
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 transition shadow-lg cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{t('topology_physical_delete')}</span>
               </button>
             </div>
           </div>

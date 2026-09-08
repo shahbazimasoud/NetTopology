@@ -54,16 +54,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <h1 className="text-sm sm:text-base font-bold tracking-tight text-white font-mono glow-text-cyan flex items-center gap-1.5">
               {t('app_title')} <span className="text-indigo-400 text-[11px] font-semibold px-1.5 py-0.2 rounded bg-indigo-500/20 border border-indigo-500/30">{t('app_edition')}</span>
             </h1>
-
-            {/* Ultra-Compact Discreet Version Tag */}
-            <button
-              onClick={onOpenReleaseNotes}
-              className="text-[9px] font-mono font-medium px-1.5 py-0.2 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300/80 hover:text-cyan-200 border border-cyan-500/20 transition flex items-center gap-1 active:scale-95 cursor-pointer"
-              title={t('app_version_tooltip')}
-            >
-              <span className="w-1 h-1 rounded-full bg-cyan-400"></span>
-              <span>v{APP_VERSION}</span>
-            </button>
           </div>
           <p className="text-[10px] text-slate-400 hidden sm:block font-sans">
             {t('app_subtitle')}

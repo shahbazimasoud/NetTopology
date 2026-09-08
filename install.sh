@@ -22,7 +22,7 @@ echo -e "${CYAN}${BOLD}"
 echo "╔══════════════════════════════════════════════════════════════════╗"
 echo "║                                                                  ║"
 echo "║     🌐  NetTopology - Enterprise Network Management Panel        ║"
-echo "║     🚀  Version: 1.5.0 (Production Stable)                       ║"
+echo "║     🚀  Version: 1.6.0 (Production Stable)                       ║"
 echo "║     🛡️  Cisco Port Security & CDP/LLDP Topology Visualizer       ║"
 echo "║     🎨  Spatial Cyber Neon & Multi-Theme Network Studio          ║"
 echo "║                                                                  ║"
@@ -66,18 +66,33 @@ while true; do
   fi
 done
 
+while true; do
+  read -p "پورت سرویس بک‌اند (API / Python Engine) [پیش‌فرض: 5001]: " BACKEND_PORT_INPUT
+  BACKEND_PORT_INPUT="${BACKEND_PORT_INPUT:-5001}"
+  if [[ "$BACKEND_PORT_INPUT" =~ ^[0-9]+$ ]] && [ "$BACKEND_PORT_INPUT" -ge 1 ] && [ "$BACKEND_PORT_INPUT" -le 65535 ]; then
+    if [ "$BACKEND_PORT_INPUT" -eq "$PANEL_SSL_PORT" ]; then
+      echo -e "${RED}پورت بک‌اند نمی‌تواند با پورت عمومی پنل ($PANEL_SSL_PORT) تداخل داشته باشد.${NC}"
+    else
+      INTERNAL_BACKEND_PORT="$BACKEND_PORT_INPUT"
+      break
+    fi
+  else
+    echo -e "${RED}پورت نامعتبر است. یک عدد بین 1 تا 65535 وارد کنید.${NC}"
+  fi
+done
+
 # Internal loopback ports for Node and Python (isolated from external network)
 INTERNAL_NODE_PORT="3000"
-INTERNAL_BACKEND_PORT="5001"
-if [ "$PANEL_SSL_PORT" -eq "$INTERNAL_NODE_PORT" ]; then
+if [ "$PANEL_SSL_PORT" -eq "$INTERNAL_NODE_PORT" ] || [ "$INTERNAL_BACKEND_PORT" -eq "$INTERNAL_NODE_PORT" ]; then
   INTERNAL_NODE_PORT="13000"
-fi
-if [ "$PANEL_SSL_PORT" -eq "$INTERNAL_BACKEND_PORT" ]; then
-  INTERNAL_BACKEND_PORT="15001"
+  if [ "$PANEL_SSL_PORT" -eq "$INTERNAL_NODE_PORT" ] || [ "$INTERNAL_BACKEND_PORT" -eq "$INTERNAL_NODE_PORT" ]; then
+    INTERNAL_NODE_PORT="13001"
+  fi
 fi
 
-echo -e "${CYAN}✓ معماری امنیتی SSL تنظیم شد:${NC}"
+echo -e "${CYAN}✓ معماری امنیتی و پورت‌های سیستم تنظیم شد:${NC}"
 echo -e "  • دسترسی عمومی: صرفاً از طریق HTTPS با پورت $PANEL_SSL_PORT و گواهی Self-Signed"
+echo -e "  • پورت بک‌اند (API & Engine): پورت اختصاصی $INTERNAL_BACKEND_PORT (محدود به 127.0.0.1)"
 echo -e "  • جداسازی داخلی: سرویس‌های Node.js و Python به لوپ‌بک محلی (127.0.0.1) محدود شدند.\n"
 
 # ذخیره تنظیمات در فایل .env

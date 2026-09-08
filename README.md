@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۵.۰
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.5.0
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۶.۰
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.6.0
 
 ---
 
@@ -73,8 +73,11 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 - **پارامترهای متغیر پویا:** درج متغیرهایی مانند `{{HOSTNAME}}` و `{{IP_ADDRESS}}` و جایگزینی هوشمند آن‌ها قبل از ارسال به دیوایس.
 - **تست و بررسی Diff قبل از اعمال:** مشاهده خط‌به‌خط تغییرات ارسالی به سوئیچ برای پیشگیری از اختلال در شبکه.
 
-### ۶. نقشه توپولوژی شبکه و مدیریت رک‌ها (Topology & Rack Layout)
-- **پایش مکانی:** دسته‌بندی تجهیزات بر اساس ساختمان، طبقه، واحد و رک فیزیکی.
+### ۶. نقشه استقرار فیزیکی، درگ اند دراپ و سلسله‌مراتب ساختمان/طبقه/بخش/رک (Physical Placement & Hierarchy)
+- **ساختار سلسله‌مراتبی کامل فیزیکی:** گروه‌بندی ساختاریافته تجهیزات در چهار سطح استاندارد: ساختمان (Building) > طبقه (Floor) > واحد/بخش (Unit/Room) > رک سرور (Server Rack).
+- **کشیدن و رها کردن تعاملی (Drag & Drop):** جابجایی آسان و بصری هر سوئیچ و روتر بین طبقات، ساختمان‌های مختلف، واحدها یا رک‌های اختصاصی با درگ ان دراپ و بازخورد زنده‌ی دراپ‌زون.
+- **مدیریت کامل و ویرایش/حذف (Full CRUD):** امکان افزودن ساختمان، طبقه، بخش/اتاق و رک، به همراه امکان ویرایش نام (Rename) و حذف (Delete) در تمامی سطوح سلسله‌مراتب فیزیکی.
+- **جابجایی دستی (Manual Relocation Modal):** مودال جابجایی دقیق برای انتقال تجهیزات به مکان‌های دلخواه بدون نیاز به درگ.
 - **پایش وضعیت اتصال:** نمایش وضعیت آنلاین/آفلاین بودن هر سوئیچ و روتر با پینگ و تله‌متری دوره‌ای.
 - **فیلترهای پیشرفته:** جستجوی آنی بر اساس آی‌پی، نام سوئیچ، مدل و پورت‌های فعال.
 
@@ -288,8 +291,11 @@ npm start
 - **Dynamic Parameter Replacement:** Interpolates template placeholders (e.g. `{{HOSTNAME}}`, `{{IP_ADDRESS}}`) before pushing to target appliances.
 - **Diff & Validation View:** Visual comparison of running configurations vs. target states before deployment.
 
-### 6. Topology Mapping & Rack Hierarchy
-- **Physical Organization:** Hierarchical grouping by building, floor, room, and rack unit.
+### 6. Physical Placement Topology, Drag & Drop & Multi-Level Hierarchy
+- **Comprehensive Physical Hierarchy:** Full 4-tier structural grouping: Building > Floor > Unit/Section > Server Rack.
+- **Interactive Drag & Drop:** Intuitive drag-and-drop mechanics to move any switch or router across floors, into custom buildings, or into specific units and server racks with animated drop-zone guidance.
+- **Full Hierarchy Management (CRUD):** Add, rename, and delete buildings, floors, units/sections, and racks directly from the UI with cascading device handling.
+- **Manual Relocation Modal:** Accessible alternative allowing precision assignment of building, floor, unit, and rack without drag gestures.
 - **Real-Time Health Monitoring:** Visual indicators for device reachability, uptime, and firmware versions.
 - **Fast Search & Filtering:** Filter devices by IP, model, location, or active port status.
 
