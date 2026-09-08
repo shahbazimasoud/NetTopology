@@ -193,7 +193,7 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="p-4 sm:p-6 space-y-4 max-w-7xl mx-auto text-right text-slate-100 animate-fadeIn">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 left-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-slate-900 border border-emerald-500/40 text-emerald-300 text-xs shadow-[0_0_25px_rgba(16,185,129,0.3)] animate-fadeIn">
@@ -203,7 +203,7 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
       )}
 
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-slate-900/80 border border-white/10 backdrop-blur-xl shadow-lg">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl spatial-glass border border-white/10 backdrop-blur-xl shadow-xl">
         <div>
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 text-cyan-400 border border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.25)]">
@@ -270,51 +270,51 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
 
       {/* KPI Stats Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/10 flex items-center justify-between">
+        <div className="p-3.5 rounded-xl spatial-glass spatial-glass-hover spatial-depth-card border border-white/10 shadow-lg flex items-center justify-between">
           <div>
             <div className="text-[11px] text-slate-400 font-medium">کل تمپلیت‌های فعال</div>
             <div className="text-xl font-bold text-white font-mono mt-0.5">{stats.total}</div>
           </div>
-          <div className="p-2 rounded-lg bg-indigo-500/15 text-indigo-400">
+          <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
             <Layers className="w-4 h-4" />
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/10 flex items-center justify-between">
+        <div className="p-3.5 rounded-xl spatial-glass spatial-glass-hover spatial-depth-card border border-white/10 shadow-lg flex items-center justify-between">
           <div>
             <div className="text-[11px] text-slate-400 font-medium">الگوهای سیسکو (IOS-XE)</div>
-            <div className="text-xl font-bold text-cyan-300 font-mono mt-0.5">{stats.ciscoCount}</div>
+            <div className="text-xl font-bold text-cyan-400 font-mono mt-0.5">{stats.ciscoCount}</div>
           </div>
-          <div className="p-2 rounded-lg bg-cyan-500/15 text-cyan-400">
+          <div className="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
             <Terminal className="w-4 h-4" />
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/10 flex items-center justify-between">
+        <div className="p-3.5 rounded-xl spatial-glass spatial-glass-hover spatial-depth-card border border-white/10 shadow-lg flex items-center justify-between">
           <div>
             <div className="text-[11px] text-slate-400 font-medium">الگوهای میکروتیک (RouterOS)</div>
-            <div className="text-xl font-bold text-emerald-300 font-mono mt-0.5">{stats.mikrotikCount}</div>
+            <div className="text-xl font-bold text-emerald-400 font-mono mt-0.5">{stats.mikrotikCount}</div>
           </div>
-          <div className="p-2 rounded-lg bg-emerald-500/15 text-emerald-400">
+          <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
             <Code2 className="w-4 h-4" />
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/10 flex items-center justify-between">
+        <div className="p-3.5 rounded-xl spatial-glass spatial-glass-hover spatial-depth-card border border-white/10 shadow-lg flex items-center justify-between">
           <div>
             <div className="text-[11px] text-slate-400 font-medium">سوئیچ‌ها / روترها</div>
-            <div className="text-xl font-bold text-amber-300 font-mono mt-0.5">
+            <div className="text-xl font-bold text-amber-400 font-mono mt-0.5">
               {stats.switchCount} <span className="text-xs text-slate-400 font-normal">/</span> {stats.routerCount}
             </div>
           </div>
-          <div className="p-2 rounded-lg bg-amber-500/15 text-amber-400">
+          <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
             <Server className="w-4 h-4" />
           </div>
         </div>
       </div>
 
       {/* Filter & Search Toolbar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-900/60 border border-white/10">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-xl spatial-glass border border-white/10 shadow-lg">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
           <input
@@ -322,19 +322,19 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="جستجو در عنوان، کامندها یا متغیرها..."
-            className="w-full bg-slate-950 border border-white/10 rounded-xl pr-9 pl-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+            className="w-full bg-slate-900/70 border border-white/15 rounded-xl pr-9 pl-3 py-2 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
           {/* Vendor Filter */}
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-white/10 text-xs">
+          <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-white/10 text-xs template-filter-group">
             <span className="text-[11px] text-slate-400 px-2 font-medium">سازنده:</span>
             <button
               onClick={() => setVendorFilter('all')}
-              className={`px-2.5 py-1 rounded-lg transition ${
+              className={`px-2.5 py-1 rounded-lg transition text-xs ${
                 vendorFilter === 'all'
-                  ? 'bg-cyan-600 text-white font-semibold'
+                  ? 'bg-cyan-600 text-white font-semibold shadow-xs'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -342,9 +342,9 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
             </button>
             <button
               onClick={() => setVendorFilter('cisco')}
-              className={`px-2.5 py-1 rounded-lg transition ${
+              className={`px-2.5 py-1 rounded-lg transition text-xs ${
                 vendorFilter === 'cisco'
-                  ? 'bg-cyan-600 text-white font-semibold'
+                  ? 'bg-cyan-600 text-white font-semibold shadow-xs'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -352,9 +352,9 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
             </button>
             <button
               onClick={() => setVendorFilter('mikrotik')}
-              className={`px-2.5 py-1 rounded-lg transition ${
+              className={`px-2.5 py-1 rounded-lg transition text-xs ${
                 vendorFilter === 'mikrotik'
-                  ? 'bg-cyan-600 text-white font-semibold'
+                  ? 'bg-cyan-600 text-white font-semibold shadow-xs'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -363,13 +363,13 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
           </div>
 
           {/* Type Filter */}
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-white/10 text-xs">
+          <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-white/10 text-xs template-filter-group">
             <span className="text-[11px] text-slate-400 px-2 font-medium">تجهیز:</span>
             <button
               onClick={() => setTypeFilter('all')}
-              className={`px-2.5 py-1 rounded-lg transition ${
+              className={`px-2.5 py-1 rounded-lg transition text-xs ${
                 typeFilter === 'all'
-                  ? 'bg-indigo-600 text-white font-semibold'
+                  ? 'bg-indigo-600 text-white font-semibold shadow-xs'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -377,9 +377,9 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
             </button>
             <button
               onClick={() => setTypeFilter('switch')}
-              className={`px-2.5 py-1 rounded-lg transition ${
+              className={`px-2.5 py-1 rounded-lg transition text-xs ${
                 typeFilter === 'switch'
-                  ? 'bg-indigo-600 text-white font-semibold'
+                  ? 'bg-indigo-600 text-white font-semibold shadow-xs'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -387,9 +387,9 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
             </button>
             <button
               onClick={() => setTypeFilter('router')}
-              className={`px-2.5 py-1 rounded-lg transition ${
+              className={`px-2.5 py-1 rounded-lg transition text-xs ${
                 typeFilter === 'router'
-                  ? 'bg-indigo-600 text-white font-semibold'
+                  ? 'bg-indigo-600 text-white font-semibold shadow-xs'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -406,7 +406,7 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
           <span className="text-xs">در حال بارگذاری الگوهای کانفیگ...</span>
         </div>
       ) : filteredTemplates.length === 0 ? (
-        <div className="p-12 rounded-2xl bg-slate-900/50 border border-white/10 text-center space-y-3">
+        <div className="p-12 rounded-2xl spatial-glass border border-white/10 text-center space-y-3">
           <FileCode2 className="w-10 h-10 text-slate-500 mx-auto" />
           <h3 className="text-sm font-semibold text-slate-300">هیچ تمپلیتی با این مشخصات یافت نشد</h3>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
@@ -420,7 +420,7 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
             return (
               <div
                 key={tmpl.id}
-                className="flex flex-col justify-between p-5 rounded-2xl bg-slate-900/80 border border-white/10 hover:border-cyan-500/40 transition-all duration-300 shadow-lg group hover:shadow-[0_0_30px_rgba(6,182,212,0.12)]"
+                className="flex flex-col justify-between p-5 rounded-2xl spatial-glass spatial-glass-hover spatial-depth-card border border-white/10 hover:border-cyan-500/40 transition-all duration-300 shadow-xl group hover:shadow-[0_0_30px_rgba(6,182,212,0.15)]"
               >
                 <div>
                   {/* Card Header & Badges */}
@@ -438,11 +438,11 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
                         {tmpl.vendor === 'mikrotik' ? 'MikroTik RouterOS' : tmpl.vendor === 'cisco' ? 'Cisco IOS-XE' : 'Generic CLI'}
                       </span>
 
-                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/5 text-slate-300 border border-white/10">
+                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-white/5 text-slate-300 border border-white/10 template-meta-badge">
                         {tmpl.target_type === 'switch' ? 'سوئیچ' : tmpl.target_type === 'router' ? 'روتر' : 'همگانی'}
                       </span>
 
-                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-mono">
+                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-mono template-role-badge">
                         {tmpl.role}
                       </span>
                     </div>
@@ -489,7 +489,7 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
                   </div>
 
                   {/* Title & Description */}
-                  <h3 className="font-bold text-sm text-white group-hover:text-cyan-200 transition">
+                  <h3 className="font-bold text-sm text-white group-hover:text-cyan-300 transition">
                     {tmpl.name}
                   </h3>
                   <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
@@ -498,7 +498,7 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
 
                   {/* Dynamic Variables Pill Box */}
                   {tmpl.variables && tmpl.variables.length > 0 && (
-                    <div className="mt-3.5 pt-3 border-t border-white/5 space-y-1.5">
+                    <div className="mt-3.5 pt-3 border-t border-white/10 space-y-1.5">
                       <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
                         <span className="flex items-center gap-1">
                           <Sliders className="w-3 h-3 text-cyan-400" />
@@ -510,14 +510,14 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
                         {tmpl.variables.slice(0, 6).map((v) => (
                           <span
                             key={v.name}
-                            className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-slate-300 border border-white/10"
+                            className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 template-var-pill"
                             title={`${v.label}: پیش‌فرض ${v.default_value}`}
                           >
                             {`{{${v.name}}}`}
                           </span>
                         ))}
                         {tmpl.variables.length > 6 && (
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-lg bg-white/5 text-slate-400 border border-white/10 template-var-pill">
                             +{tmpl.variables.length - 6} متغیر دیگر
                           </span>
                         )}
@@ -526,7 +526,7 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
                   )}
 
                   {/* Script Preview Box */}
-                  <div className="mt-3 relative rounded-xl bg-slate-950 border border-white/10 p-3 font-mono text-[11px] text-slate-300 max-h-36 overflow-hidden dir-ltr text-left">
+                  <div className="mt-3 relative rounded-xl bg-slate-950 border border-white/10 p-3 font-mono text-[11px] text-slate-300 max-h-36 overflow-hidden dir-ltr text-left template-code-preview">
                     <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
                       <button
                         onClick={() => handleCopyCommands(tmpl.id, tmpl.commands)}

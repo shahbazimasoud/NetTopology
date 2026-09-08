@@ -8,9 +8,22 @@ export interface ReleaseNote {
   changes: string[];
 }
 
-export const APP_VERSION = '1.2.2';
+export const APP_VERSION = '1.2.3';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.2.3',
+    releaseDate: '2026-09-08',
+    type: 'patch',
+    title: 'بهبود تفکیک جداول تجهیزات، منوی عملیات ۳ نقطه و هماهنگ‌سازی رنگ‌بندی صفحه الگوها با داشبورد',
+    changes: [
+      'افزودن خطوط جداکننده عمودی بین سرستون‌های جدول تجهیزات (Header Dividers) برای خوانایی کامل عناوین',
+      'افزودن خطوط جداکننده و استایل تفکیک ردیف‌های تجهیزات (Row Separators & Alternating Bands) در تم روشن و تاریک',
+      'جایگزینی دکمه‌های کانکت، تمپلیت و حذف با منوی دراپ‌داون سه نقطه (3-Dots Actions Menu) حرفه‌ای و مرتب',
+      'اصلاح ساختار و رنگ‌بندی کامل صفحه الگوها و تمپلیت‌ها (Template Management) با کارت‌های spatial-glass، شبیه داشبورد',
+      'کنتراست استاندارد و وضوح کارت‌های KPI، تولبار فیلترها و کادر مشاهده کامندهای CLI در هر دو تم تاریک و روشن'
+    ]
+  },
   {
     version: '1.2.2',
     releaseDate: '2026-09-08',

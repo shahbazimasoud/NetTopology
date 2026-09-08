@@ -660,6 +660,109 @@
   border-color: #c7d2fe !important;
 }
 
+/* ==========================================================================
+   Device List Table Separators & 3-Dots Action Menu
+   ========================================================================== */
+.theme-light .device-table {
+  background-color: #ffffff !important;
+}
+
+.theme-light .device-table thead tr {
+  background-color: #f1f5f9 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+}
+
+.theme-light .device-table thead th {
+  color: #1e293b !important;
+  border-left: 1px solid #cbd5e1 !important;
+}
+
+.theme-light .device-table thead th:last-child {
+  border-left: none !important;
+}
+
+.theme-light .device-table tbody tr {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.theme-light .device-table tbody tr:nth-child(even) {
+  background-color: #f8fafc !important;
+}
+
+.theme-light .device-table tbody tr:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Device 3-Dots Action Dropdown Menu in Light Mode */
+.theme-light .device-action-dropdown {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 20px 35px -5px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+.theme-light .device-action-dropdown button:hover {
+  background-color: #f1f5f9 !important;
+}
+
+.theme-light .device-action-dropdown .text-white {
+  color: #0f172a !important;
+}
+
+/* ==========================================================================
+   Template Management View Theme Harmonization
+   ========================================================================== */
+.theme-light .template-filter-group {
+  background-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.theme-light .template-filter-group button:not(.bg-cyan-600):not(.bg-indigo-600) {
+  color: #475569 !important;
+}
+
+.theme-light .template-filter-group button:not(.bg-cyan-600):not(.bg-indigo-600):hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.theme-light .template-meta-badge {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.theme-light .template-role-badge {
+  background-color: #e0e7ff !important;
+  color: #3730a3 !important;
+  border-color: #c7d2fe !important;
+}
+
+.theme-light .template-var-pill {
+  background-color: #f1f5f9 !important;
+  color: #4338ca !important;
+  border-color: #c7d2fe !important;
+}
+
+/* Keep CLI code preview dark & high contrast like real terminal across all themes */
+.template-code-preview {
+  background-color: #070b14 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.template-code-preview pre {
+  color: #6ee7b7 !important;
+}
+
+.theme-light .template-code-preview {
+  background-color: #0b1120 !important;
+  border-color: #334155 !important;
+}
+
+.theme-light .template-code-preview pre {
+  color: #34d399 !important;
+}
+
 .theme-light input::placeholder {
   color: #94a3b8 !important;
 }

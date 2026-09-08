@@ -17,7 +17,8 @@ import {
   Terminal,
   AlertTriangle,
   Save,
-  FileCode2
+  FileCode2,
+  MoreVertical
 } from 'lucide-react';
 import { Device, DeviceType } from '../types';
 
@@ -52,6 +53,7 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
   const [buildingFilter, setBuildingFilter] = useState<string>('all');
   const [pingingId, setPingingId] = useState<string | null>(null);
   const [writingId, setWritingId] = useState<string | null>(null);
+  const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
 
   const buildings = Array.from(new Set(devices.map((d) => d.building).filter(Boolean)));
   const unsavedCount = devices.filter((d) => d.has_unsaved_changes).length;
@@ -244,21 +246,21 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
 
       {/* Devices List Table */}
       <div className="spatial-glass border border-white/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-right text-xs">
+        <div className="overflow-x-auto min-h-[380px]">
+          <table className="w-full text-right text-xs device-table">
             <thead>
-              <tr className="bg-slate-950/70 text-slate-400 border-b border-white/10 text-[11px] font-bold uppercase tracking-wider font-mono">
-                <th className="p-3.5">نام و شناسه تجهیز</th>
-                <th className="p-3.5">نوع و مدل</th>
-                <th className="p-3.5">آدرس IP</th>
-                <th className="p-3.5">محل استقرار (ساختمان / طبقه / واحد)</th>
-                <th className="p-3.5">وضعیت لحظه‌ای</th>
-                <th className="p-3.5">پروتکل همسایگی</th>
-                <th className="p-3.5 text-center">پورت‌ها و ویلن</th>
+              <tr className="bg-slate-950/80 text-slate-300 border-b-2 border-white/15 text-[11px] font-bold uppercase tracking-wider font-mono">
+                <th className="p-3.5 border-l border-white/15">نام و شناسه تجهیز</th>
+                <th className="p-3.5 border-l border-white/15">نوع و مدل</th>
+                <th className="p-3.5 border-l border-white/15">آدرس IP</th>
+                <th className="p-3.5 border-l border-white/15">محل استقرار (ساختمان / طبقه / واحد)</th>
+                <th className="p-3.5 border-l border-white/15">وضعیت لحظه‌ای</th>
+                <th className="p-3.5 border-l border-white/15">پروتکل همسایگی</th>
+                <th className="p-3.5 border-l border-white/15 text-center">پورت‌ها و ویلن</th>
                 <th className="p-3.5 text-center">عملیات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-white/10">
               {filteredDevices.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="p-10 text-center text-slate-400">
@@ -269,7 +271,7 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                 filteredDevices.map((dev) => {
                   const isPinging = pingingId === dev.id;
                   return (
-                    <tr key={dev.id} className="hover:bg-white/5 transition">
+                    <tr key={dev.id} className="border-b border-white/10 hover:bg-white/5 transition-colors group">
                       {/* Name & Role */}
                       <td className="p-3.5">
                         <div className="flex items-center gap-3">
@@ -408,44 +410,148 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                         </button>
                       </td>
 
-                      {/* Actions */}
-                      <td className="p-3.5 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {/* Cisco CLI Connect button for switches and routers */}
-                          {(dev.type === 'switch' || dev.type === 'router') && onConnectTerminal && (
-                            <button
-                              onClick={() => onConnectTerminal(dev)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-mono text-xs font-medium shadow-[0_0_10px_rgba(16,185,129,0.2)] transition active:scale-95"
-                              title="اتصال مستقیم به خط فرمان ترمینال سیسکو (CLI / SSH)"
-                            >
-                              <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>کانکت</span>
-                            </button>
-                          )}
-
-                          {/* Apply Template button */}
-                          {onApplyTemplate && (
-                            <button
-                              onClick={() => onApplyTemplate(dev)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-sans text-xs font-medium shadow-[0_0_10px_rgba(6,182,212,0.15)] transition active:scale-95"
-                              title="اعمال تعاملی تمپلیت کانفیگ استاندارد روی این تجهیز"
-                            >
-                              <FileCode2 className="w-3.5 h-3.5 text-cyan-400" />
-                              <span>تمپلیت</span>
-                            </button>
-                          )}
-
+                      {/* Actions with 3-Dots Menu */}
+                      <td className="p-3.5 text-center relative">
+                        <div className="flex items-center justify-center">
                           <button
-                            onClick={() => {
-                              if (window.confirm(`آیا از حذف تجهیز ${dev.name} اطمینان دارید؟`)) {
-                                onDeleteDevice(dev.id);
-                              }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenActionMenuId(openActionMenuId === dev.id ? null : dev.id);
                             }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition border border-transparent hover:border-rose-500/30"
-                            title="حذف تجهیز"
+                            className={`p-1.5 sm:p-2 rounded-xl border transition active:scale-95 shadow-xs ${
+                              openActionMenuId === dev.id
+                                ? 'bg-indigo-600 text-white border-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.4)]'
+                                : 'bg-white/5 hover:bg-white/15 text-slate-300 border-white/10 hover:text-white'
+                            }`}
+                            title="عملیات و گزینه‌ها"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <MoreVertical className="w-4 h-4" />
                           </button>
+
+                          {/* Dropdown Menu */}
+                          {openActionMenuId === dev.id && (
+                            <>
+                              {/* Backdrop for closing dropdown on outside click */}
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenActionMenuId(null);
+                                }}
+                              />
+
+                              <div
+                                className="absolute left-2 top-full mt-1.5 w-60 z-50 rounded-2xl shadow-2xl p-1.5 border border-white/15 backdrop-blur-2xl bg-slate-950/95 text-right font-sans device-action-dropdown animate-fadeIn"
+                                dir="rtl"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between text-[11px] font-mono">
+                                  <span className="font-bold text-white truncate max-w-[120px]">{dev.name}</span>
+                                  <span className="text-indigo-400 font-semibold">{dev.ip}</span>
+                                </div>
+
+                                <div className="py-1 space-y-0.5">
+                                  {/* Cisco CLI Connect */}
+                                  {(dev.type === 'switch' || dev.type === 'router') && onConnectTerminal && (
+                                    <button
+                                      onClick={() => {
+                                        setOpenActionMenuId(null);
+                                        onConnectTerminal(dev);
+                                      }}
+                                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-emerald-300 hover:bg-emerald-500/15 hover:text-emerald-200 transition text-right group/item"
+                                    >
+                                      <Terminal className="w-4 h-4 text-emerald-400 group-hover/item:scale-110 transition shrink-0" />
+                                      <div className="flex flex-col text-right">
+                                        <span>کانکت به ترمینال سیسکو</span>
+                                        <span className="text-[10px] text-emerald-500/80 font-mono">SSH / CLI Direct</span>
+                                      </div>
+                                    </button>
+                                  )}
+
+                                  {/* Apply Template */}
+                                  {onApplyTemplate && (
+                                    <button
+                                      onClick={() => {
+                                        setOpenActionMenuId(null);
+                                        onApplyTemplate(dev);
+                                      }}
+                                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-cyan-300 hover:bg-cyan-500/15 hover:text-cyan-200 transition text-right group/item"
+                                    >
+                                      <FileCode2 className="w-4 h-4 text-cyan-400 group-hover/item:scale-110 transition shrink-0" />
+                                      <div className="flex flex-col text-right">
+                                        <span>اعمال تمپلیت کانفیگ</span>
+                                        <span className="text-[10px] text-cyan-400/70">تکمیل متغیرها و اجرا</span>
+                                      </div>
+                                    </button>
+                                  )}
+
+                                  {/* Quick Ping */}
+                                  <button
+                                    onClick={() => {
+                                      setOpenActionMenuId(null);
+                                      handlePing(dev.id);
+                                    }}
+                                    disabled={isPinging}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:bg-white/10 transition text-right"
+                                  >
+                                    <RefreshCw className={`w-4 h-4 text-indigo-400 shrink-0 ${isPinging ? 'animate-spin' : ''}`} />
+                                    <div className="flex flex-col text-right">
+                                      <span>تست پینگ و تاخیر لحظه‌ای</span>
+                                      <span className="text-[10px] text-slate-400 font-mono">ICMP Keepalive Check</span>
+                                    </div>
+                                  </button>
+
+                                  {/* Ports Inspector */}
+                                  <button
+                                    onClick={() => {
+                                      setOpenActionMenuId(null);
+                                      onInspectPorts(dev);
+                                    }}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:bg-white/10 transition text-right"
+                                  >
+                                    <Cable className="w-4 h-4 text-indigo-400 shrink-0" />
+                                    <div className="flex flex-col text-right">
+                                      <span>مشاهده وضعیت پورت‌ها و VLAN</span>
+                                      <span className="text-[10px] text-slate-400 font-mono">{dev.total_ports || 24} Interfaces</span>
+                                    </div>
+                                  </button>
+
+                                  {/* Write Memory */}
+                                  {dev.has_unsaved_changes && onWriteMemory && (
+                                    <button
+                                      onClick={() => {
+                                        setOpenActionMenuId(null);
+                                        handleWriteMem(dev.id);
+                                      }}
+                                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-300 hover:bg-amber-500/15 transition text-right"
+                                    >
+                                      <Save className="w-4 h-4 text-amber-400 shrink-0" />
+                                      <div className="flex flex-col text-right">
+                                        <span>ذخیره در NVRAM (Write Memory)</span>
+                                        <span className="text-[10px] text-amber-400/80 font-mono">Running &gt; Startup Config</span>
+                                      </div>
+                                    </button>
+                                  )}
+
+                                  <div className="my-1 border-t border-white/10" />
+
+                                  {/* Delete Device */}
+                                  <button
+                                    onClick={() => {
+                                      setOpenActionMenuId(null);
+                                      if (window.confirm(`آیا از حذف تجهیز «${dev.name}» از لیست اطمینان دارید؟`)) {
+                                        onDeleteDevice(dev.id);
+                                      }
+                                    }}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition text-right"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
+                                    <span>حذف تجهیز از سیستم</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
