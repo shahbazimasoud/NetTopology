@@ -14,6 +14,12 @@
 
 ## 3. UI/UX Standards
 - **Modal Backdrops**: All modals must use `.modal-backdrop-blur` with `data-modal-backdrop="true"` for a dark blurred glassmorphism backdrop.
+- **Light Theme Modal Harmonization (Mandatory / اجباری)**:
+  - All modals must match the clean styling standard of `CloneTemplateModal`.
+  - **No Gray / Low-Contrast Backgrounds in Light Mode**: Modal containers must have a clean white background (`#ffffff`), subtle borders (`#e2e8f0`), and soft natural shadows.
+  - **No Saturated Blue-Purple Gradients in Headers**: Avoid heavy blue-purple gradients in modal headers and body cards. Headers in light mode must use clean neutral surfaces (`#f8fafc`).
+  - **No Low-Contrast Input Fields**: Never allow white text on light backgrounds or low-contrast gray text boxes. All inputs, textareas, and select elements in light mode must feature crisp white backgrounds (`#ffffff`), dark slate text (`#0f172a`), defined borders (`#cbd5e1`), and vibrant focus rings.
+  - **Terminal and Code View Readability**: Code blocks, CLI outputs, and SSH/Telnet terminal sessions must always maintain high-contrast dark backgrounds (`#0f172a`) with bright emerald/cyan text or clear syntax coloring across both light and dark modes.
 - **Port Visualization**: Switch faceplates must use the dedicated RJ-45 vector component (`NetworkPortSvg`).
 - **High-Contrast Light Theme**: All buttons, terminal components, and badges must maintain pristine readability and high contrast in light mode.
 

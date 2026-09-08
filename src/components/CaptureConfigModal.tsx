@@ -254,13 +254,13 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
       }}
     >
       <div
-        className="relative w-full max-w-5xl rounded-2xl bg-slate-900/95 border border-cyan-500/30 shadow-[0_0_50px_rgba(6,182,212,0.25)] flex flex-col max-h-[92vh] overflow-hidden text-right text-slate-100"
+        className="relative w-full max-w-5xl rounded-2xl bg-slate-900/95 border border-cyan-500/30 shadow-[0_0_60px_rgba(6,182,212,0.25)] flex flex-col max-h-[94vh] overflow-hidden text-right text-slate-100 backdrop-blur-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-gradient-to-r from-cyan-950/50 via-slate-900 to-indigo-950/50">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-white/10 bg-slate-950/70 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+            <div className="p-2.5 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.25)]">
               <DownloadCloud className="w-5 h-5 animate-pulse" />
             </div>
             <div>
@@ -268,7 +268,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                 <h3 className="text-base font-bold text-white">
                   استخراج و تبدیل کانفیگ تجهیز زنده به تمپلیت
                 </h3>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
                   Live Config Extractor & Parameterizer
                 </span>
               </div>
@@ -280,12 +280,12 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
 
           <div className="flex items-center gap-3">
             {/* Step Indicators */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-800/80 border border-white/10 text-xs">
-              <span className={`px-2 py-0.5 rounded-md font-bold transition ${step === 1 ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'}`}>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs">
+              <span className={`px-2.5 py-0.5 rounded-lg font-bold transition ${step === 1 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'}`}>
                 ۱. اتصال و استخراج
               </span>
               <span className="text-slate-500">←</span>
-              <span className={`px-2 py-0.5 rounded-md font-bold transition ${step === 2 ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'}`}>
+              <span className={`px-2.5 py-0.5 rounded-lg font-bold transition ${step === 2 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'}`}>
                 ۲. بررسی و ذخیره الگو
               </span>
             </div>
@@ -302,7 +302,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
 
         {/* Global Error Banner */}
         {extractError && (
-          <div className="mx-6 mt-4 p-3.5 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2.5 animate-shake">
+          <div className="mx-6 mt-4 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2.5 animate-shake">
             <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
             <span className="flex-1 font-medium">{extractError}</span>
             <button onClick={() => setExtractError(null)} className="text-rose-400 hover:text-white">
@@ -317,8 +317,8 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
             /* STEP 1: Connection & Smart Options */
             <div className="space-y-6">
               {/* Source Mode Selector */}
-              <div className="p-4 rounded-xl bg-slate-800/60 border border-white/10 space-y-3">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-2">
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
+                <label className="text-xs font-semibold text-slate-200 flex items-center gap-2">
                   <Server className="w-4 h-4 text-cyan-400" />
                   <span>انتخاب روش اتصال به تجهیز مبدأ:</span>
                 </label>
@@ -328,8 +328,8 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                     onClick={() => setSourceMode('registered')}
                     className={`flex items-center justify-between p-3.5 rounded-xl border text-xs font-semibold transition ${
                       sourceMode === 'registered'
-                        ? 'bg-cyan-500/20 border-cyan-500/60 text-cyan-200 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
-                        : 'bg-slate-800/40 border-white/5 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                        ? 'bg-cyan-500/20 border-cyan-500/60 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
+                        : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
@@ -347,8 +347,8 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                     onClick={() => setSourceMode('custom')}
                     className={`flex items-center justify-between p-3.5 rounded-xl border text-xs font-semibold transition ${
                       sourceMode === 'custom'
-                        ? 'bg-cyan-500/20 border-cyan-500/60 text-cyan-200 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
-                        : 'bg-slate-800/40 border-white/5 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                        ? 'bg-cyan-500/20 border-cyan-500/60 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
+                        : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
@@ -365,11 +365,11 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                 {/* Dropdown if registered mode */}
                 {sourceMode === 'registered' && (
                   <div className="pt-2">
-                    <label className="block text-xs text-slate-400 mb-1.5">تجهیز شبکه هدف:</label>
+                    <label className="block text-xs text-slate-300 mb-1.5 font-medium">تجهیز شبکه هدف:</label>
                     <select
                       value={selectedDeviceId}
                       onChange={(e) => handleDeviceSelect(e.target.value)}
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                      className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono shadow-inner"
                     >
                       {devices.map((d) => (
                         <option key={d.id} value={d.id}>
@@ -382,8 +382,8 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
               </div>
 
               {/* Connection Credentials Form */}
-              <div className="p-4 rounded-xl bg-slate-800/60 border border-white/10 space-y-4">
-                <h4 className="text-xs font-semibold text-slate-300 flex items-center gap-2">
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-4">
+                <h4 className="text-xs font-semibold text-slate-200 flex items-center gap-2">
                   <Key className="w-4 h-4 text-cyan-400" />
                   <span>مشخصات ارتباطی و احراز هویت (SSH / Telnet)</span>
                 </h4>
@@ -394,7 +394,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                     <select
                       value={vendor}
                       onChange={(e) => setVendor(e.target.value as TemplateVendor)}
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 shadow-inner"
                     >
                       <option value="cisco">سیسکو (Cisco IOS / IOS-XE)</option>
                       <option value="mikrotik">میکروتیک (MikroTik RouterOS)</option>
@@ -407,7 +407,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                     <select
                       value={targetType}
                       onChange={(e) => setTargetType(e.target.value as TemplateTargetType)}
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 shadow-inner"
                     >
                       <option value="switch">سوئیچ شبکه (Switch)</option>
                       <option value="router">روتر / گیت‌وی (Router)</option>
@@ -422,7 +422,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                       value={ip}
                       onChange={(e) => setIp(e.target.value)}
                       placeholder="192.168.1.1"
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 text-left ltr"
+                      className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 text-left ltr shadow-inner"
                     />
                   </div>
 
@@ -433,7 +433,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                         type="number"
                         value={port}
                         onChange={(e) => setPort(Number(e.target.value))}
-                        className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 text-center"
+                        className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 text-center shadow-inner"
                       />
                     </div>
                     <div>
@@ -446,7 +446,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                           if (proto === 'telnet' && port === 22) setPort(23);
                           if (proto === 'ssh' && port === 23) setPort(22);
                         }}
-                        className="w-full bg-slate-900 border border-white/10 rounded-xl px-2 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                        className="w-full bg-slate-950 border border-white/15 rounded-xl px-2 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono shadow-inner"
                       >
                         <option value="ssh">SSH v2</option>
                         <option value="telnet">Telnet</option>
@@ -463,7 +463,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder="admin"
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 text-left ltr"
+                      className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 text-left ltr shadow-inner"
                     />
                   </div>
 
@@ -474,7 +474,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 text-left ltr"
+                      className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 text-left ltr shadow-inner"
                     />
                   </div>
 
@@ -487,14 +487,14 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                       value={enablePassword}
                       onChange={(e) => setEnablePassword(e.target.value)}
                       placeholder="رمز ورود به # privileged"
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 text-left ltr"
+                      className="w-full bg-slate-950 border border-white/15 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 text-left ltr shadow-inner"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Smart Extraction Options (آپشن‌های هوشمند پیشرفته پیشنهادی) */}
-              <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-950/40 via-slate-800/60 to-cyan-950/40 border border-cyan-500/30 space-y-3.5">
+              {/* Smart Extraction Options */}
+              <div className="p-4 rounded-xl bg-white/5 border border-cyan-500/30 space-y-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-cyan-400" />
@@ -502,14 +502,14 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                       تنظیمات هوشمند استخراج و تمپلیت‌سازی (Smart Options)
                     </h4>
                   </div>
-                  <span className="text-[10px] text-cyan-300 font-mono px-2 py-0.5 rounded-md bg-cyan-500/20 border border-cyan-500/30">
+                  <span className="text-[10px] text-cyan-300 font-mono px-2.5 py-0.5 rounded-md bg-cyan-500/20 border border-cyan-500/40">
                     AI & Regex Engine
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                   {/* Option 1: Auto-Parameterize */}
-                  <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/70 border border-white/10 hover:border-cyan-500/40 transition cursor-pointer">
+                  <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-950/60 border border-white/10 hover:border-cyan-500/40 transition cursor-pointer">
                     <input
                       type="checkbox"
                       checked={autoParameterize}
@@ -527,7 +527,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                   </label>
 
                   {/* Option 2: Sensitive Data Sanitization */}
-                  <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/70 border border-white/10 hover:border-cyan-500/40 transition cursor-pointer">
+                  <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-950/60 border border-white/10 hover:border-cyan-500/40 transition cursor-pointer">
                     <input
                       type="checkbox"
                       checked={sanitizeSecrets}
@@ -546,7 +546,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                   </label>
 
                   {/* Option 3: Strip Ephemeral */}
-                  <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/70 border border-white/10 hover:border-cyan-500/40 transition cursor-pointer">
+                  <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-950/60 border border-white/10 hover:border-cyan-500/40 transition cursor-pointer">
                     <input
                       type="checkbox"
                       checked={stripEphemeral}
@@ -565,7 +565,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
 
                   {/* Option 4: MikroTik Compact Export */}
                   {vendor === 'mikrotik' && (
-                    <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/70 border border-white/10 hover:border-cyan-500/40 transition cursor-pointer">
+                    <label className="flex items-start gap-3 p-3 rounded-xl bg-slate-950/60 border border-white/10 hover:border-cyan-500/40 transition cursor-pointer">
                       <input
                         type="checkbox"
                         checked={mikrotikCompact}
@@ -589,11 +589,11 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
             /* STEP 2: Review, Parameter Customization & Template Save */
             <div className="space-y-4">
               {/* Extraction Stats Banner */}
-              <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                   <span className="font-semibold">کانفیگ تجهیز با موفقیت استخراج و تحلیل گردید:</span>
-                  <span className="font-mono text-white bg-slate-900 px-2 py-0.5 rounded border border-white/10">
+                  <span className="font-mono text-white bg-slate-950 px-2 py-0.5 rounded border border-white/15">
                     {extractResult?.detected_device_name} ({ip})
                   </span>
                 </div>
@@ -605,7 +605,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
               </div>
 
               {/* Template Metadata Inputs */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 p-4 rounded-xl bg-slate-800/60 border border-white/10">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 p-4 rounded-xl bg-white/5 border border-white/10">
                 <div className="md:col-span-2">
                   <label className="block text-xs font-semibold text-slate-200 mb-1">
                     نام تمپلیت دلخواه (Template Name): <span className="text-rose-400">*</span>
@@ -615,7 +615,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                     value={templateName}
                     onChange={(e) => setTemplateName(e.target.value)}
                     placeholder="مثال: کانفیگ استاندارد سوئیچ طبقه ۲ ساختمان مرکزی"
-                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500 font-medium"
+                    className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-medium shadow-inner"
                   />
                 </div>
 
@@ -626,7 +626,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                     value={templateRole}
                     onChange={(e) => setTemplateRole(e.target.value)}
                     placeholder="Access Switch / Distribution"
-                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 shadow-inner"
                   />
                 </div>
 
@@ -637,7 +637,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                     value={templateDesc}
                     onChange={(e) => setTemplateDesc(e.target.value)}
                     placeholder="توضیحات تکمیلی در رابطه با این کانفیگ و نحوه استفاده در شبکه..."
-                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 shadow-inner"
                   />
                 </div>
               </div>
@@ -651,7 +651,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                     className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
                       reviewTab === 'editor'
                         ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
                     <FileCode2 className="w-3.5 h-3.5" />
@@ -664,7 +664,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                     className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
                       reviewTab === 'variables'
                         ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
                     <Sliders className="w-3.5 h-3.5" />
@@ -677,7 +677,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                     className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
                       reviewTab === 'raw'
                         ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
                     <Eye className="w-3.5 h-3.5" />
@@ -690,7 +690,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                     className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
                       reviewTab === 'logs'
                         ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
                     <Terminal className="w-3.5 h-3.5" />
@@ -702,7 +702,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                   <button
                     type="button"
                     onClick={handleCopyRaw}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 hover:bg-white/15 text-slate-200 text-xs transition"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-200 text-xs transition border border-white/10"
                   >
                     {copiedRaw ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copiedRaw ? 'کپی شد' : 'کپی کانفیگ خام'}</span>
@@ -715,7 +715,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                 <div className="space-y-3">
                   {/* Available variables chips */}
                   {templateVariables.length > 0 && (
-                    <div className="p-3 rounded-xl bg-slate-800/60 border border-white/10">
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10">
                       <div className="text-[11px] text-slate-400 mb-2 flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                         <span>کلیک روی هر متغیر برای درج سریع در متن کانفیگ:</span>
@@ -737,13 +737,17 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                     </div>
                   )}
 
-                  <div className="relative rounded-xl overflow-hidden border border-white/10 bg-slate-950 font-mono text-xs shadow-inner">
+                  <div className="relative rounded-2xl bg-slate-950 border border-white/15 overflow-hidden focus-within:border-cyan-500/60 shadow-inner">
+                    <div className="flex items-center justify-between px-3.5 py-2 bg-white/5 border-b border-white/10 text-[11px] text-slate-400 font-mono">
+                      <span>Mustache Parameterized Config Template</span>
+                      <span className="text-[10px] text-cyan-400 font-mono">{'{{VARIABLE_NAME}}'} supported</span>
+                    </div>
                     <textarea
                       ref={textareaRef}
                       value={templateCommands}
                       onChange={(e) => setTemplateCommands(e.target.value)}
                       rows={14}
-                      className="w-full bg-transparent p-4 text-emerald-300 font-mono text-xs focus:outline-none leading-relaxed select-text resize-y text-left ltr"
+                      className="w-full bg-slate-950 p-4 font-mono text-xs text-slate-200 leading-relaxed focus:outline-none resize-y dir-ltr text-left selection:bg-cyan-500/30"
                       placeholder="متن فرامین کانفیگ تمپلیت..."
                       spellCheck={false}
                     />
@@ -753,9 +757,9 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
 
               {/* Tab 2: Variables List & Edit */}
               {reviewTab === 'variables' && (
-                <div className="p-4 rounded-xl bg-slate-800/60 border border-white/10 space-y-3">
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-300 font-semibold">
+                    <span className="text-xs text-slate-200 font-semibold">
                       لیست متغیرهای پویای استخراج‌شده از کانفیگ تجهیز:
                     </span>
                     <button
@@ -774,7 +778,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                           },
                         ]);
                       }}
-                      className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-medium hover:bg-cyan-500/30 transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-medium hover:bg-cyan-500/30 transition"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>افزودن متغیر جدید</span>
@@ -785,10 +789,10 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                     {templateVariables.map((v, idx) => (
                       <div
                         key={idx}
-                        className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-lg bg-slate-900 border border-white/5 items-center text-xs"
+                        className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-white/5 border border-white/10 items-center text-xs"
                       >
                         <div className="sm:col-span-3">
-                          <label className="text-[10px] text-slate-400 block sm:hidden">شناسه متغیر:</label>
+                          <label className="text-[10px] text-slate-400 block sm:hidden mb-0.5">شناسه متغیر:</label>
                           <input
                             type="text"
                             value={v.name}
@@ -797,12 +801,12 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                               copy[idx].name = e.target.value;
                               setTemplateVariables(copy);
                             }}
-                            className="w-full bg-slate-800 border border-white/10 rounded px-2 py-1 text-cyan-300 font-mono text-left ltr"
+                            className="w-full bg-slate-950 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 text-left ltr shadow-inner"
                           />
                         </div>
 
                         <div className="sm:col-span-3">
-                          <label className="text-[10px] text-slate-400 block sm:hidden">عنوان فارسی:</label>
+                          <label className="text-[10px] text-slate-400 block sm:hidden mb-0.5">عنوان فارسی:</label>
                           <input
                             type="text"
                             value={v.label}
@@ -811,12 +815,12 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                               copy[idx].label = e.target.value;
                               setTemplateVariables(copy);
                             }}
-                            className="w-full bg-slate-800 border border-white/10 rounded px-2 py-1 text-slate-200"
+                            className="w-full bg-slate-950 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 shadow-inner"
                           />
                         </div>
 
                         <div className="sm:col-span-3">
-                          <label className="text-[10px] text-slate-400 block sm:hidden">مقدار پیش‌فرض:</label>
+                          <label className="text-[10px] text-slate-400 block sm:hidden mb-0.5">مقدار پیش‌فرض:</label>
                           <input
                             type="text"
                             value={v.default_value || ''}
@@ -825,7 +829,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                               copy[idx].default_value = e.target.value;
                               setTemplateVariables(copy);
                             }}
-                            className="w-full bg-slate-800 border border-white/10 rounded px-2 py-1 text-emerald-300 font-mono text-left ltr"
+                            className="w-full bg-slate-950 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 text-left ltr shadow-inner"
                           />
                         </div>
 
@@ -837,7 +841,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                               copy[idx].type = e.target.value as any;
                               setTemplateVariables(copy);
                             }}
-                            className="w-full bg-slate-800 border border-white/10 rounded px-2 py-1 text-slate-300"
+                            className="w-full bg-slate-950 border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 shadow-inner"
                           >
                             <option value="text">متن (Text)</option>
                             <option value="ip">آدرس IP</option>
@@ -855,7 +859,7 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                             onClick={() => {
                               setTemplateVariables(templateVariables.filter((_, i) => i !== idx));
                             }}
-                            className="p-1 rounded text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+                            className="p-1.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition"
                             title="حذف متغیر"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -869,14 +873,14 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
 
               {/* Tab 3: Raw Configuration View */}
               {reviewTab === 'raw' && (
-                <div className="rounded-xl overflow-hidden border border-white/10 bg-slate-950 p-4 font-mono text-xs text-slate-300 max-h-[350px] overflow-y-auto leading-relaxed select-text text-left ltr whitespace-pre">
+                <div className="rounded-2xl overflow-hidden border border-white/15 bg-slate-950 p-4 font-mono text-xs text-slate-200 max-h-[350px] overflow-y-auto leading-relaxed select-text text-left ltr whitespace-pre shadow-inner">
                   {extractResult?.raw_config}
                 </div>
               )}
 
               {/* Tab 4: Execution Logs */}
               {reviewTab === 'logs' && (
-                <div className="rounded-xl overflow-hidden border border-white/10 bg-slate-950 p-4 font-mono text-xs text-cyan-400 max-h-[350px] overflow-y-auto leading-relaxed select-text text-left ltr space-y-1">
+                <div className="rounded-2xl overflow-hidden border border-white/15 bg-slate-950 p-4 font-mono text-xs text-emerald-400 max-h-[350px] overflow-y-auto leading-relaxed select-text text-left ltr space-y-1 shadow-inner">
                   {extractResult?.logs.map((logLine, idx) => (
                     <div key={idx}>{logLine}</div>
                   ))}
@@ -887,13 +891,13 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-white/10 bg-slate-950/60">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-4 border-t border-white/10 bg-slate-950/70 shrink-0">
           <div>
             {step === 2 ? (
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-semibold transition border border-white/10"
               >
                 <ArrowRight className="w-4 h-4" />
                 <span>بازگشت به مشخصات اتصال</span>
@@ -949,10 +953,10 @@ export const CaptureConfigModal: React.FC<CaptureConfigModalProps> = ({
                   type="button"
                   onClick={() => handleSaveTemplate(true)}
                   disabled={saving}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-[0_0_20px_rgba(16,185,129,0.4)] transition disabled:opacity-50 active:scale-95"
+                  className="btn-apply-template flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-[0_0_20px_rgba(16,185,129,0.4)] transition disabled:opacity-50 active:scale-95"
                 >
-                  <Play className="w-3.5 h-3.5 fill-white" />
-                  <span>ذخیره و اعمال روی تجهیز دیگر</span>
+                  <Play className="w-3.5 h-3.5 fill-white text-white" />
+                  <span className="text-white">ذخیره و اعمال روی تجهیز دیگر</span>
                 </button>
               </>
             )}

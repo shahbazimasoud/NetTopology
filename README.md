@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۳.۰
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.3.0
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۳.۱
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.3.1
 
 ---
 
@@ -78,9 +78,11 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 - **پایش وضعیت اتصال:** نمایش وضعیت آنلاین/آفلاین بودن هر سوئیچ و روتر با پینگ و تله‌متری دوره‌ای.
 - **فیلترهای پیشرفته:** جستجوی آنی بر اساس آی‌پی، نام سوئیچ، مدل و پورت‌های فعال.
 
-### ۷. استایل مدرن شیشه‌ای تیره (Spatial Dark Glassmorphism)
-- تمامی پنجره‌های پاپ‌آپ و مودال‌های سیستم از افکت تیره شیشه‌ای بلور (`backdrop-filter: blur(14px)`) بهره می‌برند تا تمرکز کاربر حفظ شده و هیچ‌گونه تداخل بصری با هدر یا بدنه رخ ندهد.
-- پشتیبانی کامل از **Dark Mode** و **Light Mode** با کنتراست اصلاح‌شده و تاییدیه استانداردهای دسترس‌پذیری.
+### ۷. استایل مدرن و هماهنگ مودال‌ها در تم تاریک و روشن (Modal Harmonization & Light Theme Standards)
+- تمامی پنجره‌های پاپ‌آپ و مودال‌های سیستم (استخراج کانفیگ زنده، اعمال تمپلیت، کلون‌گیری، ویرایشگر و ترمینال) از افکت شیشه‌ای بلور استاندارد (`.modal-backdrop-blur` با `data-modal-backdrop="true"`) بهره می‌برند.
+- **اصلاح کامل تم روشن (Light Mode):** طراحی کادرهای مودال بر اساس استاندارد مودال کلون‌گیری با بدنه سفید خالص (`#ffffff`)، حاشیه‌های نرم اسلیت (`#e2e8f0`)، حذف گرادیانت‌های نامناسب آبی-بنفش، و سطوح خنثی و تمیز در سربرگ‌ها.
+- **حل قطعی مشکل تکست‌باکس‌ها:** تمامی فیلدهای ورودی، سلکت‌باکس‌ها و متغیرها در تم روشن دارای پس‌زمینه سفید، متن تیره پرکنتراست (`#0f172a`) و کادرهای مشخص بوده و از هرگونه ناخوانایی متن سفید روی پس‌زمینه سفید یا خاکستری‌های تیره کدر جلوگیری شده است.
+- خوانایی تضمین‌شده بلاک‌های کد و خروجی‌های ترمینال با پس‌زمینه تیره خوانا و کنتراست رنگی تفکیک‌شده در هر دو تم.
 
 ### ۸. استخراج هوشمند و تبدیل خودکار کانفیگ تجهیز زنده به الگو (Live Device Config Extraction & Auto-Parameterization)
 - **دریافت مشخصات اتصال به صورت مستقیم:** پشتیبانی از ارتباط SSH v2 و Telnet با دریافت آدرس IP، پورت، یوزرنیم، پسورد ورود و پسورد Enable Secret سیسکو.
@@ -229,9 +231,12 @@ npm start
 - **Real-Time Health Monitoring:** Visual indicators for device reachability, uptime, and firmware versions.
 - **Fast Search & Filtering:** Filter devices by IP, model, location, or active port status.
 
-### 7. Dark Glassmorphism Modal Architecture
-- Universal backdrop blur (`.modal-backdrop-blur`, `backdrop-filter: blur(14px)`) ensures focus and eliminates color clashing with headers and backgrounds.
-- High-contrast accessibility compliance across both Dark and Light themes.
+### 7. Modal Styling Standards & Light Theme Harmonization
+- Universal backdrop blur (`.modal-backdrop-blur` with `data-modal-backdrop="true"`) ensures focused user attention without background interference.
+- **Light Mode Harmonization:** Modals (Live Config Extraction, Apply Template, Clone Template, etc.) are styled in accordance with the Clone Template modal archetype, featuring crisp white containers (`#ffffff`), subtle borders (`#e2e8f0`), and soft natural shadows.
+- **Elimination of Blue-Purple Gradients & Dull Gray Surfaces:** Replaced heavy saturated gradients with clean neutral header styling.
+- **Input Contrast Resolution:** All text fields, textareas, and select inputs in light mode provide pure white backgrounds, dark slate typography (`#0f172a`), and defined border lines, completely preventing white-on-white text clipping or washed-out controls.
+- **Terminal Readability:** Code viewers and interactive terminal streams maintain dedicated dark high-contrast backgrounds with emerald/cyan syntax coloring in all modes.
 
 ### 8. Live Device Config Extraction & Auto-Parameterization Engine
 - **Direct Appliance Connection:** Connects over SSH v2 or Telnet using custom or registered credentials (IP, Port, Username, Password, and Cisco Enable Secret).
