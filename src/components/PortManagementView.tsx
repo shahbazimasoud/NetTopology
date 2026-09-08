@@ -3,6 +3,8 @@ import { Server, Cable, Zap, Shield, Search, Filter, Edit3, Save, CheckCircle2, 
 import { Device, SwitchPort } from '../types';
 import { fetchDevicePorts, updateSwitchPort } from '../services/api';
 import { CiscoPortContextMenu } from './CiscoPortContextMenu';
+import { CiscoCommandConfirmModal } from './CiscoCommandConfirmModal';
+import { AssignVlanModal } from './AssignVlanModal';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface PortManagementViewProps {
@@ -62,9 +64,47 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
     }
   };
 
+  // Right-click action confirmation modal state (Yes/No with device CLI preview)
+  const [confirmModalState, setConfirmModalState] = useState<{
+    action: 'shutdown' | 'no_shutdown' | 'mode_trunk' | 'mode_access' | 'port_sec_disable';
+    port: SwitchPort;
+  } | null>(null);
+  const [isExecutingConfirmAction, setIsExecutingConfirmAction] = useState(false);
+
+  // Assign Access VLAN modal state
+  const [vlanAssignModalPort, setVlanAssignModalPort] = useState<SwitchPort | null>(null);
+  const [isAssigningVlan, setIsAssigningVlan] = useState(false);
+
   const handleExecuteContextMenuAction = async (action: string, extra?: any) => {
     if (!contextMenu || !currentDevice) return;
     const targetPort = contextMenu.port;
+
+    // 1. Enable Port Security: Open edit mode directly for user configuration
+    if (action === 'port_sec_enable') {
+      startEdit(targetPort);
+      setEditMode('access');
+      setContextMenu(null);
+      return;
+    }
+
+    // 2. Assign Access VLAN: Open dedicated modal with device VLAN list & custom input
+    if (action === 'open_assign_vlan' || action === 'change_vlan') {
+      setContextMenu(null);
+      setVlanAssignModalPort(targetPort);
+      return;
+    }
+
+    // 3. For other actions: Open confirmation dialog with CLI preview
+    setContextMenu(null);
+    setConfirmModalState({
+      action: action as any,
+      port: targetPort,
+    });
+  };
+
+  const handleConfirmExecuteCommand = async () => {
+    if (!confirmModalState || !currentDevice) return;
+    const { action, port: targetPort } = confirmModalState;
     let updates: Partial<SwitchPort> = {};
 
     switch (action) {
@@ -80,26 +120,15 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
       case 'mode_access':
         updates = { mode: 'access' };
         break;
-      case 'port_sec_enable':
-        updates = {
-          port_security_enabled: true,
-          mode: 'access',
-          port_security_mode: 'sticky',
-          port_security_violation: 'restrict',
-          port_security_max_mac: 1,
-        };
-        break;
       case 'port_sec_disable':
         updates = { port_security_enabled: false };
-        break;
-      case 'change_vlan':
-        updates = { vlan: Number(extra) || 1 };
         break;
       default:
         break;
     }
 
     try {
+      setIsExecutingConfirmAction(true);
       await updateSwitchPort(currentDevice.id, targetPort.port_id, updates);
       setPorts((prev) =>
         prev.map((p) => (p.port_id === targetPort.port_id ? { ...p, ...updates } : p))
@@ -107,8 +136,36 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
       if (selectedPort?.port_id === targetPort.port_id) {
         setSelectedPort((prev) => (prev ? { ...prev, ...updates } : null));
       }
+      setConfirmModalState(null);
     } catch (err: any) {
       console.error('Failed to update port from context menu:', err);
+    } finally {
+      setIsExecutingConfirmAction(false);
+    }
+  };
+
+  const handleConfirmAssignVlan = async (newVlan: number) => {
+    if (!vlanAssignModalPort || !currentDevice) return;
+    const targetPort = vlanAssignModalPort;
+    const updates: Partial<SwitchPort> = {
+      vlan: newVlan,
+      mode: 'access',
+    };
+
+    try {
+      setIsAssigningVlan(true);
+      await updateSwitchPort(currentDevice.id, targetPort.port_id, updates);
+      setPorts((prev) =>
+        prev.map((p) => (p.port_id === targetPort.port_id ? { ...p, ...updates } : p))
+      );
+      if (selectedPort?.port_id === targetPort.port_id) {
+        setSelectedPort((prev) => (prev ? { ...prev, ...updates } : null));
+      }
+      setVlanAssignModalPort(null);
+    } catch (err: any) {
+      console.error('Failed to assign VLAN:', err);
+    } finally {
+      setIsAssigningVlan(false);
     }
   };
 
@@ -309,10 +366,10 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                       isSelected
                         ? 'bg-indigo-600/30 border-cyan-400 ring-2 ring-cyan-400/40 text-white shadow-[0_0_12px_rgba(6,182,212,0.4)]'
                         : isDisabled
-                        ? 'bg-black/40 border-amber-800/60 hover:border-amber-500 text-slate-300'
+                        ? 'bg-amber-500/20 border-amber-500/60 hover:border-amber-400 hover:bg-amber-500/30 text-amber-200'
                         : isUp
                         ? 'bg-white/5 border-white/15 hover:border-cyan-400/80 text-slate-200'
-                        : 'bg-black/30 border-white/5 hover:border-white/20 opacity-60 text-slate-500'
+                        : 'bg-rose-500/20 border-rose-500/50 hover:border-rose-400 hover:bg-rose-500/30 text-rose-200'
                     }`}
                   >
                     <div className="flex items-center gap-0.5 mb-1">
@@ -691,6 +748,31 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
           deviceName={currentDevice.name}
           onClose={() => setContextMenu(null)}
           onExecuteAction={handleExecuteContextMenuAction}
+        />
+      )}
+
+      {/* Cisco CLI Command Confirmation Modal (Yes/No with Switch/Router CLI syntax) */}
+      {confirmModalState && currentDevice && (
+        <CiscoCommandConfirmModal
+          isOpen={!!confirmModalState}
+          onClose={() => setConfirmModalState(null)}
+          onConfirm={handleConfirmExecuteCommand}
+          action={confirmModalState.action}
+          port={confirmModalState.port}
+          device={currentDevice}
+          isLoading={isExecutingConfirmAction}
+        />
+      )}
+
+      {/* Assign Access VLAN Modal (With device VLANs list at top and custom ID input) */}
+      {vlanAssignModalPort && currentDevice && (
+        <AssignVlanModal
+          isOpen={!!vlanAssignModalPort}
+          onClose={() => setVlanAssignModalPort(null)}
+          onAssign={handleConfirmAssignVlan}
+          port={vlanAssignModalPort}
+          device={currentDevice}
+          isLoading={isAssigningVlan}
         />
       )}
     </div>

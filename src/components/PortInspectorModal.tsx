@@ -4,6 +4,8 @@ import { Device, SwitchPort } from '../types';
 import { fetchDevicePorts, updateSwitchPort, writeMemory } from '../services/api';
 import { NetworkPortSvg } from './NetworkPortSvg';
 import { CiscoPortContextMenu } from './CiscoPortContextMenu';
+import { CiscoCommandConfirmModal } from './CiscoCommandConfirmModal';
+import { AssignVlanModal } from './AssignVlanModal';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface PortInspectorModalProps {
@@ -58,6 +60,17 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
   const [showConfirmSummary, setShowConfirmSummary] = useState(false);
   const [isWritingMem, setIsWritingMem] = useState(false);
 
+  // Right-click action confirmation modal state (Yes/No with device CLI preview)
+  const [confirmModalState, setConfirmModalState] = useState<{
+    action: 'shutdown' | 'no_shutdown' | 'mode_trunk' | 'mode_access' | 'port_sec_disable';
+    port: SwitchPort;
+  } | null>(null);
+  const [isExecutingConfirmAction, setIsExecutingConfirmAction] = useState(false);
+
+  // Assign Access VLAN modal state
+  const [vlanAssignModalPort, setVlanAssignModalPort] = useState<SwitchPort | null>(null);
+  const [isAssigningVlan, setIsAssigningVlan] = useState(false);
+
   const handlePortContextMenu = (e: React.MouseEvent, port: SwitchPort) => {
     e.preventDefault();
     setContextMenu({
@@ -70,6 +83,44 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
   const handleExecuteContextMenuAction = async (action: string, extra?: any) => {
     if (!contextMenu || !device) return;
     const targetPort = contextMenu.port;
+
+    // 1. If user chose "Enable Port Security"
+    // Requirement: "اگر فعال کردن پورت سکوریتی رو انتخاب شد از این منو باید بره تو همین مودال قسمت ویرایش پورت و تیک فعال شدن پورت سکوریتی رو بزنه تا از اینجا طرف خودش کانفیگ کنه"
+    if (action === 'port_sec_enable') {
+      setSelectedPort(targetPort);
+      setIsEditing(true);
+      setEditPortSecEnabled(true);
+      setEditMode('access');
+      setContextMenu(null);
+      setTimeout(() => {
+        const secEl = document.getElementById('port-security-section');
+        if (secEl) {
+          secEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      return;
+    }
+
+    // 2. If user chose "Assign Access VLAN"
+    // Requirement: "اگر اساین اگسس ویلن رو انتخاب کردم باید یه مودال باز بشه بالاش وی لن های این دستگاه رو نشون بده و یه کادر باشه که من بتونم خودم بگم این پورت بره تو چه ویلنی"
+    if (action === 'open_assign_vlan' || action === 'change_vlan') {
+      setContextMenu(null);
+      setVlanAssignModalPort(targetPort);
+      return;
+    }
+
+    // 3. For all other actions:
+    // Requirement: "از منوی که با راست کلیک باز میشه اگر هر کدوم رو که انتخاب کردم باید یه تایید یس و نو بگیره از من اگر یس زدم باید کامند متناظرش رو در دیوایس اجرا کنه با توجه به نوع دستگاهی که هست منظورم سویچ یا روتر بودنشه"
+    setContextMenu(null);
+    setConfirmModalState({
+      action: action as any,
+      port: targetPort,
+    });
+  };
+
+  const handleConfirmExecuteCommand = async () => {
+    if (!confirmModalState || !device) return;
+    const { action, port: targetPort } = confirmModalState;
     let updates: Partial<SwitchPort> = {};
 
     switch (action) {
@@ -85,26 +136,15 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
       case 'mode_access':
         updates = { mode: 'access' };
         break;
-      case 'port_sec_enable':
-        updates = {
-          port_security_enabled: true,
-          mode: 'access',
-          port_security_mode: 'sticky',
-          port_security_violation: 'restrict',
-          port_security_max_mac: 1,
-        };
-        break;
       case 'port_sec_disable':
         updates = { port_security_enabled: false };
-        break;
-      case 'change_vlan':
-        updates = { vlan: Number(extra) || 1 };
         break;
       default:
         break;
     }
 
     try {
+      setIsExecutingConfirmAction(true);
       await updateSwitchPort(device.id, targetPort.port_id, updates);
       setPorts((prev) =>
         prev.map((p) => (p.port_id === targetPort.port_id ? { ...p, ...updates } : p))
@@ -112,9 +152,38 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
       if (selectedPort?.port_id === targetPort.port_id) {
         setSelectedPort((prev) => (prev ? { ...prev, ...updates } : null));
       }
+      setConfirmModalState(null);
       if (onPortUpdated) onPortUpdated();
     } catch (err: any) {
-      console.error('Failed to update port from context menu:', err);
+      console.error('Failed to execute command on device:', err);
+    } finally {
+      setIsExecutingConfirmAction(false);
+    }
+  };
+
+  const handleConfirmAssignVlan = async (newVlan: number) => {
+    if (!vlanAssignModalPort || !device) return;
+    const targetPort = vlanAssignModalPort;
+    const updates: Partial<SwitchPort> = {
+      vlan: newVlan,
+      mode: 'access',
+    };
+
+    try {
+      setIsAssigningVlan(true);
+      await updateSwitchPort(device.id, targetPort.port_id, updates);
+      setPorts((prev) =>
+        prev.map((p) => (p.port_id === targetPort.port_id ? { ...p, ...updates } : p))
+      );
+      if (selectedPort?.port_id === targetPort.port_id) {
+        setSelectedPort((prev) => (prev ? { ...prev, ...updates } : null));
+      }
+      setVlanAssignModalPort(null);
+      if (onPortUpdated) onPortUpdated();
+    } catch (err: any) {
+      console.error('Failed to assign VLAN:', err);
+    } finally {
+      setIsAssigningVlan(false);
     }
   };
 
@@ -777,7 +846,7 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
                   </div>
 
                   {/* Cisco Port Security Configuration Box (تنظیمات پورت سکیوریتی سیسکو) */}
-                  <div className="port-sub-card border border-indigo-500/30 rounded-xl overflow-hidden bg-white/5 shadow-xs">
+                  <div id="port-security-section" className="port-sub-card border border-indigo-500/30 rounded-xl overflow-hidden bg-white/5 shadow-xs scroll-mt-6">
                     <div className="flex flex-wrap items-center justify-between p-3 bg-gradient-to-r from-indigo-950/50 to-slate-900/60 border-b border-indigo-500/20 gap-2">
                       <div className="flex items-center gap-2.5">
                         <div className="p-2 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 text-white shadow-md">
@@ -1319,6 +1388,31 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
             onClose={() => setContextMenu(null)}
             onExecuteAction={handleExecuteContextMenuAction}
             onOpenTerminal={onConnectTerminal ? () => onConnectTerminal(device) : undefined}
+          />
+        )}
+
+        {/* Cisco CLI Command Confirmation Modal (Yes/No with Switch/Router CLI syntax) */}
+        {confirmModalState && device && (
+          <CiscoCommandConfirmModal
+            isOpen={!!confirmModalState}
+            onClose={() => setConfirmModalState(null)}
+            onConfirm={handleConfirmExecuteCommand}
+            action={confirmModalState.action}
+            port={confirmModalState.port}
+            device={device}
+            isLoading={isExecutingConfirmAction}
+          />
+        )}
+
+        {/* Assign Access VLAN Modal (With device VLANs list at top and custom ID input) */}
+        {vlanAssignModalPort && device && (
+          <AssignVlanModal
+            isOpen={!!vlanAssignModalPort}
+            onClose={() => setVlanAssignModalPort(null)}
+            onAssign={handleConfirmAssignVlan}
+            port={vlanAssignModalPort}
+            device={device}
+            isLoading={isAssigningVlan}
           />
         )}
       </div>

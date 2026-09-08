@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.6.1-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.7.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۶.۱
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.6.1
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۷.۰
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.7.0
 
 ---
 
@@ -210,6 +210,13 @@ npm start
 > ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
 
 ### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
+- **نسخه ۱.۷.۰ (v1.7.0 - تاییدیه هوشمند دستورات سیسکو سویچ/روتر، مودال تخصیص ویلن، رنگ‌بندی وضعیت پورت‌ها و هدایت پورت سکیوریتی)**:
+  - **مودال تایید تعاملی بله/خیر (Cisco Command Confirmation Modal):** اضافه شدن مودال تایید با تولید و نمایش بلادرنگ دستورات دقیق Cisco IOS متناسب با نوع تجهیز (Switch یا Router) برای تمامی اکشن‌های تغییر وضعیت پورت (`shutdown` / `no shutdown`، تغییر مد `trunk` / `access` و غیرفعال‌سازی `port-security`).
+  - **مودال اختصاصی تخصیص ویلن دسترسی (Assign Access VLAN Modal):** باز شدن پنجره مستقل با نمایش لیست ویلن‌های موجود تجهیز در بالای کادر همراه با فیلد جستجو و کادر ورودی شماره دلخواه VLAN جهت تغییر امن پورت به مد Access و تخصیص VLAN با پیش‌نمایش کامند.
+  - **هدایت هوشمند فعال‌سازی Port Security:** انتخاب «فعال‌سازی پورت سکیوریتی» از منوی راست‌کلیک پورت، مستقیماً پنجره را به بخش ویرایش پورت هدایت کرده و تیک پورت سکیوریتی را به صورت خودکار فعال می‌کند تا مدیر شبکه پارامترهای مک‌آدرس و Violation را مطابق نیاز شخصی‌سازی کند.
+  - **رنگ‌بندی بصری وضعیت پورت‌ها در Switch Faceplate:** رنگ پس‌زمینه پورت‌های خاموش به قرمز ملایم و پورت‌های غیرفعال/قطع به نارنجی ملایم تغییر یافته تا خطای فیزیکی در یک نگاه قابل تشخیص باشد.
+  - **کنتراست بالای بج‌های VLAN:** ارتقای بج‌های شماره ویلن (v1, v10, ...) با متن سفید پررنگ (Bold White) بر روی پس‌زمینه بنفش در تمام صفحات و مودال‌ها.
+
 - **نسخه ۱.۶.۱ (v1.6.1 - منوی راست‌کلیک پورت‌های فیس‌پلیت، رفع مشکل دراپ‌داون اینترفیس‌های ترمینال و کنتراست بالای لیبل‌ها در تم روشن)**:
   - **منوی راست‌کلیک پورت‌های سوئیچ (Cisco Port Context Menu):** افزودن قابلیت راست‌کلیک روی پورت‌های فیزیکی سوئیچ در فیس‌پلیت جهت اعمال دستورات shutdown / no shutdown، تغییر حالت Trunk/Access، فعال‌سازی پورت سکیوریتی و تنظیم سریع شماره VLAN.
   - **رفع مشکل خروج لیست اینترفیس‌های ترمینال از کادر:** اصلاح موقعیت‌دهی، محدودسازی ارتفاع، اسکرول روان و بسته‌شدن هوشمند با کلیک در بیرون کادر.
@@ -443,6 +450,13 @@ Any AI assistant, coding agent, or human contributor working on this repository 
 3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
 
 ### Release Notes & Bug Fixes
+- **Version 1.7.0 (Cisco Switch/Router Command Confirmation, Assign Access VLAN Modal, Port State Visuals & Port Security Navigation)**:
+  - **Interactive Cisco CLI Command Confirmation Modal (`CiscoCommandConfirmModal`):** Dual-step Yes/No confirmation dialog providing real-time preview of exact Cisco IOS CLI commands dynamically tailored to device type (Switch vs. Router) for port shutdown, no shutdown, trunk/access mode switches, and port security deactivation.
+  - **Dedicated Assign Access VLAN Modal (`AssignVlanModal`):** Standalone modal presenting the device's currently configured VLANs with search filtering, manual VLAN ID input, and auto-generated Cisco CLI configuration preview.
+  - **Port Security Right-Click Direct Navigation:** Selecting "Enable Port Security" directly shifts the inspector modal into editing mode, turns on the port security toggle, and smooth-scrolls to the security parameters for custom configuration.
+  - **Visual Port State Coloring on Switch Faceplate:** Physical port background dynamically tints soft red for shutdown ports and soft amber for disabled/down ports, making physical and administrative statuses immediately clear.
+  - **High-Contrast Bold White Text on Purple VLAN Badges:** Optimized VLAN badges across faceplate ports and inventory tables with crisp bold white text over rich purple backgrounds.
+
 - **Version 1.6.1 (Cisco Switch Port Right-Click Context Menu, Terminal Interface Dropdown Fix & High-Contrast Light Theme Badges)**:
   - **Cisco Switch Port Right-Click Context Menu (`CiscoPortContextMenu`):** Added intuitive right-click action menu on physical ports in the Switch Faceplate for immediate shutdown/no shutdown toggles, Trunk vs. Access switching, Layer-2 Port Security activation, and quick VLAN configuration.
   - **Fixed Terminal Interface Dropdown Overflow:** Corrected dropdown boundaries, maximum height, smooth scrolling, and click-outside closing mechanism in `CiscoTerminalModal`.

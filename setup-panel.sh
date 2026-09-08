@@ -30,7 +30,7 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-PANEL_VERSION="1.6.1"
+PANEL_VERSION="1.7.0"
 
 clear 2>/dev/null || true
 echo -e "${CYAN}${BOLD}"

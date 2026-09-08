@@ -43,10 +43,10 @@ export const NetworkPortSvg: React.FC<NetworkPortSvgProps> = ({
         isSelected
           ? 'bg-indigo-950/90 border-2 border-indigo-400 ring-2 ring-indigo-500/40 shadow-lg scale-105 z-10'
           : isDisabled
-          ? 'bg-slate-900/90 border border-amber-800/70 hover:border-amber-500 hover:bg-slate-850'
+          ? 'bg-amber-500/20 border border-amber-500/60 hover:border-amber-400 hover:bg-amber-500/30'
           : isUp
           ? 'bg-slate-900/90 border border-slate-700/80 hover:border-indigo-400 hover:bg-slate-800/90'
-          : 'bg-slate-950 border border-slate-800 hover:border-slate-700 opacity-75'
+          : 'bg-rose-500/20 border border-rose-500/50 hover:border-rose-400 hover:bg-rose-500/30'
       }`}
       title={`${port.name} (${port.port_id}) - ${port.status.toUpperCase()} - Mode: ${port.mode.toUpperCase()} - VLAN ${port.vlan}${port.connected_device ? ` - ${port.connected_device}` : ''}`}
       style={{ width: '56px' }}
@@ -86,7 +86,7 @@ export const NetworkPortSvg: React.FC<NetworkPortSvgProps> = ({
           height="34"
           rx="3"
           fill="#1e293b"
-          stroke={isSelected ? '#818cf8' : isUp ? '#475569' : '#334155'}
+          stroke={isSelected ? '#818cf8' : isDisabled ? '#f59e0b' : isUp ? '#475569' : '#f43f5e'}
           strokeWidth="1.5"
         />
         
@@ -140,12 +140,13 @@ export const NetworkPortSvg: React.FC<NetworkPortSvgProps> = ({
         />
       </svg>
 
-      {/* VLAN ID Badge - High Contrast (Always clear on dark socket plate) */}
+      {/* VLAN ID Badge - High Contrast (Always clear bold white text on purple) */}
       <div className="mt-1 flex items-center justify-center w-full">
         <span
+          data-badge="vlan-tag"
           className={`font-mono text-[9px] font-bold px-1.5 py-0.2 rounded tracking-tight shadow-xs ${
             isTrunk
-              ? 'bg-purple-900/90 text-purple-200 border border-purple-500/50'
+              ? 'bg-purple-600 text-white font-bold border border-purple-400'
               : port.vlan === 1
               ? 'bg-slate-800 text-cyan-300 border border-cyan-500/40'
               : 'bg-indigo-900/90 text-amber-300 border border-amber-500/40'

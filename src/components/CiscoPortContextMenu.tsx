@@ -23,7 +23,7 @@ export interface CiscoPortContextMenuProps {
   deviceName: string;
   vlans?: VlanInfo[];
   onClose: () => void;
-  onExecuteAction: (action: 'shutdown' | 'no_shutdown' | 'mode_trunk' | 'mode_access' | 'port_sec_enable' | 'port_sec_disable' | 'change_vlan', extra?: any) => void;
+  onExecuteAction: (action: 'shutdown' | 'no_shutdown' | 'mode_trunk' | 'mode_access' | 'port_sec_enable' | 'port_sec_disable' | 'change_vlan' | 'open_assign_vlan', extra?: any) => void;
   onOpenTerminal?: (portId: string) => void;
 }
 
@@ -243,74 +243,31 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
           </button>
         </div>
 
-        {/* Action 4: Quick VLAN Change Submenu */}
-        <div className="relative">
+        {/* Action 4: Assign Access VLAN (Opens dedicated Modal with device VLANs list and custom input) */}
+        <div className="group flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/90 transition cursor-pointer">
           <button
             type="button"
-            onClick={() => setShowVlanSubmenu(!showVlanSubmenu)}
-            className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/90 transition cursor-pointer"
+            onClick={() => {
+              onExecuteAction('open_assign_vlan');
+              onClose();
+            }}
+            className="w-full flex items-center justify-between text-left rtl:text-right"
           >
             <div className="flex items-center gap-2.5">
               <span className="w-4 h-4 flex items-center justify-center font-mono font-bold text-indigo-400 text-xs">
                 V#
               </span>
-              <div className="text-left rtl:text-right">
+              <div>
                 <div className="font-bold text-white text-xs">
-                  {isEn ? 'Assign Access VLAN' : 'تغییر ویلن پورت (VLAN)'}
+                  {isEn ? 'Assign Access VLAN...' : 'تخصیص ویلن دسترسی (VLAN)...'}
                 </div>
                 <div className="text-[10px] font-mono text-slate-400">
                   {isEn ? `Current: VLAN ${port.vlan}` : `ویلن فعلی: ${port.vlan}`}
                 </div>
               </div>
             </div>
-            <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform ${showVlanSubmenu ? 'rotate-90' : ''}`} />
+            <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-400 transition" />
           </button>
-
-          {showVlanSubmenu && (
-            <div className="p-2 my-1 rounded-xl bg-slate-950/80 border border-slate-700/80 max-h-32 overflow-y-auto space-y-1">
-              {vlans.length > 0 ? (
-                vlans.map((v) => (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => {
-                      onExecuteAction('change_vlan', v.id);
-                      setShowVlanSubmenu(false);
-                      onClose();
-                    }}
-                    className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] font-mono transition cursor-pointer ${
-                      port.vlan === v.id
-                        ? 'bg-indigo-600 text-white font-bold'
-                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                    }`}
-                  >
-                    <span>VLAN {v.id} ({v.name})</span>
-                    {port.vlan === v.id && <Check className="w-3 h-3 text-white" />}
-                  </button>
-                ))
-              ) : (
-                [1, 10, 20, 30, 40, 50, 99].map((vlanId) => (
-                  <button
-                    key={vlanId}
-                    type="button"
-                    onClick={() => {
-                      onExecuteAction('change_vlan', vlanId);
-                      setShowVlanSubmenu(false);
-                      onClose();
-                    }}
-                    className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] font-mono transition cursor-pointer ${
-                      port.vlan === vlanId
-                        ? 'bg-indigo-600 text-white font-bold'
-                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                    }`}
-                  >
-                    <span>VLAN {vlanId}</span>
-                    {port.vlan === vlanId && <Check className="w-3 h-3 text-white" />}
-                  </button>
-                ))
-              )}
-            </div>
-          )}
         </div>
 
         {/* Action 5: Open in Cisco CLI */}
