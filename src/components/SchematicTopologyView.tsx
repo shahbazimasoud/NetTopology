@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import {
   ZoomIn,
   ZoomOut,
@@ -18,7 +18,10 @@ import {
   Filter,
   Eye,
   Info,
-  Terminal
+  Terminal,
+  Move,
+  RotateCcw,
+  Check
 } from 'lucide-react';
 import { TopologyData, Device, TopologyLink, TopologyNode } from '../types';
 
@@ -44,10 +47,62 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   onConnectTerminal,
 }) => {
   const [viewMode, setViewMode] = useState<'schematic' | 'physical'>('schematic');
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  // Viewport zoom and pan with LocalStorage persistence
+  const [zoom, setZoom] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('net_topology_viewport');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.zoom === 'number') return parsed.zoom;
+      }
+    } catch (e) {}
+    return 1;
+  });
+
+  const [pan, setPan] = useState<{ x: number; y: number }>(() => {
+    try {
+      const saved = localStorage.getItem('net_topology_viewport');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.pan && typeof parsed.pan.x === 'number') return parsed.pan;
+      }
+    } catch (e) {}
+    return { x: 0, y: 0 };
+  });
+
+  // Custom node positions with LocalStorage persistence
+  const [customPositions, setCustomPositions] = useState<Record<string, { x: number; y: number }>>(() => {
+    try {
+      const saved = localStorage.getItem('net_topology_node_positions');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {}
+    return {};
+  });
+
+  const [hasSavedPositions, setHasSavedPositions] = useState<boolean>(() => {
+    try {
+      return !!localStorage.getItem('net_topology_node_positions');
+    } catch (e) {
+      return false;
+    }
+  });
+
+  // Dragging states
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
+  const dragNodeOffset = useRef<{ offsetX: number; offsetY: number; startClientX: number; startClientY: number; moved: boolean }>({
+    offsetX: 0,
+    offsetY: 0,
+    startClientX: 0,
+    startClientY: 0,
+    moved: false,
+  });
+
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [filterBuilding, setFilterBuilding] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,45 +110,45 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Pan and drag handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('.interactive-node')) {
-      return;
+  // Save viewport changes to localStorage
+  const saveViewport = useCallback((newZoom: number, newPan: { x: number; y: number }) => {
+    try {
+      localStorage.setItem('net_topology_viewport', JSON.stringify({ zoom: newZoom, pan: newPan }));
+    } catch (e) {}
+  }, []);
+
+  // Save custom node positions to localStorage
+  const saveNodePositions = useCallback((positions: Record<string, { x: number; y: number }>) => {
+    try {
+      localStorage.setItem('net_topology_node_positions', JSON.stringify(positions));
+      setHasSavedPositions(true);
+    } catch (e) {}
+  }, []);
+
+  // Reset positions back to auto-layout
+  const handleResetPositions = () => {
+    if (window.confirm('آیا مایلید موقعیت قرارگیری تجهیزات در نقشه به حالت پیش‌فرض و منظم بازگردد؟')) {
+      setCustomPositions({});
+      setHasSavedPositions(false);
+      try {
+        localStorage.removeItem('net_topology_node_positions');
+      } catch (e) {}
     }
-    setIsDragging(true);
-    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    setPan({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y,
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
   };
 
   const handleResetView = () => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
+    saveViewport(1, { x: 0, y: 0 });
     setSelectedNodeId(null);
   };
 
-  // Node position calculations for Schematic View
+  // Node position calculations for Schematic View (hierarchical default + custom overrides)
   const nodePositions = useMemo(() => {
     if (!topology || !topology.nodes) return new Map<string, { x: number; y: number }>();
     const pos = new Map<string, { x: number; y: number }>();
 
-    // Hierarchical arrangement:
-    // Row 0 (y: 80): Routers / Edge Gateways
-    // Row 1 (y: 200): Core Switches
-    // Row 2 (y: 350): Distribution Switches
-    // Row 3 (y: 500): Access Switches
-    // Row 4 (y: 650): Access Points & Endpoints
-
+    // Hierarchical arrangement defaults:
     const routers = topology.nodes.filter((n) => n.type === 'router');
     const core = topology.nodes.filter((n) => n.type === 'switch' && n.role.includes('Core'));
     const dist = topology.nodes.filter((n) => n.type === 'switch' && n.role.includes('Distribution'));
@@ -126,8 +181,169 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       }
     });
 
+    // Apply custom user drag-and-drop position overrides
+    Object.entries(customPositions).forEach(([id, customPos]) => {
+      if (customPos && typeof customPos.x === 'number' && typeof customPos.y === 'number') {
+        pos.set(id, customPos);
+      }
+    });
+
     return pos;
-  }, [topology]);
+  }, [topology, customPositions]);
+
+  // Background Pan Handler
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    // If clicked on an interactive node or button, don't start canvas pan
+    if (
+      (e.target as HTMLElement).closest('.interactive-node') ||
+      (e.target as HTMLElement).closest('button') ||
+      (e.target as HTMLElement).closest('input') ||
+      (e.target as HTMLElement).closest('select')
+    ) {
+      return;
+    }
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  };
+
+  // Node Drag Handler (Mouse Down)
+  const handleNodeMouseDown = (e: React.MouseEvent, nodeId: string) => {
+    // Ignore clicks on internal action buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    e.stopPropagation();
+
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    // Convert client coords to world diagram coords
+    const worldMouseX = (e.clientX - rect.left - pan.x) / zoom;
+    const worldMouseY = (e.clientY - rect.top - pan.y) / zoom;
+
+    const currentPos = nodePositions.get(nodeId) || { x: 100, y: 100 };
+
+    dragNodeOffset.current = {
+      offsetX: worldMouseX - currentPos.x,
+      offsetY: worldMouseY - currentPos.y,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      moved: false,
+    };
+
+    setDraggingNodeId(nodeId);
+  };
+
+  // Global mouse move & up
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      // 1. Handling Node Drag
+      if (draggingNodeId && containerRef.current) {
+        const dist = Math.hypot(
+          e.clientX - dragNodeOffset.current.startClientX,
+          e.clientY - dragNodeOffset.current.startClientY
+        );
+        if (dist > 3) {
+          dragNodeOffset.current.moved = true;
+        }
+
+        const rect = containerRef.current.getBoundingClientRect();
+        const worldMouseX = (e.clientX - rect.left - pan.x) / zoom;
+        const worldMouseY = (e.clientY - rect.top - pan.y) / zoom;
+
+        const newX = Math.round(worldMouseX - dragNodeOffset.current.offsetX);
+        const newY = Math.round(worldMouseY - dragNodeOffset.current.offsetY);
+
+        setCustomPositions((prev) => ({
+          ...prev,
+          [draggingNodeId]: { x: newX, y: newY },
+        }));
+        return;
+      }
+
+      // 2. Handling Canvas Pan
+      if (isPanning) {
+        const newPan = {
+          x: e.clientX - panStart.x,
+          y: e.clientY - panStart.y,
+        };
+        setPan(newPan);
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      if (draggingNodeId) {
+        if (dragNodeOffset.current.moved) {
+          // Persist the updated positions on drop
+          setCustomPositions((latest) => {
+            saveNodePositions(latest);
+            return latest;
+          });
+        } else {
+          // It was a click without significant drag
+          setSelectedNodeId(draggingNodeId);
+        }
+        setDraggingNodeId(null);
+      }
+
+      if (isPanning) {
+        setIsPanning(false);
+        saveViewport(zoom, pan);
+      }
+    };
+
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [draggingNodeId, isPanning, panStart, pan, zoom, saveNodePositions, saveViewport]);
+
+  // Mouse Wheel Zoom with cursor focal anchoring
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Only zoom if hovering schematic canvas
+      if (viewMode !== 'schematic') return;
+      e.preventDefault();
+
+      const rect = container.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      setZoom((prevZoom) => {
+        const factor = e.deltaY < 0 ? 1.12 : 0.89;
+        const targetZoom = Math.min(Math.max(prevZoom * factor, 0.35), 2.6);
+        const cleanZoom = parseFloat(targetZoom.toFixed(2));
+
+        if (cleanZoom === prevZoom) return prevZoom;
+
+        // Keep world coordinate under mouse cursor stable
+        setPan((prevPan) => {
+          const worldX = (mouseX - prevPan.x) / prevZoom;
+          const worldY = (mouseY - prevPan.y) / prevZoom;
+
+          const newPanX = Math.round(mouseX - worldX * cleanZoom);
+          const newPanY = Math.round(mouseY - worldY * cleanZoom);
+          const newPan = { x: newPanX, y: newPanY };
+
+          saveViewport(cleanZoom, newPan);
+          return newPan;
+        });
+
+        return cleanZoom;
+      });
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [viewMode, saveViewport]);
 
   const selectedNode = topology?.nodes.find((n) => n.id === selectedNodeId);
 
@@ -219,6 +435,14 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
         {/* Filters & Actions */}
         <div className="flex items-center flex-wrap gap-2">
+          {/* Status Indicator for Custom Positions */}
+          {viewMode === 'schematic' && hasSavedPositions && (
+            <div className="hidden lg:flex items-center gap-1 text-[11px] font-mono text-cyan-300 bg-cyan-500/10 px-2 py-1 rounded-lg border border-cyan-500/20">
+              <Check className="w-3 h-3 text-cyan-400" />
+              <span>چیدمان سفارشی ذخیره است</span>
+            </div>
+          )}
+
           {/* Search */}
           <div className="relative">
             <input
@@ -253,33 +477,50 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             title="پویش و استخراج همسایگی‌ها با پروتکل‌های CDP و LLDP"
           >
             <Zap className={`w-3.5 h-3.5 text-cyan-300 ${isScanning ? 'animate-spin' : ''}`} />
-            <span>{isScanning ? 'در حال اسکن همسایگی...' : 'اسکن CDP/LLDP'}</span>
+            <span>{isScanning ? 'در حال اسکن...' : 'اسکن CDP/LLDP'}</span>
           </button>
 
           {/* Canvas Controls */}
           {viewMode === 'schematic' && (
             <div className="flex items-center gap-1 bg-slate-900/60 border border-white/10 rounded-xl p-1">
               <button
-                onClick={() => setZoom((z) => Math.min(z + 0.15, 2))}
+                onClick={() => {
+                  const newZoom = Math.min(zoom + 0.15, 2.5);
+                  setZoom(parseFloat(newZoom.toFixed(2)));
+                  saveViewport(newZoom, pan);
+                }}
                 className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
-                title="بزرگنمایی"
+                title="بزرگنمایی (یا با اسکرول ماوس)"
               >
                 <ZoomIn className="w-3.5 h-3.5" />
               </button>
               <button
-                onClick={() => setZoom((z) => Math.max(z - 0.15, 0.4))}
+                onClick={() => {
+                  const newZoom = Math.max(zoom - 0.15, 0.35);
+                  setZoom(parseFloat(newZoom.toFixed(2)));
+                  saveViewport(newZoom, pan);
+                }}
                 className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
-                title="کوچکنمایی"
+                title="کوچکنمایی (یا با اسکرول ماوس)"
               >
                 <ZoomOut className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={handleResetView}
                 className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
-                title="بازنشانی اندازه و موقعیت"
+                title="بازنشانی زوم و مرکز صفحه"
               >
                 <Maximize2 className="w-3.5 h-3.5" />
               </button>
+              {hasSavedPositions && (
+                <button
+                  onClick={handleResetPositions}
+                  className="p-1.5 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition border-r border-white/10 pr-1.5 mr-0.5"
+                  title="بازگردانی چیدمان نودها به حالت خودکار اولیه"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -291,10 +532,14 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
         {viewMode === 'schematic' ? (
           <div
             ref={containerRef}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            className="flex-1 h-full cursor-grab active:cursor-grabbing relative overflow-hidden bg-slate-950/80 bg-[radial-gradient(rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:24px_24px]"
+            onMouseDown={handleCanvasMouseDown}
+            className={`flex-1 h-full relative overflow-hidden bg-slate-950/80 bg-[radial-gradient(rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:24px_24px] select-none ${
+              draggingNodeId
+                ? 'cursor-grabbing'
+                : isPanning
+                ? 'cursor-grabbing'
+                : 'cursor-grab'
+            }`}
           >
             {/* SVG Schematic Canvas */}
             <svg
@@ -302,7 +547,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
               style={{
                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                 transformOrigin: '0 0',
-                transition: isDragging ? 'none' : 'transform 0.15s ease-out',
+                transition: isPanning || draggingNodeId ? 'none' : 'transform 0.12s ease-out',
               }}
             >
               <defs>
@@ -325,11 +570,11 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                 const isDown = link.status === 'down';
                 const isSelected = selectedNodeId === link.source || selectedNodeId === link.target;
 
-                // Center coordinates of nodes
-                const x1 = sourcePos.x + 110;
-                const y1 = sourcePos.y + 50;
-                const x2 = targetPos.x + 110;
-                const y2 = targetPos.y + 50;
+                // Center coordinates of nodes (230x120 dimension)
+                const x1 = sourcePos.x + 115;
+                const y1 = sourcePos.y + 55;
+                const x2 = targetPos.x + 115;
+                const y2 = targetPos.y + 55;
 
                 // Midpoint for badges
                 const midX = (x1 + x2) / 2;
@@ -355,7 +600,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                           : '#2563eb'
                       }
                       strokeWidth={isTrunk ? 3 : 2}
-                      strokeDasharray={isDown ? '6 4' : isTrunk ? 'none' : 'none'}
+                      strokeDasharray={isDown ? '6 4' : 'none'}
                       filter={isTrunk && !isDown ? 'url(#glow-trunk)' : 'url(#glow-access)'}
                       opacity={isSelected ? 1 : 0.85}
                     />
@@ -388,7 +633,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
                     {/* Source Port Tag */}
                     {showPortLabels && (
-                      <g transform={`translate(${x1 + (x2 - x1) * 0.22}, ${y1 + (y2 - y1) * 0.22})`}>
+                      <g transform={`translate(${x1 + (x2 - x1) * 0.24}, ${y1 + (y2 - y1) * 0.24})`}>
                         <rect x="-24" y="-8" width="48" height="16" rx="3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
                         <text textAnchor="middle" dominantBaseline="central" fill="#4f46e5" fontSize="8" fontFamily="monospace" fontWeight="bold">
                           {link.source_port}
@@ -398,7 +643,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
                     {/* Target Port Tag */}
                     {showPortLabels && (
-                      <g transform={`translate(${x1 + (x2 - x1) * 0.78}, ${y1 + (y2 - y1) * 0.78})`}>
+                      <g transform={`translate(${x1 + (x2 - x1) * 0.76}, ${y1 + (y2 - y1) * 0.76})`}>
                         <rect x="-24" y="-8" width="48" height="16" rx="3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
                         <text textAnchor="middle" dominantBaseline="central" fill="#4f46e5" fontSize="8" fontFamily="monospace" fontWeight="bold">
                           {link.target_port}
@@ -413,6 +658,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
               {filteredNodes.map((node) => {
                 const pos = nodePositions.get(node.id) || { x: 100, y: 100 };
                 const isSelected = selectedNodeId === node.id;
+                const isBeingDragged = draggingNodeId === node.id;
                 const isOnline = node.is_online;
 
                 return (
@@ -420,20 +666,31 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     key={node.id}
                     x={pos.x}
                     y={pos.y}
-                    width="230"
-                    height="120"
+                    width="236"
+                    height="126"
                     className="overflow-visible interactive-node"
                   >
                     <div
-                      onClick={() => setSelectedNodeId(node.id)}
-                      className={`w-[220px] p-3 rounded-xl border transition-all cursor-pointer shadow-xl select-none text-right backdrop-blur-xl ${
-                        isSelected
-                          ? 'spatial-glass border-cyan-400 ring-2 ring-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.35)] scale-105 z-30'
+                      onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
+                      className={`w-[226px] p-3 rounded-xl border transition-shadow select-none text-right backdrop-blur-xl group relative ${
+                        isBeingDragged
+                          ? 'spatial-glass border-cyan-400 ring-2 ring-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.6)] cursor-grabbing z-40 scale-102'
+                          : isSelected
+                          ? 'spatial-glass border-cyan-400 ring-2 ring-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.35)] cursor-grab z-30'
                           : isOnline
-                          ? 'spatial-glass spatial-glass-hover border-white/10 hover:border-indigo-500/40'
-                          : 'spatial-glass border-rose-500/40 bg-rose-950/20'
+                          ? 'spatial-glass spatial-glass-hover border-white/10 hover:border-indigo-500/40 cursor-grab hover:shadow-2xl'
+                          : 'spatial-glass border-rose-500/40 bg-rose-950/20 cursor-grab'
                       }`}
                     >
+                      {/* Drag Handle Indicator */}
+                      <div
+                        className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-slate-900/90 border border-white/20 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[9px] font-mono pointer-events-none shadow-md"
+                        title="جهت تغییر مکان، بکشید و رها کنید (Drag & Drop)"
+                      >
+                        <Move className="w-2.5 h-2.5 text-cyan-400" />
+                        <span>جابجایی</span>
+                      </div>
+
                       {/* Node Header */}
                       <div className="flex items-center justify-between gap-1.5 mb-1.5">
                         <div className="flex items-center gap-2 min-w-0">
@@ -468,7 +725,9 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                           ></span>
                           <span
                             className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
-                              isOnline ? 'text-emerald-300 bg-emerald-500/15 border border-emerald-500/30' : 'text-rose-300 bg-rose-500/15 border border-rose-500/30'
+                              isOnline
+                                ? 'text-emerald-300 bg-emerald-500/15 border border-emerald-500/30'
+                                : 'text-rose-300 bg-rose-500/15 border border-rose-500/30'
                             }`}
                           >
                             {isOnline ? `${node.latency_ms || 1.2}ms` : 'OFF'}
@@ -476,7 +735,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                         </div>
                       </div>
 
-                      {/* IP & Model */}
+                      {/* IP & Role */}
                       <div className="flex items-center justify-between text-[11px] font-mono text-indigo-300 bg-slate-900/60 px-2 py-0.5 rounded-lg border border-white/10 mb-1.5">
                         <span className="font-bold">{node.ip}</span>
                         <span className="text-[10px] text-slate-400 truncate max-w-[90px]">{node.role}</span>
@@ -533,11 +792,16 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
               })}
             </svg>
 
-            {/* Bottom Floating Legend */}
+            {/* Bottom Floating Legend & Interactive Guide */}
             <div className="absolute bottom-3 left-3 z-20 spatial-glass border border-white/10 backdrop-blur-xl rounded-xl p-3 shadow-2xl text-xs space-y-1.5 text-slate-200">
-              <div className="text-[11px] font-bold text-white mb-1 flex items-center gap-1.5 glow-text-cyan">
-                <Info className="w-3.5 h-3.5 text-indigo-400" />
-                <span>راهنمای نقشه شماتیک توپولوژی</span>
+              <div className="text-[11px] font-bold text-white mb-1 flex items-center justify-between gap-3 glow-text-cyan">
+                <div className="flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>راهنمای نقشه توپولوژی</span>
+                </div>
+                <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/15 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                  اسکرول موس = زوم | کشیدن = جابجایی
+                </span>
               </div>
               <div className="flex items-center gap-3 text-[11px] text-slate-300">
                 <div className="flex items-center gap-1.5">

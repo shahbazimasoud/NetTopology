@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { RefreshCw, Zap, Palette, ChevronDown, Check, ShieldCheck } from 'lucide-react';
+import { RefreshCw, Zap, Palette, ChevronDown, Check, ShieldCheck, Sparkles } from 'lucide-react';
+import { APP_VERSION } from '../version';
 
 export type ThemeType = 'obsidian' | 'emerald' | 'cobalt' | 'rose' | 'amber' | 'light';
 
@@ -13,6 +14,7 @@ interface NavbarProps {
   totalDevices: number;
   panelTheme: ThemeType;
   onChangeTheme: (theme: ThemeType) => void;
+  onOpenReleaseNotes?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -25,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   totalDevices,
   panelTheme,
   onChangeTheme,
+  onOpenReleaseNotes,
 }) => {
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const offlineCount = Math.max(0, totalDevices - onlineCount);
@@ -52,6 +55,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             <h1 className="text-base font-bold tracking-tight text-white font-mono glow-text-cyan flex items-center gap-1.5">
               NetTopology <span className="text-indigo-400 text-xs font-semibold px-1.5 py-0.5 rounded bg-indigo-500/20 border border-indigo-500/30">NOC Pro</span>
             </h1>
+            <button
+              onClick={onOpenReleaseNotes}
+              className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 transition flex items-center gap-1 active:scale-95"
+              title="مشاهده تاریخچه نسخه‌ها و یادداشت‌های انتشار"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]"></span>
+              <span>v{APP_VERSION}</span>
+            </button>
           </div>
           <p className="text-[10px] text-slate-400 hidden sm:block font-sans">
             سامانه مانیتورینگ متراکم تجهیزات شبکه سازمانی • Matrix Spatial Edition
@@ -184,4 +195,3 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
-

@@ -1,0 +1,43 @@
+export type VersionType = 'major' | 'minor' | 'patch';
+
+export interface ReleaseNote {
+  version: string;
+  releaseDate: string;
+  type: VersionType;
+  title: string;
+  changes: string[];
+}
+
+export const APP_VERSION = '1.1.0';
+
+export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.1.0',
+    releaseDate: '2026-09-08',
+    type: 'minor',
+    title: 'ارتقای تعاملی نقشه شماتیک و بهینه‌سازی رابط کاربری',
+    changes: [
+      'قابلیت درگ و دراپ (Drag & Drop) برای جابجایی آزادانه تمامی تجهیزات در نقشه شماتیک',
+      'بزرگنمایی و کوچکنمایی نرم نقشه با اسکرول موس (Mouse Wheel Zoom In / Out)',
+      'ذخیره‌سازی خودکار و ماندگار موقعیت نودها، سطح بزرگنمایی و موقعیت دید در مرورگر',
+      'حذف برچسب‌های متنی اضافه در سایدبار و رفع تداخل ظاهری آن‌ها با عناوین',
+      'قابلیت جمع‌شوندگی و بازشوندگی سایدبار (Collapsible Sidebar) برای مشاهده وسیع‌تر نقشه',
+      'افزودن سیستم مدیریت نسخه و تاریخچه تغییرات (Release Notes & Versioning)',
+    ],
+  },
+  {
+    version: '1.0.0',
+    releaseDate: '2026-09-08',
+    type: 'major',
+    title: 'انتشار نسخه پایه سامانه مانیتورینگ و توپولوژی شبکه NetTopology',
+    changes: [
+      'داشبورد پایش لحظه‌ای پینگ و تأخیر تجهیزات شبکه',
+      'نمایش شماتیک سلسله‌مراتبی سوئیچ‌های Core، Distribution، Access و روترها',
+      'محیط شماتیک ساختمانی با تفکیک فیزیکی طبقات و واحدها',
+      'موتور کشف همسایگی‌های شبکه سیسکو با پروتکل‌های CDP و LLDP',
+      'مدیریت و نظارت دقیق پورت‌ها، ترانک‌ها و ویلن‌ها (VLANs)',
+      'کنسول ترمینال شبیه‌ساز سیسکو (CLI Terminal)',
+      'موتور تم‌های بصری فضایی و دارک‌مود پیشرفته',
+    ],
+  },
+];

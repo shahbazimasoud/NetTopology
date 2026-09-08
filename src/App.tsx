@@ -9,6 +9,8 @@ import { CdpLldpScannerView } from './components/CdpLldpScannerView';
 import { AddDeviceModal } from './components/AddDeviceModal';
 import { PortInspectorModal } from './components/PortInspectorModal';
 import { CiscoTerminalModal } from './components/CiscoTerminalModal';
+import { ReleaseNotesModal } from './components/ReleaseNotesModal';
+import { APP_VERSION } from './version';
 import { Device, TopologyData } from './types';
 import {
   fetchDevices,
@@ -42,10 +44,30 @@ export default function App() {
     localStorage.setItem('theme_mode', newTheme === 'light' ? 'light' : 'dark');
   };
 
+  // Collapsible sidebar state with local storage persistence
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sidebar_collapsed') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('sidebar_collapsed', String(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [portInspectorDevice, setPortInspectorDevice] = useState<Device | null>(null);
   const [terminalDevice, setTerminalDevice] = useState<Device | null>(null);
+  const [isReleaseNotesOpen, setIsReleaseNotesOpen] = useState(false);
 
   // Initial load
   const loadData = useCallback(async () => {
@@ -198,6 +220,7 @@ export default function App() {
         totalDevices={devices.length}
         panelTheme={panelTheme}
         onChangeTheme={changeTheme}
+        onOpenReleaseNotes={() => setIsReleaseNotesOpen(true)}
       />
 
       {/* Main Layout (Sidebar + Content View) */}
@@ -208,6 +231,9 @@ export default function App() {
           setActiveTab={setActiveTab}
           devicesCount={devices.length}
           offlineCount={offlineCount}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={toggleSidebarCollapse}
+          onOpenReleaseNotes={() => setIsReleaseNotesOpen(true)}
         />
 
         {/* View Port */}
@@ -278,8 +304,17 @@ export default function App() {
             موتور همسایگی: <b className="text-purple-400 font-mono">CDP v2 / LLDP Matrix</b>
           </span>
         </div>
-        <div className="font-mono text-slate-400 text-[10px] hidden sm:block">
-          NetVision Cyber Matrix • High Density Infrastructure OS
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsReleaseNotesOpen(true)}
+            className="font-mono text-slate-400 hover:text-cyan-300 text-[10px] hidden sm:flex items-center gap-1.5 transition"
+            title="مشاهده نسخه و تاریخچه تغییرات"
+          >
+            <span>NetTopology OS</span>
+            <span className="text-cyan-400 font-bold bg-white/5 hover:bg-white/10 px-1.5 py-0.2 rounded border border-white/10">
+              v{APP_VERSION}
+            </span>
+          </button>
         </div>
       </footer>
 
@@ -320,6 +355,12 @@ export default function App() {
         isOpen={!!terminalDevice}
         onClose={() => setTerminalDevice(null)}
         onDeviceUpdated={loadData}
+      />
+
+      {/* Release Notes & Version History Modal */}
+      <ReleaseNotesModal
+        isOpen={isReleaseNotesOpen}
+        onClose={() => setIsReleaseNotesOpen(false)}
       />
     </div>
   );
