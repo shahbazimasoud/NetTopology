@@ -10,9 +10,30 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.4.2';
+export const APP_VERSION = '1.4.3';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.4.3',
+    releaseDate: '2026-09-08',
+    type: 'patch',
+    title: 'خلوت‌سازی هدر، افزودن منوی دراپ‌داون پروفایل و سازگاری کامل صفحات پورت‌ها و اسکنر CDP/LLDP با تم‌های رنگی',
+    title_en: 'Header Decluttering, Profile Dropdown Menu & Full Theme Color Compatibility for Port Management and CDP/LLDP Scanner',
+    changes: [
+      'ایجاد آیکون و منوی کشویی یکپارچه پروفایل (Profile Dropdown) در هدر با انتقال تنظیمات تیم/سازمان و سوئیچر زبان به داخل آن',
+      'حذف نشانگرهای شلوغ تعداد تجهیزات آنلاین و کریتیکال از نوار بالایی جهت خلوت و مینیمال شدن کامل هدر',
+      'کوچک‌سازی چشمگیر برچسب نسخه سامانه به یک تگ ظریف و فشرده در هدر',
+      'اصلاح و بازطراحی کامل صفحه مدیریت پورت‌ها (PortManagementView) جهت سازگاری ۱۰۰٪ با تمامی تم‌های تیره و رنگی (Obsidian, Emerald, Cobalt, Rose, Amber, Light) و حذف پس‌زمینه‌های سفید استاتیک',
+      'به‌روزرسانی و هماهنگ‌سازی استایل پوسته فیزیکی سوئیچ (Faceplate) و جدول پورت‌ها با افکت شیشه‌ای spatial-glass'
+    ],
+    changes_en: [
+      'Implemented a unified user profile dropdown menu in header consolidating Team/Organization and Language controls',
+      'Removed crowded online and critical device count badges to deliver a clean, minimalist header bar',
+      'Significantly reduced header version badge size into a compact, elegant tag',
+      'Refactored Port Management view (PortManagementView) to achieve 100% theme compatibility across Obsidian, Emerald, Cobalt, Rose, Amber, and Light palettes',
+      'Harmonized switch hardware faceplate visual and ports data table with adaptive spatial-glass styling'
+    ]
+  },
   {
     version: '1.4.2',
     releaseDate: '2026-09-08',

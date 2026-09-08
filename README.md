@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.4.2-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.4.3-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۴.۲
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.4.2
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۴.۳
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.4.3
 
 ---
 
@@ -123,6 +123,13 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 - **ترجمه ۱۰۰٪ انگلیسی در تمام مودال‌ها:** حذف کامل تمام متون و عبارات فارسی هاردکد شده در مودال‌های «ثبت تجهیز جدید»، «کلون‌گیری تمپلیت»، «اعمال تعاملی تمپلیت»، «بازرسی پورت»، «استخراج زنده کانفیگ»، «ترمینال سیسکو» و «تاریخچه نسخه‌ها» در زمان انتخاب زبان انگلیسی.
 - **تثبیت هدر و فوتر عملیاتی (Pinned Header & Footer):** سربرگ و دکمه‌های تایید/لغو در فوتر مودال‌ها همواره ثابت و در دسترس کاربر باقی می‌مانند بدون آنکه به زیر صفحه یا خارج از کادر بروند.
 
+### ۱۴. خلوت‌سازی هدر، افزودن منوی دراپ‌داون پروفایل و سازگاری کامل تم‌ها در پورت‌ها و اسکنر CDP/LLDP
+- **منوی اختصاصی پروفایل در هدر (Profile Dropdown Menu):** تجمیع و انتقال تنظیمات تیم و سازمان، سوئیچر زبان به همراه اطلاعات کاربری درون یک منوی دراپ‌داون شیک و بازشونده در گوشه هدر.
+- **خلوت‌سازی و مینیمال کردن هدر (Header Decluttering):** حذف نشانگرهای شلوغ تعداد تجهیزات آنلاین و کریتیکال جهت ارائه نمایی خلوت، خلوت‌تر شدن نوار بالایی و تمرکز بر ابزارهای اصلی.
+- **کوچک‌سازی بج نسخه (Compact Version Badge):** کاهش چشمگیر ابعاد برچسب نسخه در هدر به یک برچسب ظریف و مینی‌مال.
+- **سازگاری کامل رنگی صفحه مدیریت پورت‌ها (Port Management Theme Harmony):** بازطراحی و رفع کامل استایل‌های سفید استاتیک (`bg-white` و `border-slate-200`) در صفحه پورت‌ها و هماهنگ‌سازی پوسته سخت‌افزاری فیس‌پلیت، فرم ویرایش و جدول پورت‌ها با تمامی تم‌های نرم‌افزار (Obsidian, Emerald, Cobalt, Rose, Amber, Light).
+- **سازگاری تم در اسکنر لایه ۲ همسایگی CDP/LLDP:** استایل‌دهی مدرن شیشه‌ای `spatial-glass` برای کارت‌های آمار، راهنمای پروتکل و جدول همسایگان.
+
 ---
 
 ## ساختار معماری و تکنولوژی‌ها
@@ -199,6 +206,12 @@ npm start
 > ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
 
 ### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
+- **نسخه ۱.۴.۳ (v1.4.3 - خلوت‌سازی هدر، منوی پروفایل و سازگاری کامل تم‌ها در پورت‌ها و CDP/LLDP)**:
+  - **منوی اختصاصی پروفایل:** انتقال گزینه‌های تیم/سازمان و سوئیچر زبان به منوی پاپ‌آپ جدید پروفایل.
+  - **مینیمال کردن هدر:** حذف تگ‌های شمارنده آنلاین و کریتیکال و کوچک‌سازی چشمگیر نمایشگر نسخه در هدر.
+  - **سازگاری کامل تم در صفحه مدیریت پورت‌ها:** اصلاح تمامی بک‌گراندها و بردرهای سفید هاردکد شده به کلاس‌های پویا و شیشه‌ای `spatial-glass` سازگار با کلیه تم‌ها (Obsidian, Emerald, Cobalt, Rose, Amber, Light).
+  - **سازگاری تم در اسکنر لایه ۲ CDP/LLDP:** هماهنگ‌سازی جدول، کارت‌ها و راهنماها با تم انتخابی کاربر.
+
 - **نسخه ۱.۴.۲ (v1.4.2 - فاوآیکون شبکه و بومی‌سازی کامل انگلیسی صفحات توپولوژی، پورت‌ها، اسکنر و قالب‌ها)**:
   - **طراحی فاوآیکون جدید:** ایجاد آیکون مدرن شبکه بر پایه وکتور SVG شامل نودهای شبکه و سوئیچ متمرکز.
   - **بومی‌سازی کامل صفحه نقشه توپولوژی:** رفع کلمات فارسی مانند «پورت»، راهنمای نقشه، هدر، سرچ‌باکس و دراور مشخصات تجهیز در حالت انگلیسی.
@@ -315,6 +328,13 @@ npm start
 - **Complete English Translation in Modals:** 100% elimination of hardcoded Persian phrases in English mode across all modal windows (Add Device, Clone Template, Apply Template, Port Inspector, Live Config Capture, Terminal, and Release Notes).
 - **Pinned Headers & Action Footers:** Form titles, close buttons, and primary action buttons (Save, Apply, Cancel) stay permanently anchored within view, preventing controls from sliding off-screen.
 
+### 14. Header Decluttering, Profile Dropdown & Full Theme Harmony in Port Management and CDP/LLDP
+- **Consolidated Profile Dropdown Menu:** Grouped team/organization identity and language switcher into a unified, elegant profile dropdown at the top navigation bar.
+- **Decluttered Top Header:** Removed congested online and critical device count tags to maintain a clean, distraction-free header.
+- **Ultra-Compact Version Badge:** Scaled down the version display tag to a discreet, minimalist pill.
+- **Full Theme Adaptation for Port Management View:** Replaced static white backgrounds and borders with adaptive `spatial-glass` classes, ensuring 100% color harmony across Obsidian, Emerald, Cobalt, Rose, Amber, and Light themes for the switch faceplate, inspector, and ports data table.
+- **Full Theme Adaptation for CDP/LLDP Discovery Scanner:** All metric cards, scan logs, neighbor tables, and protocol guidelines dynamically adapt to whichever theme palette is selected.
+
 ---
 
 ## System Architecture & Stack
@@ -390,6 +410,12 @@ Any AI assistant, coding agent, or human contributor working on this repository 
 3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
 
 ### Release Notes & Bug Fixes
+- **Version 1.4.3 (Header Decluttering, Profile Dropdown & Theme Harmonization)**:
+  - **Dedicated Profile Dropdown:** Integrated Team/Organization settings and Language switcher into an intuitive user profile menu in the header.
+  - **Header Decluttering:** Removed busy online/critical device counts from the top navbar and minimized the version display tag.
+  - **Full Theme Harmonization in Port Management:** Refactored `PortManagementView` to completely eliminate hardcoded white boxes, adapting switch faceplate, details card, and ports table to all themes.
+  - **Full Theme Harmonization in CDP/LLDP Scanner:** Refactored `CdpLldpScannerView` to dynamically blend with Obsidian, Emerald, Cobalt, Rose, Amber, and Light palettes.
+
 - **Version 1.4.2 (Network Favicon & Complete i18n Localization)**:
   - **New Vector Network Favicon:** Designed and integrated a professional SVG network topology favicon in `index.html`.
   - **Complete English Localization for Schematic Topology:** Removed hardcoded Persian terms (such as "پورت"), fully localized legends, headers, search inputs, node cards, and device details drawer.

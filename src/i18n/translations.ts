@@ -31,6 +31,15 @@ export const translations = {
     lang_short_en: 'EN',
     lang_short_fa: 'FA',
 
+    // Profile Menu
+    profile_menu_title: 'Profile & Settings',
+    profile_admin_name: 'Network Administrator',
+    profile_admin_role: 'L3 Specialist / System Admin',
+    profile_admin_email: 'admin@nettopology.internal',
+    profile_language_title: 'Interface Language',
+    profile_theme_title: 'Color Palette & Theme',
+    profile_active_session: 'Active Session',
+
     // Header Actions
     action_quick_scan: 'Scan CDP/LLDP',
     action_quick_scan_active: 'Scanning...',
@@ -561,6 +570,15 @@ export const translations = {
     lang_fa: 'فارسی (FA)',
     lang_short_en: 'EN',
     lang_short_fa: 'FA',
+
+    // Profile Menu
+    profile_menu_title: 'پروفایل و تنظیمات',
+    profile_admin_name: 'مدیر ارشد شبکه',
+    profile_admin_role: 'متخصص لایه ۳ و مدیر سیستم',
+    profile_admin_email: 'admin@nettopology.internal',
+    profile_language_title: 'زبان رابط کاربری',
+    profile_theme_title: 'تم و پالت رنگی',
+    profile_active_session: 'نشست فعال',
 
     // Header Actions
     action_quick_scan: 'اسکن CDP/LLDP',

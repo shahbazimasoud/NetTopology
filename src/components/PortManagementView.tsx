@@ -115,32 +115,35 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
   return (
     <div
       dir={isRtl ? 'rtl' : 'ltr'}
-      className={`p-4 space-y-4 max-w-7xl mx-auto ${isRtl ? 'text-right' : 'text-left'} text-slate-800`}
+      className={`p-4 space-y-4 max-w-7xl mx-auto ${isRtl ? 'text-right' : 'text-left'}`}
     >
       {/* Header & Switch Selector */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 spatial-glass p-3.5 rounded-xl border border-white/10 shadow-lg backdrop-blur-xl">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold text-slate-900">{t('ports_title')}</h2>
-            <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono font-bold">
+            <h2 className="text-base font-bold text-white font-mono flex items-center gap-2">
+              <Cable className="w-5 h-5 text-indigo-400" />
+              <span>{t('ports_title')}</span>
+            </h2>
+            <span className="text-xs px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono font-bold">
               {t('ports_tag')}
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-400 mt-0.5">
             {t('ports_subtitle')}
           </p>
         </div>
 
         {/* Switch Selector Dropdown */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-600">{t('ports_select_device')}</span>
+          <span className="text-xs text-slate-300 font-medium">{t('ports_select_device')}</span>
           <select
             value={selectedDeviceId}
             onChange={(e) => setSelectedDeviceId(e.target.value)}
-            className="px-2.5 py-1.5 rounded bg-slate-50 border border-slate-300 text-indigo-700 font-mono text-xs focus:bg-white focus:outline-none focus:border-indigo-500 font-semibold"
+            className="px-3 py-1.5 rounded-xl bg-black/30 border border-white/15 text-indigo-300 font-mono text-xs focus:outline-none focus:border-indigo-400 font-semibold shadow-inner"
           >
             {devices.map((d) => (
-              <option key={d.id} value={d.id}>
+              <option key={d.id} value={d.id} className="bg-slate-900 text-white">
                 {d.name} ({d.ip}) - {d.role}
               </option>
             ))}
@@ -150,79 +153,79 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
 
       {/* Selected Device Banner */}
       {currentDevice && (
-        <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded bg-indigo-50 text-indigo-600 border border-indigo-100">
-              <Server className="w-4 h-4" />
+        <div className="p-3.5 rounded-xl spatial-glass border border-white/10 shadow-lg flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 text-white shadow-md">
+              <Server className="w-5 h-5 text-cyan-200" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900 font-mono text-xs">{currentDevice.name}</span>
-                <span className="text-indigo-700 font-mono font-bold">({currentDevice.ip})</span>
+                <span className="font-bold text-white font-mono text-sm">{currentDevice.name}</span>
+                <span className="text-cyan-300 font-mono font-bold">({currentDevice.ip})</span>
                 <span
-                  className={`text-[9px] px-1.5 py-0.2 rounded font-mono ${
+                  className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${
                     currentDevice.is_online
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : 'bg-rose-50 text-rose-700 border border-rose-200'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                   }`}
                 >
                   {currentDevice.is_online ? 'ONLINE' : 'OFFLINE'}
                 </span>
               </div>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[10px] text-slate-400 mt-0.5">
                 {t('topology_details_model')}: {currentDevice.model} • {t('topology_details_building')}: {currentDevice.building} • {t('topology_details_floor')}: {currentDevice.floor} •{' '}
                 {t('topology_details_unit')}: {currentDevice.unit} {currentDevice.rack ? `• ${t('topology_details_rack')}: ${currentDevice.rack}` : ''}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-5 text-xs">
             <div className="text-center">
-              <div className="text-slate-500 text-[10px]">{t('ports_active_ports')}</div>
-              <div className="text-emerald-700 font-bold font-mono text-sm">{activeCount}</div>
+              <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{t('ports_active_ports')}</div>
+              <div className="text-emerald-400 font-bold font-mono text-base">{activeCount}</div>
             </div>
             <div className="text-center">
-              <div className="text-slate-500 text-[10px]">{t('ports_inactive_ports')}</div>
-              <div className="text-slate-500 font-bold font-mono text-sm">{inactiveCount}</div>
+              <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{t('ports_inactive_ports')}</div>
+              <div className="text-slate-400 font-bold font-mono text-base">{inactiveCount}</div>
             </div>
             <div className="text-center">
-              <div className="text-slate-500 text-[10px]">{t('ports_trunk_ports')}</div>
-              <div className="text-purple-700 font-bold font-mono text-sm">{trunkCount}</div>
+              <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{t('ports_trunk_ports')}</div>
+              <div className="text-purple-400 font-bold font-mono text-base">{trunkCount}</div>
             </div>
           </div>
         </div>
       )}
 
       {/* Switch Faceplate Visual */}
-      <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-sm">
+      <div className="spatial-glass border border-white/10 rounded-xl p-3.5 shadow-lg">
         <div className="flex items-center justify-between mb-2 text-xs">
-          <div className="font-bold text-slate-900 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <div className="font-bold text-white flex items-center gap-2 font-mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
             <span>{t('ports_faceplate_title')}</span>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-slate-600">
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <div className="flex items-center gap-3 text-[11px] text-slate-300">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
               <span>{t('ports_legend_up')}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-slate-500"></span>
               <span>{t('ports_legend_down')}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2 rounded bg-purple-600"></span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2 rounded bg-purple-500"></span>
               <span>{t('ports_legend_trunk')}</span>
             </div>
           </div>
         </div>
 
         {loading ? (
-          <div className="py-8 text-center text-slate-500 text-xs animate-pulse">
+          <div className="py-8 text-center text-slate-400 text-xs animate-pulse font-mono">
             {t('ports_loading')}
           </div>
         ) : (
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-2.5 overflow-x-auto">
-            <div className="flex flex-wrap gap-1.5 justify-start min-w-[500px]">
+          <div className="bg-black/40 border border-white/10 rounded-xl p-3 overflow-x-auto shadow-inner">
+            <div className="flex flex-wrap gap-2 justify-start min-w-[500px]">
               {ports.map((port) => {
                 const isSelected = selectedPort?.port_id === port.port_id;
                 const isUp = port.status === 'up';
@@ -236,23 +239,23 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                       setSelectedPort(port);
                       setIsEditing(false);
                     }}
-                    className={`relative group p-1.5 rounded border transition-all flex flex-col items-center w-12 ${
+                    className={`relative group p-1.5 rounded-xl border transition-all flex flex-col items-center w-12 cursor-pointer ${
                       isSelected
-                        ? 'bg-indigo-950/90 border-indigo-400 ring-2 ring-indigo-500/40 text-white'
+                        ? 'bg-indigo-600/30 border-cyan-400 ring-2 ring-cyan-400/40 text-white shadow-[0_0_12px_rgba(6,182,212,0.4)]'
                         : isDisabled
-                        ? 'bg-slate-900 border-amber-800/60 hover:border-amber-600 text-slate-300'
+                        ? 'bg-black/40 border-amber-800/60 hover:border-amber-500 text-slate-300'
                         : isUp
-                        ? 'bg-slate-800/90 border-slate-700 hover:border-indigo-400 text-slate-200'
-                        : 'bg-slate-950/90 border-slate-800 hover:border-slate-700 opacity-60 text-slate-400'
+                        ? 'bg-white/5 border-white/15 hover:border-cyan-400/80 text-slate-200'
+                        : 'bg-black/30 border-white/5 hover:border-white/20 opacity-60 text-slate-500'
                     }`}
                   >
-                    <div className="flex items-center gap-0.5 mb-0.5">
+                    <div className="flex items-center gap-0.5 mb-1">
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
                           isDisabled
                             ? 'bg-amber-400'
                             : isUp
-                            ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.8)]'
+                            ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]'
                             : 'bg-slate-600'
                         }`}
                       ></span>
@@ -263,11 +266,11 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                       )}
                     </div>
 
-                    <div className="w-6 h-5 rounded bg-slate-950 border border-slate-700 flex items-center justify-center text-[8px] font-mono text-slate-300">
+                    <div className="w-7 h-5 rounded bg-black/60 border border-white/20 flex items-center justify-center text-[8px] font-mono text-slate-200 font-bold">
                       {port.port_id.replace('GigabitEthernet', 'Gi').replace('TenGigabitEthernet', 'Te').replace('1/0/', '').replace('0/', '')}
                     </div>
 
-                    <div className="mt-0.5 text-[8px] font-mono text-indigo-300">
+                    <div className="mt-1 text-[8px] font-mono text-indigo-300 font-bold">
                       V{port.vlan}
                     </div>
                   </button>
@@ -280,29 +283,29 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
 
       {/* Selected Port Detailed Card */}
       {selectedPort && (
-        <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-sm space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-slate-200">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded bg-indigo-50 text-indigo-600 border border-indigo-100">
-                <Cable className="w-4 h-4" />
+        <div className="spatial-glass border border-white/10 rounded-xl p-4 shadow-lg space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 text-white shadow-md">
+                <Cable className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h4 className="text-xs font-bold text-slate-900 font-mono">{selectedPort.name}</h4>
+                  <h4 className="text-sm font-bold text-white font-mono">{selectedPort.name}</h4>
                   <span
-                    className={`text-[9px] px-1.5 py-0.2 rounded font-bold font-mono ${
+                    className={`text-[9px] px-2 py-0.5 rounded-md font-bold font-mono ${
                       selectedPort.mode === 'trunk'
-                        ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                        : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                        : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
                     }`}
                   >
                     {selectedPort.mode === 'trunk' ? (isEn ? 'TRUNK' : 'TRUNK (ترانک)') : (isEn ? 'ACCESS' : 'ACCESS (اکسس)')}
                   </span>
                   <span
-                    className={`text-[9px] px-1.5 py-0.2 rounded font-medium ${
+                    className={`text-[9px] px-2 py-0.5 rounded-md font-medium font-mono ${
                       selectedPort.status === 'up'
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-slate-100 text-slate-600 border border-slate-200'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-white/5 text-slate-400 border border-white/10'
                     }`}
                   >
                     {selectedPort.status === 'up'
@@ -310,7 +313,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                       : (isEn ? 'Disconnected (Down)' : 'غیرفعال (Disconnected)')}
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
+                <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
                   {isEn ? 'Speed' : 'سرعت'}: {selectedPort.speed} • {isEn ? 'Duplex' : 'داپلکس'}: {selectedPort.duplex}
                 </p>
               </div>
@@ -319,25 +322,25 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
             {!isEditing ? (
               <button
                 onClick={() => startEdit(selectedPort)}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-medium shadow-sm transition"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs font-medium shadow-xs transition active:scale-95 cursor-pointer"
               >
-                <Edit3 className="w-3 h-3 text-indigo-600" />
+                <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
                 <span>{isEn ? 'Edit Port Settings' : 'ویرایش تنظیمات پورت'}</span>
               </button>
             ) : (
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="px-2.5 py-1.5 rounded bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs transition"
+                  className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-xs transition active:scale-95 cursor-pointer"
                 >
                   {t('ports_btn_cancel')}
                 </button>
                 <button
                   onClick={handleSavePort}
                   disabled={isSaving}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium shadow-sm transition disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-medium shadow-[0_0_15px_rgba(99,102,241,0.35)] transition disabled:opacity-50 border border-white/10 active:scale-95 cursor-pointer"
                 >
-                  <Save className="w-3 h-3" />
+                  <Save className="w-3.5 h-3.5" />
                   <span>{isSaving ? t('ports_saving') : t('ports_apply_changes')}</span>
                 </button>
               </div>
@@ -347,43 +350,43 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
           {/* View Mode */}
           {!isEditing ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="text-slate-500 text-[10px] mb-0.5">{isEn ? 'Connected Device / Host:' : 'تجهیز یا هاست متصل:'}</div>
-                <div className="text-slate-900 font-semibold font-mono text-xs">
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">{isEn ? 'Connected Device / Host:' : 'تجهیز یا هاست متصل:'}</div>
+                <div className="text-white font-bold font-mono text-xs">
                   {selectedPort.connected_device || t('ports_device_not_connected')}
                 </div>
-                <div className="text-slate-400 text-[10px] mt-0.5 font-mono">
+                <div className="text-slate-400 text-[10px] mt-1 font-mono">
                   {isEn ? 'Type:' : 'نوع:'} {selectedPort.connected_type || 'Host'}
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="text-slate-500 text-[10px] mb-0.5">{isEn ? 'Assigned VLAN:' : 'ویلن (VLAN) تخصیص یافته:'}</div>
-                <div className="text-indigo-700 font-bold font-mono text-xs">
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">{isEn ? 'Assigned VLAN:' : 'ویلن (VLAN) تخصیص یافته:'}</div>
+                <div className="text-indigo-300 font-bold font-mono text-xs">
                   VLAN {selectedPort.vlan}
                 </div>
-                <div className="text-slate-400 text-[10px] mt-0.5 font-mono">
+                <div className="text-slate-400 text-[10px] mt-1 font-mono">
                   {isEn ? 'Allowed Trunk VLANs:' : 'ویلن‌های مجاز ترانک:'} {selectedPort.allowed_vlans || t('ports_all_vlans')}
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="text-slate-500 text-[10px] mb-0.5">{isEn ? 'Admin Status:' : 'وضعیت مدیریتی پورت:'}</div>
-                <div className="text-emerald-700 font-semibold text-xs">
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">{isEn ? 'Admin Status:' : 'وضعیت مدیریتی پورت:'}</div>
+                <div className="text-emerald-400 font-bold text-xs font-mono">
                   {selectedPort.admin_status === 'enabled' ? t('ports_admin_no_shutdown') : t('ports_admin_shutdown')}
                 </div>
-                <div className="text-slate-400 text-[10px] mt-0.5 font-mono">
+                <div className="text-slate-400 text-[10px] mt-1 font-mono">
                   {isEn ? 'Protocol:' : 'پروتکل:'} {selectedPort.mode === 'trunk' ? '802.1Q Encapsulation' : 'Access Native'}
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="text-slate-500 text-[10px] mb-0.5">{isEn ? 'PoE Status:' : 'توان برق (PoE Status):'}</div>
-                <div className="flex items-center gap-1 text-slate-900 font-semibold font-mono text-xs">
-                  <Zap className="w-3 h-3 text-amber-500" />
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">{isEn ? 'PoE Status:' : 'توان برق (PoE Status):'}</div>
+                <div className="flex items-center gap-1.5 text-white font-bold font-mono text-xs">
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
                   <span>{selectedPort.poe_power ? `${selectedPort.poe_power} W` : t('ports_poe_disabled')}</span>
                 </div>
-                <div className="text-slate-400 text-[10px] mt-0.5 font-mono">
+                <div className="text-slate-400 text-[10px] mt-1 font-mono">
                   {isEn ? 'State:' : 'وضعیت:'} {selectedPort.poe_status || 'off'}
                 </div>
               </div>
@@ -392,71 +395,71 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
             /* Edit Mode */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
               <div>
-                <label className="block text-slate-700 mb-1 text-[11px] font-medium">{isEn ? 'Port Mode:' : 'حالت پورت (Port Mode):'}</label>
+                <label className="block text-slate-300 mb-1 text-[11px] font-medium">{isEn ? 'Port Mode:' : 'حالت پورت (Port Mode):'}</label>
                 <select
                   value={editMode}
                   onChange={(e) => setEditMode(e.target.value as 'trunk' | 'access')}
-                  className="w-full px-2.5 py-1.5 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs font-mono"
+                  className="w-full px-3 py-1.5 rounded-xl bg-black/30 border border-white/15 text-slate-100 text-xs font-mono focus:border-indigo-400 focus:outline-none"
                 >
-                  <option value="access">{isEn ? 'Access (Client / Host / PC)' : 'Access (اکسس - کلاینت / هاست / پی‌سی)'}</option>
-                  <option value="trunk">{isEn ? 'Trunk (Switch-to-Switch / Router)' : 'Trunk (ترانک - ارتباط سوئیچ به سوئیچ / روتر)'}</option>
+                  <option value="access" className="bg-slate-900 text-white">{isEn ? 'Access (Client / Host / PC)' : 'Access (اکسس - کلاینت / هاست / پی‌سی)'}</option>
+                  <option value="trunk" className="bg-slate-900 text-white">{isEn ? 'Trunk (Switch-to-Switch / Router)' : 'Trunk (ترانک - ارتباط سوئیچ به سوئیچ / روتر)'}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-slate-700 mb-1 text-[11px] font-medium">{isEn ? 'VLAN ID:' : 'شماره ویلن (VLAN ID):'}</label>
+                <label className="block text-slate-300 mb-1 text-[11px] font-medium">{isEn ? 'VLAN ID:' : 'شماره ویلن (VLAN ID):'}</label>
                 <input
                   type="number"
                   value={editVlan}
                   onChange={(e) => setEditVlan(Number(e.target.value))}
-                  className="w-full px-2.5 py-1.5 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs font-mono text-left"
+                  className="w-full px-3 py-1.5 rounded-xl bg-black/30 border border-white/15 text-slate-100 text-xs font-mono text-left focus:border-indigo-400 focus:outline-none"
                   dir="ltr"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 mb-1 text-[11px] font-medium">{isEn ? 'Allowed Trunk VLANs:' : 'ویلن‌های مجاز (Allowed VLANs):'}</label>
+                <label className="block text-slate-300 mb-1 text-[11px] font-medium">{isEn ? 'Allowed Trunk VLANs:' : 'ویلن‌های مجاز (Allowed VLANs):'}</label>
                 <input
                   type="text"
                   value={editAllowedVlans}
                   onChange={(e) => setEditAllowedVlans(e.target.value)}
                   placeholder={isEn ? 'e.g. 1,10,20,30,50' : 'مثال: 1,10,20,30,50'}
-                  className="w-full px-2.5 py-1.5 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs font-mono text-left"
+                  className="w-full px-3 py-1.5 rounded-xl bg-black/30 border border-white/15 text-slate-100 text-xs font-mono text-left focus:border-indigo-400 focus:outline-none"
                   dir="ltr"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 mb-1 text-[11px] font-medium">{isEn ? 'Connected Device / Host:' : 'تجهیز یا هاست متصل:'}</label>
+                <label className="block text-slate-300 mb-1 text-[11px] font-medium">{isEn ? 'Connected Device / Host:' : 'تجهیز یا هاست متصل:'}</label>
                 <input
                   type="text"
                   value={editConnected}
                   onChange={(e) => setEditConnected(e.target.value)}
                   placeholder={isEn ? 'e.g. AP-WIFI-02 or Core Uplink' : 'مثال: AP-WIFI-02 یا Core Uplink'}
-                  className="w-full px-2.5 py-1.5 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs"
+                  className="w-full px-3 py-1.5 rounded-xl bg-black/30 border border-white/15 text-slate-100 text-xs focus:border-indigo-400 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 mb-1 text-[11px] font-medium">{isEn ? 'Administrative Status:' : 'وضعیت مدیریتی پورت:'}</label>
+                <label className="block text-slate-300 mb-1 text-[11px] font-medium">{isEn ? 'Administrative Status:' : 'وضعیت مدیریتی پورت:'}</label>
                 <select
                   value={editAdminStatus}
                   onChange={(e) => setEditAdminStatus(e.target.value as 'enabled' | 'disabled')}
-                  className="w-full px-2.5 py-1.5 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs font-mono"
+                  className="w-full px-3 py-1.5 rounded-xl bg-black/30 border border-white/15 text-slate-100 text-xs font-mono focus:border-indigo-400 focus:outline-none"
                 >
-                  <option value="enabled">{t('ports_admin_no_shutdown')}</option>
-                  <option value="disabled">{t('ports_admin_shutdown')}</option>
+                  <option value="enabled" className="bg-slate-900 text-white">{t('ports_admin_no_shutdown')}</option>
+                  <option value="disabled" className="bg-slate-900 text-white">{t('ports_admin_shutdown')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-slate-700 mb-1 text-[11px] font-medium">{isEn ? 'Description:' : 'توضیحات (Description):'}</label>
+                <label className="block text-slate-300 mb-1 text-[11px] font-medium">{isEn ? 'Description:' : 'توضیحات (Description):'}</label>
                 <input
                   type="text"
                   value={editDesc}
                   onChange={(e) => setEditDesc(e.target.value)}
                   placeholder={isEn ? 'Description for this port' : 'توضیح مربوط به این پورت'}
-                  className="w-full px-2.5 py-1.5 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs"
+                  className="w-full px-3 py-1.5 rounded-xl bg-black/30 border border-white/15 text-slate-100 text-xs focus:border-indigo-400 focus:outline-none"
                 />
               </div>
             </div>
@@ -465,10 +468,10 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
       )}
 
       {/* Ports Table */}
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-        <div className="p-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+      <div className="spatial-glass border border-white/10 rounded-xl overflow-hidden shadow-lg">
+        <div className="p-3.5 border-b border-white/10 flex flex-wrap items-center justify-between gap-2.5 text-xs">
           <div className="flex items-center gap-2">
-            <h4 className="font-bold text-slate-900">{t('ports_table_title', { count: filteredPorts.length })}</h4>
+            <h4 className="font-bold text-white font-mono">{t('ports_table_title', { count: filteredPorts.length })}</h4>
           </div>
 
           <div className="flex items-center flex-wrap gap-2">
@@ -477,46 +480,46 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
               placeholder={t('ports_search_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-2.5 py-1 rounded bg-slate-50 border border-slate-300 text-slate-800 text-xs focus:bg-white focus:outline-none focus:border-indigo-500 w-44"
+              className="px-3 py-1.5 rounded-xl bg-black/30 border border-white/15 text-slate-100 placeholder-slate-400 text-xs focus:outline-none focus:border-indigo-400 w-44 shadow-inner"
             />
 
-            <div className="flex items-center bg-slate-100 rounded p-0.5 border border-slate-200">
+            <div className="flex items-center bg-black/20 rounded-xl p-1 border border-white/10">
               <button
                 onClick={() => setFilterMode('all')}
-                className={`px-2 py-0.5 rounded text-[11px] transition ${
-                  filterMode === 'all' ? 'bg-white text-indigo-700 font-semibold shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                className={`px-2.5 py-1 rounded-lg text-xs transition cursor-pointer ${
+                  filterMode === 'all' ? 'bg-indigo-600/40 text-white font-bold border border-indigo-500/40 shadow-xs' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 {t('ports_filter_all')}
               </button>
               <button
                 onClick={() => setFilterMode('up')}
-                className={`px-2 py-0.5 rounded text-[11px] transition ${
-                  filterMode === 'up' ? 'bg-white text-indigo-700 font-semibold shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                className={`px-2.5 py-1 rounded-lg text-xs transition cursor-pointer ${
+                  filterMode === 'up' ? 'bg-indigo-600/40 text-white font-bold border border-indigo-500/40 shadow-xs' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 {t('ports_filter_up')}
               </button>
               <button
                 onClick={() => setFilterMode('down')}
-                className={`px-2 py-0.5 rounded text-[11px] transition ${
-                  filterMode === 'down' ? 'bg-white text-indigo-700 font-semibold shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                className={`px-2.5 py-1 rounded-lg text-xs transition cursor-pointer ${
+                  filterMode === 'down' ? 'bg-indigo-600/40 text-white font-bold border border-indigo-500/40 shadow-xs' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 {t('ports_filter_down')}
               </button>
               <button
                 onClick={() => setFilterMode('trunk')}
-                className={`px-2 py-0.5 rounded text-[11px] transition ${
-                  filterMode === 'trunk' ? 'bg-white text-indigo-700 font-semibold shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                className={`px-2.5 py-1 rounded-lg text-xs transition cursor-pointer ${
+                  filterMode === 'trunk' ? 'bg-purple-600/40 text-white font-bold border border-purple-500/40 shadow-xs' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 {t('ports_filter_trunk')}
               </button>
               <button
                 onClick={() => setFilterMode('access')}
-                className={`px-2 py-0.5 rounded text-[11px] transition ${
-                  filterMode === 'access' ? 'bg-white text-indigo-700 font-semibold shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                className={`px-2.5 py-1 rounded-lg text-xs transition cursor-pointer ${
+                  filterMode === 'access' ? 'bg-indigo-600/40 text-white font-bold border border-indigo-500/40 shadow-xs' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 {t('ports_filter_access')}
@@ -528,18 +531,18 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
         <div className="overflow-x-auto">
           <table className={`w-full ${isRtl ? 'text-right' : 'text-left'} text-xs`}>
             <thead>
-              <tr className="bg-slate-50 text-slate-600 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider">
-                <th className="p-3">{t('ports_col_id')}</th>
-                <th className="p-3">{t('ports_col_status')}</th>
-                <th className="p-3">{t('ports_col_mode')}</th>
-                <th className="p-3">{t('ports_col_vlan')}</th>
-                <th className="p-3">{t('ports_col_connected')}</th>
-                <th className="p-3">{t('ports_col_speed')}</th>
-                <th className="p-3">{t('ports_col_poe')}</th>
-                <th className="p-3 text-center">{t('ports_col_actions')}</th>
+              <tr className="bg-white/5 text-slate-300 border-b border-white/10 text-[11px] font-bold uppercase tracking-wider">
+                <th className="p-3.5">{t('ports_col_id')}</th>
+                <th className="p-3.5">{t('ports_col_status')}</th>
+                <th className="p-3.5">{t('ports_col_mode')}</th>
+                <th className="p-3.5">{t('ports_col_vlan')}</th>
+                <th className="p-3.5">{t('ports_col_connected')}</th>
+                <th className="p-3.5">{t('ports_col_speed')}</th>
+                <th className="p-3.5">{t('ports_col_poe')}</th>
+                <th className="p-3.5 text-center">{t('ports_col_actions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 font-mono">
+            <tbody className="divide-y divide-white/10 font-mono">
               {filteredPorts.map((port) => (
                 <tr
                   key={port.port_id}
@@ -549,57 +552,57 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                   }}
                   className={`cursor-pointer transition ${
                     selectedPort?.port_id === port.port_id
-                      ? 'bg-indigo-50/60 text-slate-900'
-                      : 'hover:bg-slate-50/80 text-slate-800'
+                      ? 'bg-indigo-600/20 text-white border-l-2 border-indigo-400'
+                      : 'hover:bg-white/5 text-slate-200'
                   }`}
                 >
-                  <td className="p-3 font-bold text-slate-900">{port.port_id}</td>
-                  <td className="p-3">
+                  <td className="p-3.5 font-bold text-white">{port.port_id}</td>
+                  <td className="p-3.5">
                     <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-sans ${
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${
                         port.admin_status === 'disabled'
-                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                           : port.status === 'up'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          : 'bg-slate-100 text-slate-600 border border-slate-200'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-white/5 text-slate-400 border border-white/10'
                       }`}
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
                           port.admin_status === 'disabled'
-                            ? 'bg-amber-500'
+                            ? 'bg-amber-400'
                             : port.status === 'up'
-                            ? 'bg-emerald-500'
-                            : 'bg-slate-400'
+                            ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]'
+                            : 'bg-slate-500'
                         }`}
                       ></span>
                       {port.admin_status === 'disabled' ? 'Admin Down' : port.status === 'up' ? 'Up' : 'Down'}
                     </span>
                   </td>
-                  <td className="p-3">
+                  <td className="p-3.5">
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold font-mono ${
                         port.mode === 'trunk'
-                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                          : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                          : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
                       }`}
                     >
                       {port.mode.toUpperCase()}
                     </span>
                   </td>
-                  <td className="p-3 font-bold text-indigo-700">VLAN {port.vlan}</td>
-                  <td className="p-3 text-slate-800 font-sans text-xs">
+                  <td className="p-3.5 font-bold text-indigo-300">VLAN {port.vlan}</td>
+                  <td className="p-3.5 text-slate-300 font-sans text-xs">
                     {port.connected_device || '-'}
                   </td>
-                  <td className="p-3 text-slate-600">{port.speed}</td>
-                  <td className="p-3 text-slate-600">{port.poe_power ? `${port.poe_power}W` : 'Off'}</td>
-                  <td className="p-3 text-center">
+                  <td className="p-3.5 text-slate-300">{port.speed}</td>
+                  <td className="p-3.5 text-slate-300">{port.poe_power ? `${port.poe_power}W` : 'Off'}</td>
+                  <td className="p-3.5 text-center">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         startEdit(port);
                       }}
-                      className="px-2 py-1 rounded bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-xs font-sans transition border border-slate-200"
+                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 hover:text-cyan-300 text-slate-200 text-xs font-sans transition border border-white/10 cursor-pointer"
                     >
                       {t('ports_btn_edit')}
                     </button>
