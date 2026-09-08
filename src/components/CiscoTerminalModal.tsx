@@ -638,7 +638,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-hidden" dir="rtl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 modal-backdrop-blur overflow-hidden" data-modal-backdrop="true" dir="rtl">
       <div
         className={`bg-slate-900 border border-slate-700 rounded-xl shadow-2xl flex flex-col overflow-hidden text-slate-100 transition-all ${
           isFullscreen ? 'w-full h-full rounded-none' : 'w-full max-w-6xl h-[92vh]'
@@ -657,11 +657,11 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-white font-mono text-sm tracking-wide">{device.name}</span>
-                <span className="text-[11px] font-mono text-indigo-400 px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-800">
+                <span className="terminal-header-ip text-xs font-mono font-bold px-2 py-0.5 rounded-md shadow-xs" title="آدرس آی‌پی دستگاه">
                   {device.ip}
                 </span>
-                <span className="text-[10px] text-emerald-400 px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-800 flex items-center gap-1 font-mono">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="terminal-header-ssh text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-xs" title="نسخه پروتکل SSH">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                   SSH-2.0
                 </span>
               </div>
@@ -802,7 +802,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
         {/* Main Body: Terminal Screen (Left/Center) + Sidebar Guides (Right) */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Terminal Console View (Left) */}
-          <div className="flex-1 flex flex-col bg-black/95 p-3 overflow-hidden font-mono text-xs select-text">
+          <div className="cisco-terminal-screen flex-1 flex flex-col bg-slate-950 p-3.5 overflow-hidden font-mono text-xs select-text">
             {/* Output Lines Canvas */}
             <div className="flex-1 overflow-y-auto space-y-1 pr-1 pb-2 scrollbar-thin scrollbar-thumb-slate-700">
               {lines.map((line) => {
@@ -815,14 +815,14 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                 }
                 if (line.type === 'system') {
                   return (
-                    <div key={line.id} className="text-sky-400/90 italic">
+                    <div key={line.id} className="text-sky-400 font-medium italic">
                       {line.text}
                     </div>
                   );
                 }
                 if (line.type === 'error') {
                   return (
-                    <div key={line.id} className="text-rose-400 whitespace-pre-wrap">
+                    <div key={line.id} className="text-rose-400 font-medium whitespace-pre-wrap">
                       {line.text}
                     </div>
                   );
@@ -844,7 +844,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             </div>
 
             {/* Input Prompt Box */}
-            <div className="mt-2 pt-2 border-t border-slate-800 flex items-center gap-2">
+            <div className="mt-2 pt-2 border-t border-slate-800/90 flex items-center gap-2 bg-slate-900/60 px-3 py-1.5 rounded-lg">
               <span className="text-emerald-400 font-bold whitespace-nowrap font-mono">{getPrompt()}</span>
               <input
                 ref={inputRef}
@@ -853,7 +853,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                 onChange={(e) => setCurrentInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="دستور سیسکو را تایپ کنید (مثلاً enable یا show ip int brief)..."
-                className="flex-1 bg-transparent text-white font-mono outline-none border-none text-xs focus:ring-0"
+                className="cisco-cli-input flex-1 bg-transparent font-mono outline-none border-none text-xs"
                 autoFocus
                 dir="ltr"
               />
@@ -862,7 +862,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                   executeCommand(currentInput);
                   setCurrentInput('');
                 }}
-                className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-mono flex items-center gap-1 transition"
+                className="cisco-btn-exec px-3 py-1.5 rounded-lg text-white text-xs font-mono font-bold flex items-center gap-1.5 transition shadow-sm shrink-0"
               >
                 <Send className="w-3 h-3" />
                 <span className="hidden sm:inline">ارسال</span>
@@ -871,15 +871,15 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
           </div>
 
           {/* Context-Aware Cisco Commands Sidebar (Right) */}
-          <div className="w-full md:w-80 lg:w-96 bg-slate-900/90 border-t md:border-t-0 md:border-r border-slate-800 flex flex-col overflow-hidden text-right">
+          <div className="cisco-sidebar-guide w-full md:w-80 lg:w-96 border-t md:border-t-0 md:border-r flex flex-col overflow-hidden text-right">
             {/* Sidebar Header */}
-            <div className="p-3 bg-slate-950/70 border-b border-slate-800 space-y-2">
+            <div className="p-3 bg-white/50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <HelpCircle className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <HelpCircle className="w-3.5 h-3.5 text-indigo-500" />
                   <span>راهنمای هوشمند دستورات مرحله</span>
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800 font-bold">
                   {cliMode}
                 </span>
               </div>
@@ -891,19 +891,19 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                   placeholder="جستجوی دستور یا کاربرد..."
                   value={commandSearch}
                   onChange={(e) => setCommandSearch(e.target.value)}
-                  className="w-full px-2.5 py-1 pr-7 rounded bg-slate-800 border border-slate-700 text-white text-[11px] placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-2.5 py-1.5 pr-7 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white text-[11px] placeholder:text-slate-400 focus:outline-none focus:border-indigo-500"
                 />
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1.5" />
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-2" />
               </div>
             </div>
 
             {/* Current Mode Badge Explanation */}
-            <div className="p-2.5 bg-indigo-950/30 border-b border-indigo-900/40 text-[11px] text-slate-300 space-y-1">
-              <div className="font-bold text-indigo-300 flex items-center gap-1">
+            <div className="p-2.5 bg-indigo-50/70 dark:bg-indigo-950/30 border-b border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-700 dark:text-slate-300 space-y-1">
+              <div className="font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
                 <span>مرحله فعلی:</span>
-                <span className="font-mono text-emerald-400">{getPrompt()}</span>
+                <span className="font-mono text-emerald-600 dark:text-emerald-400">{getPrompt()}</span>
               </div>
-              <div className="text-[10px] text-slate-400 leading-relaxed">
+              <div className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed">
                 {cliMode === 'USER_EXEC' &&
                   'حالت کاربری ابتدایی (User EXEC). فقط دستورات اولیه مانیتورینگ و تست پینگ مجاز هستند. برای دسترسی به تنظیمات دستور enable را اجرا کنید.'}
                 {cliMode === 'PRIVILEGED_EXEC' &&
@@ -927,43 +927,43 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                 relevantCommands.map((item, idx) => (
                   <div
                     key={idx}
-                    className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800 hover:border-indigo-500/60 transition group"
+                    className="cisco-guide-card p-3 rounded-xl transition-all group"
                   >
-                    <div className="flex items-center justify-between gap-1 mb-1">
-                      <code className="text-xs font-mono font-bold text-indigo-300 group-hover:text-indigo-200 select-all" dir="ltr">
+                    <div className="flex items-center justify-between gap-1 mb-1.5">
+                      <code className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-300 group-hover:text-indigo-700 dark:group-hover:text-indigo-200 select-all" dir="ltr">
                         {item.cmd}
                       </code>
                       <span
-                        className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold font-mono ${
+                        className={`text-[9px] px-1.5 py-0.5 rounded-md uppercase font-bold font-mono ${
                           item.category === 'show'
-                            ? 'bg-sky-950 text-sky-400 border border-sky-800'
+                            ? 'bg-sky-100 text-sky-700 border border-sky-200 dark:bg-sky-950 dark:text-sky-400 dark:border-sky-800'
                             : item.category === 'config'
-                            ? 'bg-amber-950 text-amber-400 border border-amber-800'
+                            ? 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800'
                             : item.category === 'action'
-                            ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                            : 'bg-slate-800 text-slate-400'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800'
+                            : 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-400'
                         }`}
                       >
                         {item.category}
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-slate-400 leading-snug">{item.desc}</p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug">{item.desc}</p>
 
                     {/* Action Buttons */}
-                    <div className="flex items-center justify-end gap-1.5 mt-2 pt-1.5 border-t border-slate-800/80">
+                    <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
                       <button
                         onClick={() => {
                           setCurrentInput(item.cmd);
                           if (inputRef.current) inputRef.current.focus();
                         }}
-                        className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-medium transition"
+                        className="cisco-btn-insert px-2.5 py-1 rounded-lg text-[10px] font-semibold transition active:scale-95"
                       >
                         درج در خط فرمان
                       </button>
                       <button
                         onClick={() => executeCommand(item.cmd)}
-                        className="px-2.5 py-0.5 rounded bg-indigo-600/90 hover:bg-indigo-600 text-white text-[10px] font-medium transition flex items-center gap-1"
+                        className="cisco-btn-exec px-3 py-1 rounded-lg text-[10px] font-bold transition flex items-center gap-1 active:scale-95"
                       >
                         <Play className="w-2.5 h-2.5 fill-current" />
                         <span>اجرا</span>
@@ -975,11 +975,11 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             </div>
 
             {/* Quick Helper Bar */}
-            <div className="p-2 bg-slate-950 border-t border-slate-800 text-[10px] text-slate-400 flex items-center justify-between">
+            <div className="p-2.5 bg-white/50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 text-[10px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
               <span>راهنما: برای تکمیل Tab بزنید</span>
               <button
                 onClick={() => executeCommand('?')}
-                className="text-indigo-400 hover:text-indigo-300 font-mono font-bold"
+                className="text-indigo-600 dark:text-indigo-400 hover:underline font-mono font-bold"
               >
                 دستور ?
               </button>

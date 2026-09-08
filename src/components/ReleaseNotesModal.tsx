@@ -11,7 +11,7 @@ export const ReleaseNotesModal: React.FC<ReleaseNotesModalProps> = ({ isOpen, on
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in" dir="rtl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-blur animate-fade-in" data-modal-backdrop="true" dir="rtl">
       <div className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl spatial-glass border border-white/20 text-slate-100 shadow-[0_0_50px_rgba(99,102,241,0.3)] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5">

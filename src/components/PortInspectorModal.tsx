@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Cable, Zap, Shield, ShieldCheck, ShieldAlert, CheckCircle2, AlertCircle, Edit3, Save, Power, Terminal, AlertTriangle, ArrowRight, Check, Lock, Key } from 'lucide-react';
 import { Device, SwitchPort } from '../types';
 import { fetchDevicePorts, updateSwitchPort, writeMemory } from '../services/api';
+import { NetworkPortSvg } from './NetworkPortSvg';
 
 interface PortInspectorModalProps {
   device: Device | null;
@@ -330,7 +331,7 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
   const portSecCount = ports.filter((p) => p.port_security_enabled).length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop-blur overflow-y-auto" data-modal-backdrop="true">
       <div className="bg-white border border-slate-200 rounded-lg w-full max-w-5xl shadow-xl overflow-hidden my-4 text-right flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
@@ -382,11 +383,11 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
             {onConnectTerminal && (
               <button
                 onClick={() => onConnectTerminal(device)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-100 text-xs font-medium transition shadow-sm"
+                className="cisco-terminal-header-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"
                 title="اتصال مستقیم به خط فرمان ترمینال سیسکو (CLI)"
               >
-                <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-                <span>ترمینال سیسکو</span>
+                <Terminal className="w-4 h-4 text-emerald-400" />
+                <span className="font-sans font-bold">ترمینال سیسکو</span>
               </button>
             )}
 
@@ -439,59 +440,18 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
             ) : ports.length === 0 ? (
               <div className="py-6 text-center text-slate-500 text-xs">پورت فعالی ثبت نشده است.</div>
             ) : (
-              <div className="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 overflow-x-auto">
-                <div className="flex flex-wrap gap-1.5 justify-start min-w-[500px]">
-                  {ports.map((port) => {
-                    const isSelected = selectedPort?.port_id === port.port_id;
-                    const isUp = port.status === 'up';
-                    const isDisabled = port.admin_status === 'disabled';
-                    const isTrunk = port.mode === 'trunk';
-
-                    return (
-                      <button
+              <div className="switch-faceplate-chassis rounded-xl p-3 border border-slate-800 shadow-inner">
+                <div className="switch-faceplate-grid rounded-lg p-2.5 overflow-x-auto border border-slate-850">
+                  <div className="flex flex-wrap gap-2 justify-start min-w-[500px]">
+                    {ports.map((port) => (
+                      <NetworkPortSvg
                         key={port.port_id}
+                        port={port}
+                        isSelected={selectedPort?.port_id === port.port_id}
                         onClick={() => handleSelectPort(port)}
-                        className={`relative group p-1.5 rounded border transition-all flex flex-col items-center w-12 ${
-                          isSelected
-                            ? 'bg-indigo-950 border-indigo-400 ring-2 ring-indigo-500/30'
-                            : isDisabled
-                            ? 'bg-slate-900 border-amber-900/50 hover:border-amber-700'
-                            : isUp
-                            ? 'bg-slate-800/80 border-slate-700 hover:border-indigo-500'
-                            : 'bg-slate-950 border-slate-800 hover:border-slate-700 opacity-60'
-                        }`}
-                        title={`${port.name} - ${port.status.toUpperCase()} - ${port.mode.toUpperCase()} - VLAN ${port.vlan} - ${port.connected_device}`}
-                      >
-                        {/* Port LED */}
-                        <div className="flex items-center gap-1 mb-1">
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              isDisabled
-                                ? 'bg-amber-500'
-                                : isUp
-                                ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.8)]'
-                                : 'bg-slate-600'
-                            }`}
-                          ></span>
-                          {isTrunk && (
-                            <span className="text-[7px] font-bold text-purple-400 bg-purple-950/80 px-0.5 rounded">
-                              T
-                            </span>
-                          )}
-                        </div>
-
-                        {/* RJ45 Jack Visual Icon */}
-                        <div className="w-6 h-5 rounded bg-slate-950 border border-slate-700 flex items-center justify-center text-[8px] font-mono text-slate-300">
-                          {port.port_id.replace('GigabitEthernet', 'Gi').replace('TenGigabitEthernet', 'Te').replace('1/0/', '').replace('0/', '')}
-                        </div>
-
-                        {/* VLAN Tag */}
-                        <div className="mt-0.5 text-[8px] font-mono text-indigo-400">
-                          V{port.vlan}
-                        </div>
-                      </button>
-                    );
-                  })}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -765,22 +725,32 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
                         </div>
                       </div>
 
-                      <label className="inline-flex items-center gap-2 cursor-pointer select-none bg-white px-3 py-1.5 rounded-md border border-indigo-200 hover:border-indigo-400 transition shadow-xs">
-                        <input
-                          type="checkbox"
-                          checked={editPortSecEnabled}
-                          onChange={(e) => {
-                            setEditPortSecEnabled(e.target.checked);
-                            if (e.target.checked && editMode === 'trunk') {
-                              setEditMode('access');
-                            }
-                          }}
-                          className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500"
-                        />
-                        <span className={`text-xs font-bold ${editPortSecEnabled ? 'text-indigo-700' : 'text-slate-600'}`}>
-                          {editPortSecEnabled ? 'فعال‌سازی (switchport port-security)' : 'فعال‌سازی Port Security'}
+                      <button
+                        type="button"
+                        id="port-security-toggle-btn"
+                        onClick={() => {
+                          const nextState = !editPortSecEnabled;
+                          setEditPortSecEnabled(nextState);
+                          if (nextState && editMode === 'trunk') {
+                            setEditMode('access');
+                          }
+                        }}
+                        className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs border ${
+                          editPortSecEnabled
+                            ? 'port-sec-btn-active bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-700 ring-2 ring-emerald-500/20'
+                            : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                        }`}
+                        title="فعال یا غیرفعال‌سازی سکیوریتی پورت لایه ۲ سیسکو"
+                      >
+                        {editPortSecEnabled ? (
+                          <ShieldCheck className="w-4 h-4 text-white shrink-0" />
+                        ) : (
+                          <Shield className="w-4 h-4 text-slate-500 shrink-0" />
+                        )}
+                        <span className={editPortSecEnabled ? 'text-white' : 'text-slate-800'}>
+                          {editPortSecEnabled ? 'فعال (switchport port-security)' : 'فعال‌سازی Port Security'}
                         </span>
-                      </label>
+                      </button>
                     </div>
 
                     {editPortSecEnabled && (
@@ -1150,7 +1120,7 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
 
         {/* Confirmation Summary Modal (سامری تغییرات پورت و تایید نهایی) */}
         {showConfirmSummary && selectedPort && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm" dir="rtl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop-blur" data-modal-backdrop="true" dir="rtl">
             <div className="bg-white border border-slate-300 rounded-xl shadow-2xl max-w-xl w-full overflow-hidden text-right">
               {/* Header */}
               <div className="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">

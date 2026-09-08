@@ -88,7 +88,7 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 modal-backdrop-blur overflow-y-auto" data-modal-backdrop="true">
       <div className="bg-white border border-slate-200 rounded-lg w-full max-w-2xl shadow-xl overflow-hidden my-6 text-right text-slate-800">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-slate-50">

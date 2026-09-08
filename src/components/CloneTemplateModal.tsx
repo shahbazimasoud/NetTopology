@@ -173,7 +173,7 @@ export const CloneTemplateModal: React.FC<CloneTemplateModalProps> = ({
   const commandLines = commands.split('\n');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop-blur animate-fadeIn" data-modal-backdrop="true">
       <div className="w-full max-w-5xl max-h-[94vh] flex flex-col bg-slate-900/95 border border-cyan-500/30 rounded-2xl shadow-[0_0_60px_rgba(6,182,212,0.25)] overflow-hidden text-slate-100 backdrop-blur-2xl">
         
         {/* Header */}

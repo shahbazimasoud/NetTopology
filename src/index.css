@@ -360,6 +360,211 @@
   color: #0f172a !important;
 }
 
+/* Universal Modal Glass Backdrop - Blurs the background with dark spatial glass across all themes */
+.modal-backdrop-blur,
+.modal-glass-backdrop,
+[data-modal-backdrop="true"],
+.theme-light .modal-backdrop-blur,
+.theme-light .modal-glass-backdrop,
+.theme-light [data-modal-backdrop="true"],
+.theme-emerald .modal-backdrop-blur,
+.theme-rose .modal-backdrop-blur,
+.theme-amber .modal-backdrop-blur,
+.theme-cobalt .modal-backdrop-blur,
+.theme-obsidian .modal-backdrop-blur {
+  background-color: rgba(2, 6, 23, 0.78) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+/* Cisco Terminal Screen - Always high-contrast dark console with vivid terminal text */
+.cisco-terminal-screen,
+.theme-light .cisco-terminal-screen {
+  background-color: #030712 !important;
+  color: #f8fafc !important;
+  border-color: #1e293b !important;
+}
+
+.cisco-terminal-screen .text-slate-200,
+.theme-light .cisco-terminal-screen .text-slate-200,
+.cisco-terminal-screen .text-slate-300,
+.theme-light .cisco-terminal-screen .text-slate-300 {
+  color: #e2e8f0 !important;
+}
+
+.cisco-terminal-screen .text-slate-400,
+.theme-light .cisco-terminal-screen .text-slate-400,
+.cisco-terminal-screen .text-gray-400,
+.theme-light .cisco-terminal-screen .text-gray-400 {
+  color: #94a3b8 !important;
+}
+
+.cisco-terminal-screen .text-sky-400,
+.theme-light .cisco-terminal-screen .text-sky-400 {
+  color: #38bdf8 !important;
+}
+
+.cisco-terminal-screen .text-emerald-400,
+.theme-light .cisco-terminal-screen .text-emerald-400 {
+  color: #34d399 !important;
+}
+
+.cisco-terminal-screen .text-rose-400,
+.theme-light .cisco-terminal-screen .text-rose-400 {
+  color: #fb7185 !important;
+}
+
+.cisco-terminal-screen .text-amber-400,
+.theme-light .cisco-terminal-screen .text-amber-400 {
+  color: #fbbf24 !important;
+}
+
+/* Cisco Terminal Input - High-contrast Cyan Text and Emerald Cursor */
+.cisco-cli-input,
+.theme-light .cisco-cli-input,
+.theme-obsidian .cisco-cli-input {
+  color: #38bdf8 !important;
+  caret-color: #34d399 !important;
+  background-color: transparent !important;
+}
+
+.cisco-cli-input::placeholder,
+.theme-light .cisco-cli-input::placeholder {
+  color: #64748b !important;
+}
+
+/* Cisco Terminal Button in Port Inspector Header */
+.cisco-terminal-header-btn,
+.theme-light .cisco-terminal-header-btn {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+}
+.cisco-terminal-header-btn:hover,
+.theme-light .cisco-terminal-header-btn:hover {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+}
+.cisco-terminal-header-btn span,
+.theme-light .cisco-terminal-header-btn span {
+  color: #ffffff !important;
+}
+.cisco-terminal-header-btn svg,
+.theme-light .cisco-terminal-header-btn svg {
+  color: #34d399 !important;
+}
+
+/* Port Security Button Active */
+.port-sec-btn-active,
+.theme-light .port-sec-btn-active {
+  background-color: #059669 !important;
+  color: #ffffff !important;
+  border-color: #047857 !important;
+}
+.port-sec-btn-active *,
+.theme-light .port-sec-btn-active * {
+  color: #ffffff !important;
+}
+
+/* Switch Faceplate Hardware Chassis */
+.switch-faceplate-chassis,
+.theme-light .switch-faceplate-chassis {
+  background-color: #0f172a !important;
+  border-color: #1e293b !important;
+}
+.switch-faceplate-grid,
+.theme-light .switch-faceplate-grid {
+  background-color: #020617 !important;
+  border-color: #1e293b !important;
+}
+
+/* Terminal Header IP & SSH Badges */
+.terminal-header-ip {
+  background-color: #082f49 !important;
+  color: #38bdf8 !important;
+  border: 1px solid #0284c7 !important;
+}
+.theme-light .terminal-header-ip {
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+  border: 1px solid #7dd3fc !important;
+}
+
+.terminal-header-ssh {
+  background-color: #064e3b !important;
+  color: #34d399 !important;
+  border: 1px solid #059669 !important;
+}
+.theme-light .terminal-header-ssh {
+  background-color: #d1fae5 !important;
+  color: #047857 !important;
+  border: 1px solid #6ee7b7 !important;
+}
+
+/* Cisco Terminal Sidebar Guide - Dashboard-grade Styling */
+.cisco-sidebar-guide {
+  background-color: #0f172a !important;
+  border-color: #1e293b !important;
+}
+.theme-light .cisco-sidebar-guide {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.cisco-guide-card {
+  background-color: #090d16 !important;
+  border: 1px solid #1e293b !important;
+}
+.theme-light .cisco-guide-card {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+.theme-light .cisco-guide-card:hover {
+  border-color: #818cf8 !important;
+  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.1) !important;
+}
+
+.theme-light .cisco-guide-card p {
+  color: #475569 !important;
+}
+
+.cisco-btn-insert {
+  background-color: #1e293b !important;
+  color: #cbd5e1 !important;
+  border: 1px solid #334155 !important;
+}
+.cisco-btn-insert:hover {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+.theme-light .cisco-btn-insert {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+.theme-light .cisco-btn-insert:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.cisco-btn-exec,
+.theme-light .cisco-btn-exec {
+  background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.35) !important;
+}
+.cisco-btn-exec:hover,
+.theme-light .cisco-btn-exec:hover {
+  filter: brightness(1.15) !important;
+}
+.cisco-btn-exec *,
+.theme-light .cisco-btn-exec * {
+  color: #ffffff !important;
+}
+
 .theme-light .bg-black\/40,
 .theme-light .bg-black\/50,
 .theme-light .bg-black\/60,
