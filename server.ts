@@ -1,12 +1,20 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { spawn, ChildProcess } from 'child_process';
 import http from 'http';
 import { createServer as createViteServer } from 'vite';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Safely determine current directory and project root in both CJS bundle and TSX ESM dev mode
+const getCurrentDir = () => {
+  if (typeof __dirname !== 'undefined') {
+    return __dirname;
+  }
+  return process.cwd();
+};
+
+const currentDir = getCurrentDir();
+// If running from dist/server.cjs, project root is one level up
+const projectRoot = path.basename(currentDir) === 'dist' ? path.resolve(currentDir, '..') : currentDir;
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : (process.env.FRONTEND_PORT ? parseInt(process.env.FRONTEND_PORT, 10) : 3000);
@@ -20,11 +28,11 @@ app.use(express.urlencoded({ extended: true }));
 let pythonProcess: ChildProcess | null = null;
 
 function startPythonBackend() {
-  const pythonScript = path.join(__dirname, 'backend', 'server.py');
+  const pythonScript = path.join(projectRoot, 'backend', 'server.py');
   console.log(`[Python Manager] Starting Python backend from ${pythonScript} on port ${PYTHON_PORT}...`);
   
   pythonProcess = spawn('python3', [pythonScript, String(PYTHON_PORT)], {
-    cwd: __dirname,
+    cwd: projectRoot,
     stdio: 'inherit',
     env: {
       ...process.env,
@@ -104,14 +112,17 @@ app.use('/api', (req: Request, res: Response) => {
 });
 
 async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
+  const isProd = process.env.NODE_ENV === 'production' || path.basename(currentDir) === 'dist';
+
+  if (!isProd) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.join(projectRoot, 'dist');
+    console.log(`[Production Server] Serving static web UI from ${distPath}`);
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));

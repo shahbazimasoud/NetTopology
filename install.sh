@@ -22,7 +22,8 @@ echo -e "${CYAN}${BOLD}"
 echo "╔══════════════════════════════════════════════════════════════════╗"
 echo "║                                                                  ║"
 echo "║     🌐  NetTopology - Enterprise Network Management Panel        ║"
-echo "║     🚀  Cisco Port Security & CDP/LLDP Topology Visualizer       ║"
+echo "║     🚀  Version: 1.1.0 (Production Stable)                       ║"
+echo "║     🛡️  Cisco Port Security & CDP/LLDP Topology Visualizer       ║"
 echo "║     🎨  Spatial Cyber Neon & Multi-Theme Network Studio          ║"
 echo "║                                                                  ║"
 echo "╚══════════════════════════════════════════════════════════════════╝"
@@ -225,6 +226,16 @@ NODE_BIN=$(command -v node)
 SERVICE_FILE="/etc/systemd/system/nettopology.service"
 RUN_USER=${SUDO_USER:-$(whoami)}
 
+# Ensure execute permissions
+chmod +x "$APP_DIR"/*.sh 2>/dev/null || true
+chmod +x "$APP_DIR/backend/server.py" 2>/dev/null || true
+
+# Stop previous instances if running
+systemctl stop nettopology.service 2>/dev/null || true
+pkill -f "dist/server.cjs" 2>/dev/null || true
+pkill -f "backend/server.py" 2>/dev/null || true
+sleep 1
+
 cat << EOF > "$SERVICE_FILE"
 [Unit]
 Description=NetTopology - Network Management & Port Security Panel
@@ -234,6 +245,7 @@ After=network.target
 Type=simple
 User=$RUN_USER
 WorkingDirectory=$APP_DIR
+EnvironmentFile=-$APP_DIR/.env
 ExecStart=$NODE_BIN $APP_DIR/dist/server.cjs
 Restart=always
 RestartSec=3
@@ -250,6 +262,13 @@ EOF
 systemctl daemon-reload
 systemctl enable nettopology.service
 systemctl restart nettopology.service
+
+# Check health
+sleep 2
+if ! systemctl is-active --quiet nettopology.service; then
+  echo -e "${RED}خطا: سرویس با موفقیت فعال نشد. لاگ‌های زیر را بررسی کنید:${NC}"
+  journalctl -u nettopology.service -n 25 --no-pager || true
+fi
 
 # Firewall Check (Optional ufw)
 if command -v ufw &>/dev/null && ufw status | grep -q "Status: active"; then

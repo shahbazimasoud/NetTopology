@@ -30,7 +30,7 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-PANEL_VERSION="latest"
+PANEL_VERSION="1.1.0"
 
 clear 2>/dev/null || true
 echo -e "${CYAN}${BOLD}"
@@ -43,6 +43,7 @@ cat << "EOF"
   ██║ ╚████║███████╗   ██║      ██║   ╚██████╔╝██║     ╚██████╔╝
   ╚═╝  ╚═══╝╚══════╝   ╚═╝      ╚═╝    ╚═════╝ ╚═╝      ╚═════╝ 
         CISCO NETWORK TOPOLOGY & PORT SECURITY MANAGEMENT PANEL
+        Version: 1.1.0 (Production Stable)
         Developer: Masoud Shahbazi (https://www.linkedin.com/in/masoudshahbazi/)
         Repository: https://github.com/shahbazimasoud/NetTopology
 ======================================================================
@@ -59,7 +60,7 @@ fi
 
 # Detect system environment and installer location
 INSTALL_DIR=$(pwd)
-if [ -f "$INSTALL_DIR/package.json" ] && grep -q "react-example" "$INSTALL_DIR/package.json"; then
+if [ -f "$INSTALL_DIR/package.json" ] && grep -q -E "react-example|nettopology" "$INSTALL_DIR/package.json"; then
   log_info "Detected installer is running from within the NetTopology project directory."
 else
   log_step "Preparing installation directory..."
@@ -336,8 +337,9 @@ fi
 log_step "Compiling NetTopology Production Build (Vite + TypeScript Backend)..."
 npm run build
 
-# Ensure scripts have execute permissions
+# Ensure scripts and backend have execute permissions
 chmod +x "$INSTALL_DIR"/*.sh 2>/dev/null || true
+chmod +x "$INSTALL_DIR/backend/server.py" 2>/dev/null || true
 
 # ------------------------------------------------------------------------------
 # 6. Environment Configuration (.env) & Systemd Service Deployment
@@ -351,9 +353,16 @@ BACKEND_PORT=$BACKEND_PORT
 PYTHON_PORT=$BACKEND_PORT
 EOF
 
+log_step "Stopping any conflicting or stale server processes..."
+systemctl stop nettopology.service 2>/dev/null || true
+pkill -f "dist/server.cjs" 2>/dev/null || true
+pkill -f "backend/server.py" 2>/dev/null || true
+sleep 1
+
 log_step "Configuring Systemd Daemon Service..."
 SERVICE_FILE="/etc/systemd/system/nettopology.service"
-NODE_EXEC=$(command -v node || echo "/usr/local/bin/node")
+NODE_EXEC=$(command -v node || echo "/usr/bin/node")
+[ ! -x "$NODE_EXEC" ] && NODE_EXEC="/usr/local/bin/node"
 
 cat << EOF > "$SERVICE_FILE"
 [Unit]
@@ -364,6 +373,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=$INSTALL_DIR
+EnvironmentFile=-$INSTALL_DIR/.env
 ExecStart=$NODE_EXEC dist/server.cjs
 Restart=always
 RestartSec=3
@@ -380,14 +390,27 @@ EOF
 systemctl daemon-reload
 systemctl enable nettopology.service
 systemctl restart nettopology.service
-log_success "NetTopology systemd daemon service is active and running!"
+
+# Verify service health
+log_step "Verifying NetTopology service status..."
+sleep 2
+if systemctl is-active --quiet nettopology.service; then
+  log_success "NetTopology systemd daemon service is active and running!"
+else
+  log_error "NetTopology service failed to start! Displaying diagnostic logs:"
+  journalctl -u nettopology.service -n 35 --no-pager || true
+  exit 1
+fi
 
 # ------------------------------------------------------------------------------
-# 7. Optional Nginx Reverse Proxy with Self-Signed SSL
+# 7. Optional Nginx Reverse Proxy (HTTP Port 80 + HTTPS SSL Port)
 # ------------------------------------------------------------------------------
 if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
-  log_step "Setting up Nginx Reverse Proxy with SSL on port $SSL_PORT..."
+  log_step "Setting up Nginx Reverse Proxy with SSL on port $SSL_PORT and HTTP on port 80..."
   DEBIAN_FRONTEND=noninteractive apt-get install -y nginx openssl < /dev/null || true
+
+  # Remove default Ubuntu/Debian welcome site to avoid port 80 conflict
+  rm -f /etc/nginx/sites-enabled/default 2>/dev/null || true
 
   mkdir -p /etc/nginx/ssl
   SSL_CERT="/etc/nginx/ssl/nettopology.crt"
@@ -404,6 +427,37 @@ if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
 
   NGINX_CONF="/etc/nginx/sites-available/nettopology.conf"
   cat << EOF > "$NGINX_CONF"
+# HTTP standard port 80 listener (direct access without port specification)
+server {
+    listen 80;
+    listen [::]:80;
+    server_name $PANEL_DOMAIN _;
+
+    location / {
+        proxy_pass http://127.0.0.1:$FRONTEND_PORT;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:$FRONTEND_PORT/api/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 300s;
+    }
+}
+
+# HTTPS SSL listener
 server {
     listen $SSL_PORT ssl http2;
     listen [::]:$SSL_PORT ssl http2;
@@ -431,7 +485,7 @@ server {
         proxy_send_timeout 86400s;
     }
 
-    # Direct Backend API routing (also proxied by Node on frontend port)
+    # Direct Backend API routing (proxied by Node on frontend port)
     location /api/ {
         proxy_pass http://127.0.0.1:$FRONTEND_PORT/api/;
         proxy_set_header Host \$host;
@@ -445,10 +499,10 @@ EOF
 
   ln -sf "$NGINX_CONF" "/etc/nginx/sites-enabled/nettopology.conf"
   if nginx -t &>/dev/null; then
-    systemctl reload nginx || systemctl restart nginx
-    log_success "Nginx successfully configured with SSL on port $SSL_PORT!"
+    systemctl reload nginx 2>/dev/null || systemctl restart nginx 2>/dev/null || true
+    log_success "Nginx successfully configured with SSL on port $SSL_PORT and HTTP on port 80!"
   else
-    log_warning "Nginx configuration test failed. Falling back to direct ports."
+    log_warning "Nginx configuration test failed. Continuing with direct Node.js port access."
   fi
 fi
 
@@ -460,25 +514,46 @@ if command -v ufw &>/dev/null && ufw status | grep -q "active"; then
   ufw allow "$FRONTEND_PORT/tcp" comment 'NetTopology Frontend UI' 2>/dev/null || true
   ufw allow "$BACKEND_PORT/tcp" comment 'NetTopology Backend Cisco API' 2>/dev/null || true
   if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
+    ufw allow 80/tcp comment 'NetTopology Nginx HTTP' 2>/dev/null || true
     ufw allow "$SSL_PORT/tcp" comment 'NetTopology HTTPS SSL' 2>/dev/null || true
   fi
 fi
 
 # ------------------------------------------------------------------------------
-# 9. Installation Report Summary
+# 9. Health & HTTP Verification Check
+# ------------------------------------------------------------------------------
+log_step "Testing live HTTP response from NetTopology engine..."
+HTTP_OK=false
+for i in {1..8}; do
+  if curl -s -f -o /dev/null --connect-timeout 2 "http://127.0.0.1:${FRONTEND_PORT}/"; then
+    HTTP_OK=true
+    log_success "✓ Web interface response verified on http://127.0.0.1:${FRONTEND_PORT} (HTTP 200 OK)!"
+    break
+  fi
+  sleep 1
+done
+
+if [ "$HTTP_OK" = false ]; then
+  log_warning "Could not confirm HTTP 200 within 8s. Checking recent logs:"
+  journalctl -u nettopology.service -n 25 --no-pager || true
+fi
+
+# ------------------------------------------------------------------------------
+# 10. Installation Report Summary
 # ------------------------------------------------------------------------------
 echo ""
-log_success "NETTOPOLOGY INSTALLATION COMPLETED SUCCESSFULLY!"
+log_success "NETTOPOLOGY V${PANEL_VERSION} INSTALLATION COMPLETED SUCCESSFULLY!"
 echo -e "${CYAN}======================================================================${NC}"
 echo -e "  ${BOLD}NetTopology Dual-Engine Services are active under systemd!${NC}"
 echo -e "${CYAN}======================================================================${NC}"
-echo -e "  🌐 ${BOLD}Frontend Web UI:${NC}        ${GREEN}${BOLD}http://${PANEL_DOMAIN}:${FRONTEND_PORT}${NC}"
-echo -e "  ⚙️  ${BOLD}Backend Cisco API Engine:${NC} ${BLUE}${BOLD}http://${PANEL_DOMAIN}:${BACKEND_PORT}/api/topology${NC}"
-echo -e "  🌉 ${BOLD}Interconnection Bridge:${NC}   ${PURPLE}${BOLD}Active (Port ${FRONTEND_PORT} proxies to Port ${BACKEND_PORT})${NC}"
+echo -e "  🌐 ${BOLD}Direct Web UI (Port ${FRONTEND_PORT}):${NC}   ${GREEN}${BOLD}http://${PANEL_DOMAIN}:${FRONTEND_PORT}${NC}"
 if [[ "$ENABLE_NGINX" =~ ^[Yy]$ ]]; then
-echo -e "  🔒 ${BOLD}HTTPS / SSL Secure URL:${NC}   ${GREEN}${BOLD}https://${PANEL_DOMAIN}:${SSL_PORT}${NC}"
+echo -e "  🌍 ${BOLD}Standard HTTP Access:${NC}        ${GREEN}${BOLD}http://${PANEL_DOMAIN}${NC}"
+echo -e "  🔒 ${BOLD}HTTPS / SSL Secure URL:${NC}      ${GREEN}${BOLD}https://${PANEL_DOMAIN}:${SSL_PORT}${NC}"
 fi
-echo -e "  📂 ${BOLD}Installation Path:${NC}        ${YELLOW}${INSTALL_DIR}${NC}"
+echo -e "  ⚙️  ${BOLD}Backend Cisco API Engine:${NC}    ${BLUE}${BOLD}http://${PANEL_DOMAIN}:${BACKEND_PORT}/api/topology${NC}"
+echo -e "  🌉 ${BOLD}Interconnection Bridge:${NC}      ${PURPLE}${BOLD}Active (Port ${FRONTEND_PORT} proxies to Port ${BACKEND_PORT})${NC}"
+echo -e "  📂 ${BOLD}Installation Path:${NC}           ${YELLOW}${INSTALL_DIR}${NC}"
 echo -e "${CYAN}======================================================================${NC}"
 echo -e "  ⚙️  ${BOLD}Service Commands:${NC}"
 echo -e "     • Check Status:   ${YELLOW}systemctl status nettopology${NC}"

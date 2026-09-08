@@ -16,3 +16,12 @@
 - **Modal Backdrops**: All modals must use `.modal-backdrop-blur` with `data-modal-backdrop="true"` for a dark blurred glassmorphism backdrop.
 - **Port Visualization**: Switch faceplates must use the dedicated RJ-45 vector component (`NetworkPortSvg`).
 - **High-Contrast Light Theme**: All buttons, terminal components, and badges must maintain pristine readability and high contrast in light mode.
+
+## 4. Semantic Versioning on Every Change (Mandatory / اجباری - نسخه‌گذاری دائمی)
+- **قانون الزامی ثبت نسخه (Versioning)**: بعد از هر تغییر، رفع باگ، اصلاح اسکریپت یا اضافه شدن قابلیت، هوش مصنوعی **موظف است نسخه پروژه (Version) را به‌روزرسانی و ثبت کند** (بر اساس سیستم نسخه‌بندی سمانتیک `MAJOR.MINOR.PATCH`).
+- نسخه جدید باید در تمام بخش‌های زیر ارتقا یابد:
+  1. فایل `package.json` (فیلد `"version"`)
+  2. متغیر `PANEL_VERSION` در اسکریپت‌های نصب (`setup-panel.sh` و `install.sh`)
+  3. فایل `README.md` (در بخش Badge و سربرگ نسخه فارسی و انگلیسی)
+  4. متن کامیت گیت (ذکر برچسب نسخه مثلاً `v1.1.0`)
+

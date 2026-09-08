@@ -1,7 +1,11 @@
 # NetTopology 🌐
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر)
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
+
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۱.۰
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.1.0
 
 ---
 
@@ -149,7 +153,18 @@ npm start
 
 ## دستورالعمل توسعه و مشارکت هوش مصنوعی
 برای هر هوش مصنوعی (AI Coding Agent) یا توسعه‌دهنده‌ای که بر روی این پروژه کد می‌زند:
-> **قانون دائمی:** هر قابلیت، ماژول یا بهینه‌سازی جدیدی که به پروژه اضافه می‌شود **باید بلافاصله در فایل `README.md` (هم در بخش فارسی و هم انگلیسی)** مستند و ثبت گردد. همچنین تمامی تغییرات باید خودکار روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
+> ۱. **قانون به‌روزرسانی README**: هر قابلیت، ماژول یا بهینه‌سازی جدیدی که به پروژه اضافه می‌شود **باید بلافاصله در فایل `README.md` (هم در بخش فارسی و هم انگلیسی)** مستند و ثبت گردد.
+> ۲. **قانون الزامی ثبت نسخه (Versioning)**: بعد از هر بار تغییر، رفع باگ یا اصلاح اسکریپت‌ها، هوش مصنوعی **موظف است نسخه پروژه را بر اساس استاندارد Semantic Versioning ارتقا دهد** (`package.json`، `setup-panel.sh`، `install.sh`، `README.md` و پیام‌های کامیت Git).
+> ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
+
+### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
+- **نسخه ۱.۱.۰ (v1.1.0 - رفع مشکل عدم نمایش صفحه وب)**:
+  - **ریشه‌یابی باگ قبلی:** در نسخه‌های پیشین، استفاده از متغیر `import.meta.url` درون باندل CommonJS (`dist/server.cjs`) منجر به خطای مهلک زمان اجرا (`TypeError [ERR_INVALID_ARG_TYPE]`) می‌شد و پراسس نود در ابتدای شروع به کار کرش می‌کرد. همچنین اسکریپت پایتون به اشتباه در مسیر `dist/backend/server.py` جستجو می‌شد.
+  - **اصلاحات اعمال‌شده:** 
+    - پیاده‌سازی متد ایمن شناسایی مسیر ریشه پروژه (`projectRoot`) سازگار با هر دو محیط توسعه TSX و کامپایل CJS.
+    - تصحیح مسیر لودینگ موتور پایتون سیسکو و سرو فایل‌های استاتیک ریکت.
+    - پیکربندی Nginx برای شنود بر روی هر دو پروتکل HTTP استاندارد (پورت ۸۰) و HTTPS رمزنگاری‌شده با گواهی خودکار SSL.
+    - اضافه شدن مکانیزم بررسی زنده پاسخ‌دهی HTTP (Health Check Verification) پس از نصب سرویس.
 
 ---
 ---
@@ -280,7 +295,17 @@ Open `http://localhost:3000` in your web browser.
 ## AI Agent Instructions
 Any AI assistant, coding agent, or human contributor working on this repository MUST follow the guidelines defined in `AGENTS.md`:
 1. **README Maintenance:** Whenever new features, tools, endpoints, or UI capabilities are introduced, you **MUST** update `README.md` (both the Persian and English sections) to document the additions.
-2. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
+2. **Mandatory Semantic Versioning:** After every change, bugfix, or script update, you **MUST** increment the project version across `package.json`, `setup-panel.sh`, `install.sh`, `README.md`, and Git commit tags.
+3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
+
+### Release Notes & Bug Fixes
+- **Version 1.1.0 (Web UI Display & Daemon Fix)**:
+  - **Root Cause of Web UI Failure:** In previous versions, the bundled CommonJS output (`dist/server.cjs`) crashed at launch because `import.meta.url` evaluates to `undefined` in CommonJS, triggering `TypeError [ERR_INVALID_ARG_TYPE]`. Furthermore, the Python Cisco engine path was incorrectly queried in `dist/backend/server.py`.
+  - **Applied Resolution:**
+    - Replaced `import.meta.url` with a dual-mode environment detector (`projectRoot`) safe for both TSX (dev) and compiled CJS (production).
+    - Fixed directory resolution for Python backend process spawning and static assets delivery.
+    - Updated Nginx configuration to listen on both standard HTTP (Port 80) and HTTPS (Port 8443) with seamless Reverse Proxying.
+    - Added automatic live HTTP health check verification (polling for HTTP 200 OK) at the end of installation.
 
 ---
 *Maintained with ❤️ by Masoud Shahbazi*
