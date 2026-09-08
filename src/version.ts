@@ -10,9 +10,30 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.4.4';
+export const APP_VERSION = '1.5.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.5.0',
+    releaseDate: '2026-09-08',
+    type: 'minor',
+    title: 'قابلیت کشیدن و رها کردن (Drag & Drop) تجهیزات بین طبقات و ساختمان‌ها در نقشه استقرار فیزیکی',
+    title_en: 'Drag & Drop Physical Device Placement Across Buildings & Floors in Physical Map',
+    changes: [
+      'امکان درگ اند دراپ (Drag & Drop) تعاملی تجهیزات شبکه بین طبقات مختلف یک ساختمان یا جابجایی بین ساختمان‌های مجزا در نمای استقرار فیزیکی (Physical Placement)',
+      'به‌روزرسانی آنی و زنده رابط کاربری (Optimistic UI) با ارسال همزمان درخواست تغییر موقعیت فیزیکی به بک‌اند و بازگشت خودکار در صورت بروز خطا',
+      'افزودن امکان تعریف ساختمان جدید و طبقات جدید به صورت داینامیک با مودال‌های مدرن و شیشه‌ای',
+      'افزودن دکمه و مودال جابجایی دستی (Manual Relocation) برای دستگاه‌ها جهت پشتیبانی از انتخاب دقیق یا سفارشی ساختمان و طبقه مقصد',
+      'نمایش وضعیت زنده، پیام‌های راهنما، انیمیشن ناحیه هدف (Drop Zone) و بازخورد صوتی/بصری تغییر مکان'
+    ],
+    changes_en: [
+      'Interactive HTML5 Drag & Drop for network devices between floors and across different buildings in the Physical Placement schematic view',
+      'Optimistic UI state updates with real-time backend persistence (PUT /api/devices/:id) and automatic rollback upon error',
+      'Dynamic creation of custom buildings and floors via clean glassmorphic modals to expand physical topology hierarchy',
+      'Manual relocation modal offering accessible dropdown and custom input selectors for precision placement without drag gestures',
+      'Live visual feedback including animated drop zones, moving indicator pills, and toast status notifications'
+    ]
+  },
   {
     version: '1.4.4',
     releaseDate: '2026-09-08',

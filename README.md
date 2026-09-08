@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.4.4-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۴.۴
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.4.4
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۵.۰
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.5.0
 
 ---
 
@@ -206,6 +206,13 @@ npm start
 > ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
 
 ### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
+- **نسخه ۱.۵.۰ (v1.5.0 - قابلیت کشیدن و رها کردن تجهیزات بین طبقات و ساختمان‌ها در نقشه استقرار فیزیکی)**:
+  - **قابلیت درگ اند دراپ (Drag & Drop):** پشتیبانی کامل از کشیدن و رها کردن تعاملی تجهیزات شبکه بین طبقات مختلف یک ساختمان و یا انتقال به ساختمان‌های دیگر در نمای شماتیک فیزیکی (`Physical Placement`).
+  - **به‌روزرسانی آنی و زنده (Optimistic UI):** جابجایی بلافاصله در رابط کاربری منعکس شده و درخواست ویرایش مشخصات فیزیکی به اندپوینت `PUT /api/devices/:id` ارسال می‌شود؛ در صورت بروز خطا وضعیت به طور خودکار بازگردانی (Rollback) می‌شود.
+  - **تعریف پویا ساختمان و طبقه جدید:** افزودن دکمه‌های «افزودن ساختمان» و «افزودن طبقه» با مودال‌های مدرن و استایل هماهنگ شیشه‌ای `spatial-glass` جهت ساخت فضاهای فیزیکی جدید و رها کردن تجهیزات در آن‌ها.
+  - **جابجایی دستی (Manual Relocate Modal):** امکان انتخاب ساختمان و طبقه مقصد به صورت دستی از طریق فرم انتخابی با پشتیبانی از تعریف نام سفارشی بدون نیاز به ژست درگ.
+  - **نواحی هدف هوشمند (Drop Zones):** انیمیشن‌های هایلایت فیروزه‌ای، نشانگر متحرک، پیام‌های وضعیت و بازخورد زنده.
+
 - **نسخه ۱.۴.۴ (v1.4.4 - سازگاری کامل مودال بازرسی پورت با تمامی تم‌ها و خلوت‌سازی نوار کناری و پروفایل)**:
   - **سازگاری ۱۰۰٪ تم در مودال بازرسی پورت (Port Inspector Modal):** اصلاح کلیه بخش‌های مودال شامل جدول پورت‌ها، فیلترها، فرم ویرایش و پنجره تایید نهایی تغییرات (Confirmation Summary) با کلاس‌های شیشه‌ای و تم‌پذیر `spatial-glass` بدون پس‌زمینه سفید ثابت.
   - **خلوت‌سازی سایدبار:** حذف باکس هشدار قطعی تجهیزات (Outage Alert) و شماره نسخه از پاورقی سایدبار ناوبری.
@@ -415,6 +422,13 @@ Any AI assistant, coding agent, or human contributor working on this repository 
 3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
 
 ### Release Notes & Bug Fixes
+- **Version 1.5.0 (Drag & Drop Physical Device Placement Across Buildings & Floors)**:
+  - **Interactive Drag & Drop:** Full HTML5 drag-and-drop mechanics enabling network operators to move switches, routers, and access points freely across floors within the same building or relocate them to different buildings in the Physical Placement view.
+  - **Optimistic UI with Real-time Backend Sync:** Instant DOM updates with immediate API calls to `PUT /api/devices/:id` (`building`, `floor`) and automatic graceful rollback if the backend request fails.
+  - **Dynamic Floor & Building Creation:** Added "Add Building" and "Add Floor" capabilities with clean, modern glassmorphic modals so users can define new physical environments on the fly.
+  - **Manual Relocate Modal:** Accessible manual relocation modal with dropdown selectors and custom name inputs for precise location changes without drag interactions.
+  - **Drop Zones & Visual Feedback:** Vivid cyan-glowing drop targets, grip drag handles, live moving toast notifications, and empty-floor drop targets.
+
 - **Version 1.4.4 (Port Inspector Modal Theme Harmonization & UI Decluttering)**:
   - **Full Theme Harmonization in Port Inspector Modal:** Redesigned all modal surfaces including switch ports table, filter bar, port configuration form, and confirmation summary dialog to dynamically adapt to all themes (Obsidian, Emerald, Cobalt, Rose, Amber, and Light).
   - **Sidebar Decluttering:** Removed Outage Alert badge and version number from the navigation sidebar.

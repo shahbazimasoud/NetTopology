@@ -24,10 +24,19 @@ import {
   RotateCcw,
   Check,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  GripVertical,
+  Plus,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react';
 import { TopologyData, Device, TopologyLink, TopologyNode } from '../types';
 import { useLanguage } from '../i18n';
+import { updateDevice } from '../services/api';
 
 interface SchematicTopologyViewProps {
   topology: TopologyData | null;
@@ -121,7 +130,144 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const [showToolbarInFullMode, setShowToolbarInFullMode] = useState(false);
   const [isLegendOpen, setIsLegendOpen] = useState(false);
 
+  // Local nodes state for instant optimistic updates and drag & drop in Physical view
+  const [localNodes, setLocalNodes] = useState<TopologyNode[]>([]);
+
+  useEffect(() => {
+    if (topology?.nodes) {
+      setLocalNodes(topology.nodes);
+    }
+  }, [topology?.nodes]);
+
+  // Custom added buildings and floors
+  const [customBuildings, setCustomBuildings] = useState<string[]>([]);
+  const [customFloors, setCustomFloors] = useState<Record<string, string[]>>({});
+
+  // Drag and drop states for Physical view
+  const [draggedDevice, setDraggedDevice] = useState<{
+    id: string;
+    name: string;
+    type: string;
+    fromBuilding: string;
+    fromFloor: string;
+  } | null>(null);
+
+  const [dragOverTarget, setDragOverTarget] = useState<{
+    building: string;
+    floor: string;
+  } | null>(null);
+
+  const [movingDeviceId, setMovingDeviceId] = useState<string | null>(null);
+  const [feedbackToast, setFeedbackToast] = useState<{
+    type: 'success' | 'error' | 'info';
+    message: string;
+  } | null>(null);
+
+  // Modals for adding floor/building and manual relocation
+  const [addFloorBuilding, setAddFloorBuilding] = useState<string | null>(null);
+  const [newFloorInput, setNewFloorInput] = useState('');
+  const [showAddBuildingModal, setShowAddBuildingModal] = useState(false);
+  const [newBuildingInput, setNewBuildingInput] = useState('');
+  const [relocateDevice, setRelocateDevice] = useState<TopologyNode | null>(null);
+  const [relocateTargetBuilding, setRelocateTargetBuilding] = useState('');
+  const [relocateTargetFloor, setRelocateTargetFloor] = useState('');
+  const [customRelocateBuilding, setCustomRelocateBuilding] = useState('');
+  const [customRelocateFloor, setCustomRelocateFloor] = useState('');
+
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleMoveDevice = async (deviceId: string, targetBuilding: string, targetFloor: string) => {
+    const dev = localNodes.find((n) => n.id === deviceId);
+    if (!dev) return;
+
+    const trimmedBuilding = targetBuilding.trim();
+    const trimmedFloor = targetFloor.trim();
+
+    if (!trimmedBuilding || !trimmedFloor) return;
+
+    const currentBuilding = dev.building || (isEn ? 'Other Buildings' : 'سایر ساختمان‌ها');
+    const currentFloor = dev.floor || (isEn ? 'Unassigned Floor' : 'طبقه نامشخص');
+
+    if (currentBuilding === trimmedBuilding && currentFloor === trimmedFloor) {
+      setFeedbackToast({
+        type: 'info',
+        message: isEn
+          ? `Device "${dev.name}" is already situated in ${trimmedBuilding} > ${trimmedFloor}.`
+          : `تجهیز «${dev.name}» هم‌اکنون در ${trimmedBuilding} > ${trimmedFloor} مستقر است.`,
+      });
+      setTimeout(() => setFeedbackToast(null), 3500);
+      return;
+    }
+
+    // Optimistic UI update
+    const previousNodes = [...localNodes];
+    setLocalNodes((prev) =>
+      prev.map((n) =>
+        n.id === deviceId
+          ? { ...n, building: trimmedBuilding, floor: trimmedFloor }
+          : n
+      )
+    );
+    setMovingDeviceId(deviceId);
+
+    try {
+      await updateDevice(deviceId, {
+        building: trimmedBuilding,
+        floor: trimmedFloor,
+      });
+
+      setFeedbackToast({
+        type: 'success',
+        message: t('topology_physical_move_success', {
+          name: dev.name,
+          building: trimmedBuilding,
+          floor: trimmedFloor,
+        }),
+      });
+      setTimeout(() => setFeedbackToast(null), 4500);
+
+      // Trigger global refresh to sync all views across the application
+      onRefresh();
+    } catch (err: any) {
+      // Rollback optimistic update on failure
+      setLocalNodes(previousNodes);
+      setFeedbackToast({
+        type: 'error',
+        message: t('topology_physical_move_error', {
+          error: err?.message || 'Failed to update device placement',
+        }),
+      });
+      setTimeout(() => setFeedbackToast(null), 5000);
+    } finally {
+      setMovingDeviceId(null);
+      setDraggedDevice(null);
+      setDragOverTarget(null);
+    }
+  };
+
+  const handleAddFloor = (building: string) => {
+    const floorName = newFloorInput.trim();
+    if (!floorName) return;
+    setCustomFloors((prev) => ({
+      ...prev,
+      [building]: Array.from(new Set([...(prev[building] || []), floorName])),
+    }));
+    setAddFloorBuilding(null);
+    setNewFloorInput('');
+  };
+
+  const handleAddBuilding = () => {
+    const bldgName = newBuildingInput.trim();
+    if (!bldgName) return;
+    setCustomBuildings((prev) => Array.from(new Set([...prev, bldgName])));
+    const defaultFloor = isEn ? 'Floor 1' : 'طبقه ۱';
+    setCustomFloors((prev) => ({
+      ...prev,
+      [bldgName]: Array.from(new Set([...(prev[bldgName] || []), defaultFloor])),
+    }));
+    setShowAddBuildingModal(false);
+    setNewBuildingInput('');
+  };
 
   // Toggle Full Mode (Hides header, sidebar, top menu, and maximizes map to full browser viewport)
   const toggleFullMode = useCallback(() => {
@@ -436,19 +582,64 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
   // Grouped hierarchy for Physical View
   const physicalHierarchy = useMemo(() => {
-    if (!topology) return {};
-    const groups: Record<string, Record<string, Device[]>> = {};
+    const groups: Record<string, Record<string, TopologyNode[]>> = {};
 
-    topology.nodes.forEach((d) => {
-      const b = d.building || 'سایر ساختمان‌ها';
-      const f = d.floor || 'طبقه نامشخص';
+    // 1. Prepopulate custom added buildings
+    customBuildings.forEach((b) => {
+      if (!groups[b]) groups[b] = {};
+    });
+
+    // 2. Prepopulate custom added floors
+    Object.entries(customFloors).forEach(([b, floors]) => {
+      if (!groups[b]) groups[b] = {};
+      (floors as string[]).forEach((f) => {
+        if (!groups[b][f]) groups[b][f] = [];
+      });
+    });
+
+    // 3. Populate from localNodes
+    localNodes.forEach((d) => {
+      const b = d.building || (isEn ? 'Other Buildings' : 'سایر ساختمان‌ها');
+      const f = d.floor || (isEn ? 'Unassigned Floor' : 'طبقه نامشخص');
       if (!groups[b]) groups[b] = {};
       if (!groups[b][f]) groups[b][f] = [];
       groups[b][f].push(d);
     });
 
     return groups;
-  }, [topology]);
+  }, [localNodes, customBuildings, customFloors, isEn]);
+
+  // Helper list of all buildings for manual relocation
+  const allBuildingOptions = useMemo(() => {
+    const set = new Set<string>();
+    localNodes.forEach((n) => {
+      if (n.building) set.add(n.building);
+    });
+    customBuildings.forEach((b) => set.add(b));
+    if (set.size === 0) {
+      set.add(isEn ? 'Central HQ Building' : 'ساختمان مرکزی');
+    }
+    return Array.from(set);
+  }, [localNodes, customBuildings, isEn]);
+
+  // Helper list of floors for the selected building in relocation modal
+  const allFloorOptionsForSelectedBuilding = useMemo(() => {
+    const targetBldg = relocateTargetBuilding || allBuildingOptions[0] || '';
+    const set = new Set<string>();
+    localNodes
+      .filter((n) => n.building === targetBldg)
+      .forEach((n) => {
+        if (n.floor) set.add(n.floor);
+      });
+    if (customFloors[targetBldg]) {
+      customFloors[targetBldg].forEach((f) => set.add(f));
+    }
+    if (set.size === 0) {
+      set.add(isEn ? 'Floor 1' : 'طبقه ۱');
+      set.add(isEn ? 'Floor 2' : 'طبقه ۲');
+    }
+    return Array.from(set);
+  }, [relocateTargetBuilding, allBuildingOptions, localNodes, customFloors, isEn]);
 
   if (loading) {
     return (
@@ -1003,9 +1194,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             </div>
           </div>
         ) : (
-          /* VIEW 2: Physical Building & Floor Schematic Map */
+          /* VIEW 2: Physical Building & Floor Schematic Map with Drag & Drop */
           <div className="flex-1 h-full overflow-y-auto p-4 space-y-4">
-            <div className="spatial-glass p-4 rounded-xl border border-white/10 shadow-xl flex items-center justify-between">
+            {/* Header / Guide Bar */}
+            <div className="spatial-glass p-4 rounded-xl border border-white/10 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2 glow-text-cyan">
                   <Building2 className="w-4 h-4 text-cyan-400" />
@@ -1014,137 +1206,379 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                 <p className="text-xs text-slate-400 mt-1">
                   {t('topology_physical_desc')}
                 </p>
+                <div className="flex items-center gap-2 mt-2 text-[11px] text-cyan-300/90 font-medium">
+                  <Move className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                  <span>{t('topology_physical_drag_hint')}</span>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={toggleFullMode}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-white/15 text-xs text-slate-200 transition active:scale-95"
-                title={isFullMode ? t('topology_exit_full_mode') : t('topology_fullscreen_title')}
-              >
-                {isFullMode ? <Minimize2 className="w-4 h-4 text-amber-300" /> : <Maximize2 className="w-4 h-4 text-cyan-300" />}
-                <span>{isFullMode ? t('topology_exit_full_mode') : t('topology_fullscreen_title')}</span>
-              </button>
+
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddBuildingModal(true);
+                    setNewBuildingInput('');
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-medium border border-white/15 shadow-lg transition active:scale-95 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{t('topology_physical_add_bldg_btn')}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={toggleFullMode}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-white/15 text-xs text-slate-200 transition active:scale-95 cursor-pointer"
+                  title={isFullMode ? t('topology_exit_full_mode') : t('topology_fullscreen_title')}
+                >
+                  {isFullMode ? <Minimize2 className="w-4 h-4 text-amber-300" /> : <Maximize2 className="w-4 h-4 text-cyan-300" />}
+                  <span>{isFullMode ? t('topology_exit_full_mode') : t('topology_fullscreen_title')}</span>
+                </button>
+              </div>
             </div>
+
+            {/* Notification / Feedback Toast */}
+            {feedbackToast && (
+              <div
+                className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs shadow-xl backdrop-blur-xl transition-all duration-300 ${
+                  feedbackToast.type === 'success'
+                    ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
+                    : feedbackToast.type === 'error'
+                    ? 'bg-rose-950/80 border-rose-500/50 text-rose-200'
+                    : 'bg-cyan-950/80 border-cyan-500/50 text-cyan-200'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {feedbackToast.type === 'success' ? (
+                    <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : feedbackToast.type === 'error' ? (
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  ) : (
+                    <Info className="w-4 h-4 text-cyan-400 shrink-0" />
+                  )}
+                  <span>{feedbackToast.message}</span>
+                </div>
+                <button
+                  onClick={() => setFeedbackToast(null)}
+                  className="text-white/60 hover:text-white p-1 rounded-lg hover:bg-white/10"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Active Drag Hint Pill when dragging across the screen */}
+            {draggedDevice && (
+              <div className="p-2.5 rounded-xl bg-cyan-950/90 border border-cyan-400/60 shadow-[0_0_20px_rgba(6,182,212,0.3)] flex items-center justify-between gap-3 text-xs text-cyan-200">
+                <div className="flex items-center gap-2">
+                  <Move className="w-4 h-4 text-cyan-400 animate-bounce" />
+                  <span>
+                    {isEn
+                      ? `Moving "${draggedDevice.name}" — Release over any floor to relocate.`
+                      : `در حال کشیدن «${draggedDevice.name}» — روی هر طبقه‌ای رها کنید تا مستقر شود.`}
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono bg-cyan-500/20 px-2 py-0.5 rounded border border-cyan-400/30">
+                  {draggedDevice.fromBuilding} &gt; {draggedDevice.fromFloor}
+                </span>
+              </div>
+            )}
 
             {/* Buildings Grid */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {Object.entries(physicalHierarchy).map(([bldgName, floors]) => (
-                <div
-                  key={bldgName}
-                  className="spatial-glass border border-white/10 rounded-xl p-4 shadow-xl space-y-3"
-                >
-                  {/* Building Title */}
-                  <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                        <Building2 className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-white">{bldgName}</h4>
-                        <span className="text-[11px] text-slate-400">
-                          {t('topology_devices_in_building', { count: Object.values(floors).reduce((acc, devs) => acc + devs.length, 0) })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+              {Object.entries(physicalHierarchy).map(([bldgName, floors]) => {
+                const totalDevicesInBldg = Object.values(floors).reduce(
+                  (acc, devs) => acc + devs.length,
+                  0
+                );
 
-                  {/* Floors in this building */}
-                  <div className="space-y-3">
-                    {Object.entries(floors).map(([floorName, devices]) => (
-                      <div
-                        key={floorName}
-                        className="bg-slate-900/50 border border-white/5 rounded-xl p-3 space-y-2.5"
-                      >
-                        {/* Floor Label */}
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-1.5 font-semibold text-cyan-400">
-                            <Layers className="w-3.5 h-3.5" />
-                            <span>{floorName}</span>
-                          </div>
-                          <span className="text-[10px] text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded-lg border border-white/10">
-                            {t('topology_devices_on_floor', { count: devices.length })}
+                return (
+                  <div
+                    key={bldgName}
+                    className="spatial-glass border border-white/10 rounded-xl p-4 shadow-xl space-y-3"
+                  >
+                    {/* Building Title & Add Floor */}
+                    <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                          <Building2 className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-white">{bldgName}</h4>
+                          <span className="text-[11px] text-slate-400">
+                            {t('topology_devices_in_building', { count: totalDevicesInBldg })}
                           </span>
                         </div>
+                      </div>
 
-                        {/* Devices inside Floor */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          {devices.map((device) => (
-                            <div
-                              key={device.id}
-                              onClick={() => setSelectedNodeId(device.id)}
-                              className={`p-3 rounded-xl border transition cursor-pointer shadow-lg backdrop-blur-xl ${
-                                selectedNodeId === device.id
-                                  ? 'spatial-glass border-cyan-400 ring-2 ring-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
-                                  : device.is_online
-                                  ? 'spatial-glass spatial-glass-hover border-white/10'
-                                  : 'spatial-glass border-rose-500/30 bg-rose-950/20'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between mb-1.5">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <div
-                                    className={`p-1.5 rounded-lg ${
-                                      device.type === 'switch'
-                                        ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                                        : device.type === 'router'
-                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                        : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                                    }`}
-                                  >
-                                    {device.type === 'switch' ? (
-                                      <Server className="w-3 h-3" />
-                                    ) : device.type === 'router' ? (
-                                      <RouterIcon className="w-3 h-3" />
-                                    ) : (
-                                      <Wifi className="w-3 h-3" />
-                                    )}
-                                  </div>
-                                  <span className="font-bold text-xs text-white truncate font-mono">
-                                    {device.name}
-                                  </span>
-                                </div>
-                                <span
-                                  className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
-                                    device.is_online
-                                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                                  }`}
-                                >
-                                  {device.is_online ? 'ONLINE' : 'OFFLINE'}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddFloorBuilding(bldgName);
+                          setNewFloorInput('');
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-xs transition cursor-pointer"
+                        title={t('topology_physical_add_floor_btn')}
+                      >
+                        <Plus className="w-3.5 h-3.5 text-cyan-400" />
+                        <span className="text-[11px] font-medium">{t('topology_physical_add_floor_btn')}</span>
+                      </button>
+                    </div>
+
+                    {/* Floors in this building */}
+                    <div className="space-y-3">
+                      {Object.entries(floors).map(([floorName, devices]) => {
+                        const isDropHovered =
+                          dragOverTarget?.building === bldgName &&
+                          dragOverTarget?.floor === floorName;
+                        const isAnyDragging = draggedDevice !== null;
+
+                        return (
+                          <div
+                            key={floorName}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.dataTransfer.dropEffect = 'move';
+                            }}
+                            onDragEnter={(e) => {
+                              e.preventDefault();
+                              setDragOverTarget({ building: bldgName, floor: floorName });
+                            }}
+                            onDragLeave={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              if (
+                                e.clientX <= rect.left ||
+                                e.clientX >= rect.right ||
+                                e.clientY <= rect.top ||
+                                e.clientY >= rect.bottom
+                              ) {
+                                setDragOverTarget((prev) =>
+                                  prev?.building === bldgName && prev?.floor === floorName
+                                    ? null
+                                    : prev
+                                );
+                              }
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              let deviceId = '';
+                              try {
+                                const raw = e.dataTransfer.getData('application/json');
+                                if (raw) {
+                                  const parsed = JSON.parse(raw);
+                                  deviceId = parsed.deviceId;
+                                }
+                              } catch (err) {}
+                              if (!deviceId) {
+                                deviceId =
+                                  e.dataTransfer.getData('text/plain') ||
+                                  (draggedDevice ? draggedDevice.id : '');
+                              }
+
+                              if (deviceId) {
+                                handleMoveDevice(deviceId, bldgName, floorName);
+                              }
+                              setDragOverTarget(null);
+                            }}
+                            className={`rounded-xl p-3.5 space-y-2.5 transition-all duration-200 border ${
+                              isDropHovered
+                                ? 'bg-cyan-950/50 border-cyan-400 ring-2 ring-cyan-400/50 shadow-[0_0_25px_rgba(6,182,212,0.35)] scale-[1.01]'
+                                : isAnyDragging
+                                ? 'bg-slate-900/60 border-dashed border-cyan-500/40 hover:border-cyan-400 hover:bg-cyan-950/20'
+                                : 'bg-slate-900/50 border-white/5'
+                            }`}
+                          >
+                            {/* Floor Label */}
+                            <div className="flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-1.5 font-semibold text-cyan-400">
+                                <Layers className="w-3.5 h-3.5" />
+                                <span>{floorName}</span>
+                              </div>
+                              <span className="text-[10px] text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded-lg border border-white/10 font-mono">
+                                {t('topology_devices_on_floor', { count: devices.length })}
+                              </span>
+                            </div>
+
+                            {/* Drop Zone Active Banner */}
+                            {isDropHovered && draggedDevice && (
+                              <div className="flex items-center justify-center gap-2 p-2 rounded-lg bg-cyan-500/20 border border-cyan-400 text-cyan-200 text-xs font-medium animate-pulse">
+                                <CheckCircle className="w-4 h-4 text-cyan-300" />
+                                <span>
+                                  {t('topology_physical_drop_here', { floor: floorName })}
                                 </span>
                               </div>
+                            )}
 
-                              <div className="text-[11px] font-mono font-bold text-indigo-300 mb-1">
-                                {device.ip}
+                            {/* Empty Floor Drop Target */}
+                            {devices.length === 0 && (
+                              <div
+                                className={`p-4 rounded-xl border border-dashed text-center flex flex-col items-center justify-center gap-1.5 transition-all ${
+                                  isDropHovered
+                                    ? 'border-cyan-400 bg-cyan-500/20 text-cyan-200'
+                                    : 'border-white/10 text-slate-400 bg-black/10'
+                                }`}
+                              >
+                                <Move className="w-4 h-4 text-cyan-400 opacity-60" />
+                                <span className="text-xs">
+                                  {t('topology_physical_dropzone_empty')}
+                                </span>
                               </div>
+                            )}
 
-                              <div className="text-[10px] text-slate-400 space-y-0.5">
-                                <div>{t('topology_unit_label')} {device.unit}</div>
-                                {device.rack && (
-                                  <div className="text-slate-400 font-mono">{t('topology_rack_label')} {device.rack}</div>
-                                )}
-                              </div>
+                            {/* Devices inside Floor */}
+                            {devices.length > 0 && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                {devices.map((device) => {
+                                  const isBeingDragged = draggedDevice?.id === device.id;
+                                  const isCurrentlyMoving = movingDeviceId === device.id;
 
-                              <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px]">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onInspectPorts(device);
-                                  }}
-                                  className="text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 font-medium"
-                                >
-                                  <Cable className="w-3 h-3" />
-                                  <span>{t('topology_inspect_ports_btn')}</span>
-                                </button>
+                                  return (
+                                    <div
+                                      key={device.id}
+                                      draggable={!movingDeviceId}
+                                      onDragStart={(e) => {
+                                        e.dataTransfer.setData('text/plain', device.id);
+                                        e.dataTransfer.setData(
+                                          'application/json',
+                                          JSON.stringify({
+                                            deviceId: device.id,
+                                            fromBuilding: bldgName,
+                                            fromFloor: floorName,
+                                          })
+                                        );
+                                        e.dataTransfer.effectAllowed = 'move';
+                                        setDraggedDevice({
+                                          id: device.id,
+                                          name: device.name,
+                                          type: device.type,
+                                          fromBuilding: bldgName,
+                                          fromFloor: floorName,
+                                        });
+                                      }}
+                                      onDragEnd={() => {
+                                        setDraggedDevice(null);
+                                        setDragOverTarget(null);
+                                      }}
+                                      onClick={() => setSelectedNodeId(device.id)}
+                                      className={`p-3 rounded-xl border transition shadow-lg backdrop-blur-xl select-none ${
+                                        isBeingDragged
+                                          ? 'opacity-30 border-dashed border-cyan-400 ring-2 ring-cyan-400/40 scale-95 cursor-grabbing'
+                                          : selectedNodeId === device.id
+                                          ? 'spatial-glass border-cyan-400 ring-2 ring-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-grab hover:shadow-2xl'
+                                          : device.is_online
+                                          ? 'spatial-glass spatial-glass-hover border-white/10 cursor-grab hover:shadow-2xl'
+                                          : 'spatial-glass border-rose-500/30 bg-rose-950/20 cursor-grab'
+                                      }`}
+                                    >
+                                      {/* Card Header with Grip Handle */}
+                                      <div className="flex items-center justify-between mb-1.5">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                          <div
+                                            className="text-slate-400 hover:text-cyan-300 p-0.5 cursor-grab active:cursor-grabbing"
+                                            title={t('topology_physical_drag_hint')}
+                                          >
+                                            <GripVertical className="w-3.5 h-3.5" />
+                                          </div>
+                                          <div
+                                            className={`p-1.5 rounded-lg ${
+                                              device.type === 'switch'
+                                                ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                                                : device.type === 'router'
+                                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                                : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                            }`}
+                                          >
+                                            {device.type === 'switch' ? (
+                                              <Server className="w-3 h-3" />
+                                            ) : device.type === 'router' ? (
+                                              <RouterIcon className="w-3 h-3" />
+                                            ) : (
+                                              <Wifi className="w-3 h-3" />
+                                            )}
+                                          </div>
+                                          <span className="font-bold text-xs text-white truncate font-mono">
+                                            {device.name}
+                                          </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-1">
+                                          {isCurrentlyMoving ? (
+                                            <span className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                              <span>Moving...</span>
+                                            </span>
+                                          ) : (
+                                            <span
+                                              className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
+                                                device.is_online
+                                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                              }`}
+                                            >
+                                              {device.is_online ? 'ONLINE' : 'OFFLINE'}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div className="text-[11px] font-mono font-bold text-indigo-300 mb-1">
+                                        {device.ip}
+                                      </div>
+
+                                      <div className="text-[10px] text-slate-400 space-y-0.5">
+                                        <div>
+                                          {t('topology_unit_label')} {device.unit}
+                                        </div>
+                                        {device.rack && (
+                                          <div className="text-slate-400 font-mono">
+                                            {t('topology_rack_label')} {device.rack}
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Action Buttons: Inspect Ports & Manual Relocate */}
+                                      <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px]">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            onInspectPorts(device as unknown as Device);
+                                          }}
+                                          className="text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                                        >
+                                          <Cable className="w-3 h-3" />
+                                          <span>{t('topology_inspect_ports_btn')}</span>
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setRelocateDevice(device);
+                                            setRelocateTargetBuilding(bldgName);
+                                            setRelocateTargetFloor(floorName);
+                                            setCustomRelocateBuilding('');
+                                            setCustomRelocateFloor('');
+                                          }}
+                                          className="text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                                          title={t('topology_physical_relocate_btn')}
+                                        >
+                                          <Move className="w-3 h-3" />
+                                          <span>{t('topology_physical_relocate_btn')}</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -1264,7 +1698,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             {/* Action Buttons */}
             <div className="mt-auto pt-3 space-y-2">
               <button
-                onClick={() => onInspectPorts(selectedNode)}
+                onClick={() => onInspectPorts(selectedNode as unknown as Device)}
                 className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-medium text-xs shadow-lg transition active:scale-98"
               >
                 <Cable className="w-3.5 h-3.5" />
@@ -1273,6 +1707,319 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             </div>
           </div>
         )}
+
+      {/* Modal 1: Add Floor Modal */}
+      {addFloorBuilding && (
+        <div
+          data-modal-backdrop="true"
+          className="fixed inset-0 z-[100000] flex items-center justify-center p-4 modal-backdrop-blur"
+          onClick={() => setAddFloorBuilding(null)}
+        >
+          <div
+            className="relative w-full max-w-md flex flex-col rounded-2xl bg-slate-900 border border-white/20 text-slate-100 shadow-2xl overflow-hidden my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-slate-800/60">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {t('topology_physical_add_floor_btn')}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">{addFloorBuilding}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddFloorBuilding(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  {t('topology_physical_new_floor_name')}
+                </label>
+                <input
+                  type="text"
+                  value={newFloorInput}
+                  onChange={(e) => setNewFloorInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddFloor(addFloorBuilding);
+                    }
+                  }}
+                  placeholder={isEn ? 'e.g. Floor 3, NOC Room, Server Room B' : 'مانند طبقه ۳، اتاق سرور ب، مرکز داده'}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 bg-slate-950/40 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setAddFloorBuilding(null)}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5 border border-white/10 transition cursor-pointer"
+              >
+                {t('topology_physical_cancel_btn')}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAddFloor(addFloorBuilding)}
+                disabled={!newFloorInput.trim()}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-40 transition shadow-lg cursor-pointer"
+              >
+                {t('topology_physical_create_btn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 2: Add Building Modal */}
+      {showAddBuildingModal && (
+        <div
+          data-modal-backdrop="true"
+          className="fixed inset-0 z-[100000] flex items-center justify-center p-4 modal-backdrop-blur"
+          onClick={() => setShowAddBuildingModal(false)}
+        >
+          <div
+            className="relative w-full max-w-md flex flex-col rounded-2xl bg-slate-900 border border-white/20 text-slate-100 shadow-2xl overflow-hidden my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-slate-800/60">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {t('topology_physical_add_bldg_btn')}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    {isEn ? 'Create a new structural building in network topology' : 'تعریف ساختمان جدید در توپولوژی فیزیکی شبکه'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddBuildingModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  {t('topology_physical_new_bldg_name')}
+                </label>
+                <input
+                  type="text"
+                  value={newBuildingInput}
+                  onChange={(e) => setNewBuildingInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddBuilding();
+                    }
+                  }}
+                  placeholder={isEn ? 'e.g. Engineering Building, Data Center 2' : 'مانند ساختمان مهندسی، دیتاسنتر ۲، شعبه شرق'}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 bg-slate-950/40 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setShowAddBuildingModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5 border border-white/10 transition cursor-pointer"
+              >
+                {t('topology_physical_cancel_btn')}
+              </button>
+              <button
+                type="button"
+                onClick={handleAddBuilding}
+                disabled={!newBuildingInput.trim()}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-40 transition shadow-lg cursor-pointer"
+              >
+                {t('topology_physical_create_btn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 3: Manual Relocate Modal */}
+      {relocateDevice && (
+        <div
+          data-modal-backdrop="true"
+          className="fixed inset-0 z-[100000] flex items-center justify-center p-4 modal-backdrop-blur"
+          onClick={() => setRelocateDevice(null)}
+        >
+          <div
+            className="relative w-full max-w-lg flex flex-col rounded-2xl bg-slate-900 border border-white/20 text-slate-100 shadow-2xl overflow-hidden my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-slate-800/60">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                  <Move className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {t('topology_physical_relocate_modal_title')}
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    {relocateDevice.name} ({relocateDevice.ip})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRelocateDevice(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4 text-xs">
+              {/* Current Placement Banner */}
+              <div className="p-3 rounded-xl bg-slate-950/60 border border-white/10 flex items-center justify-between">
+                <span className="text-slate-400">
+                  {isEn ? 'Current Location:' : 'موقعیت فعلی:'}
+                </span>
+                <span className="font-semibold text-indigo-300">
+                  {relocateDevice.building || (isEn ? 'Other Buildings' : 'سایر ساختمان‌ها')} &gt; {relocateDevice.floor || (isEn ? 'Unassigned Floor' : 'طبقه نامشخص')}
+                </span>
+              </div>
+
+              {/* Target Building Selector */}
+              <div>
+                <label className="block font-medium text-slate-300 mb-1.5">
+                  {t('topology_physical_select_target_building')}
+                </label>
+                <select
+                  value={relocateTargetBuilding}
+                  onChange={(e) => {
+                    setRelocateTargetBuilding(e.target.value);
+                    setCustomRelocateBuilding('');
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white focus:outline-none focus:border-cyan-400"
+                >
+                  {allBuildingOptions.map((b) => (
+                    <option key={b} value={b} className="bg-slate-900 text-white">
+                      {b}
+                    </option>
+                  ))}
+                  <option value="__CUSTOM__" className="bg-slate-900 text-cyan-400">
+                    {isEn ? '+ Custom Building...' : '+ ساختمان سفارشی...'}
+                  </option>
+                </select>
+
+                {relocateTargetBuilding === '__CUSTOM__' && (
+                  <input
+                    type="text"
+                    value={customRelocateBuilding}
+                    onChange={(e) => setCustomRelocateBuilding(e.target.value)}
+                    placeholder={isEn ? 'Enter custom building name' : 'نام ساختمان سفارشی را وارد کنید'}
+                    className="w-full mt-2 px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
+                  />
+                )}
+              </div>
+
+              {/* Target Floor Selector */}
+              <div>
+                <label className="block font-medium text-slate-300 mb-1.5">
+                  {t('topology_physical_select_target_floor')}
+                </label>
+                <select
+                  value={relocateTargetFloor}
+                  onChange={(e) => {
+                    setRelocateTargetFloor(e.target.value);
+                    setCustomRelocateFloor('');
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white focus:outline-none focus:border-cyan-400"
+                >
+                  {allFloorOptionsForSelectedBuilding.map((f) => (
+                    <option key={f} value={f} className="bg-slate-900 text-white">
+                      {f}
+                    </option>
+                  ))}
+                  <option value="__CUSTOM__" className="bg-slate-900 text-cyan-400">
+                    {isEn ? '+ Custom Floor...' : '+ طبقه سفارشی...'}
+                  </option>
+                </select>
+
+                {relocateTargetFloor === '__CUSTOM__' && (
+                  <input
+                    type="text"
+                    value={customRelocateFloor}
+                    onChange={(e) => setCustomRelocateFloor(e.target.value)}
+                    placeholder={isEn ? 'Enter custom floor name' : 'نام طبقه سفارشی را وارد کنید'}
+                    className="w-full mt-2 px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2.5 px-5 py-3.5 bg-slate-950/40 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setRelocateDevice(null)}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5 border border-white/10 transition cursor-pointer"
+              >
+                {t('topology_physical_cancel_btn')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const finalBldg =
+                    relocateTargetBuilding === '__CUSTOM__'
+                      ? customRelocateBuilding.trim()
+                      : relocateTargetBuilding;
+                  const finalFloor =
+                    relocateTargetFloor === '__CUSTOM__'
+                      ? customRelocateFloor.trim()
+                      : relocateTargetFloor;
+
+                  if (finalBldg && finalFloor && relocateDevice) {
+                    handleMoveDevice(relocateDevice.id, finalBldg, finalFloor);
+                    setRelocateDevice(null);
+                  }
+                }}
+                disabled={
+                  (relocateTargetBuilding === '__CUSTOM__' && !customRelocateBuilding.trim()) ||
+                  (relocateTargetFloor === '__CUSTOM__' && !customRelocateFloor.trim()) ||
+                  !relocateTargetBuilding ||
+                  !relocateTargetFloor
+                }
+                className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-40 transition shadow-lg cursor-pointer"
+              >
+                {t('topology_physical_confirm_relocate')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
