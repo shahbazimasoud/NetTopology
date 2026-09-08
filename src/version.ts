@@ -8,9 +8,21 @@ export interface ReleaseNote {
   changes: string[];
 }
 
-export const APP_VERSION = '1.1.1';
+export const APP_VERSION = '1.1.2';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.1.2',
+    releaseDate: '2026-09-08',
+    type: 'patch',
+    title: 'رفع مشکل پنهان شدن و برش تجهیزات در هنگام جابجایی در حالت زوم اوت',
+    changes: [
+      'حذف کادر و محدوده برش SVG (Unbounded Canvas) و انتقال ترنسفورم به لایه گروه بی‌نهایت',
+      'نمایش کامل و بدون محدودیت تجهیزات در هنگام درگ به تمام جهات (بالا، پایین، چپ و راست)',
+      'افزایش دامنه زوم تا ۰.۲X و بهینه‌سازی حرکت شبکه‌بندی پس‌زمینه همراه با جابجایی دید',
+      'رفع خطای برش ForeignObject در نودهای دارای برچسب و سایه عمیق',
+    ],
+  },
   {
     version: '1.1.1',
     releaseDate: '2026-09-08',

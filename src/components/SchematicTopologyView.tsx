@@ -183,8 +183,9 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
     // Apply custom user drag-and-drop position overrides
     Object.entries(customPositions).forEach(([id, customPos]) => {
-      if (customPos && typeof customPos.x === 'number' && typeof customPos.y === 'number') {
-        pos.set(id, customPos);
+      const posObj = customPos as { x: number; y: number } | undefined;
+      if (posObj && typeof posObj.x === 'number' && typeof posObj.y === 'number') {
+        pos.set(id, posObj);
       }
     });
 
@@ -317,7 +318,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
       setZoom((prevZoom) => {
         const factor = e.deltaY < 0 ? 1.12 : 0.89;
-        const targetZoom = Math.min(Math.max(prevZoom * factor, 0.35), 2.6);
+        const targetZoom = Math.min(Math.max(prevZoom * factor, 0.2), 3.0);
         const cleanZoom = parseFloat(targetZoom.toFixed(2));
 
         if (cleanZoom === prevZoom) return prevZoom;
@@ -488,7 +489,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             <div className="flex items-center gap-1 bg-slate-900/60 border border-white/10 rounded-xl p-1">
               <button
                 onClick={() => {
-                  const newZoom = Math.min(zoom + 0.15, 2.5);
+                  const newZoom = Math.min(zoom + 0.15, 3.0);
                   setZoom(parseFloat(newZoom.toFixed(2)));
                   saveViewport(newZoom, pan);
                 }}
@@ -499,7 +500,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
               </button>
               <button
                 onClick={() => {
-                  const newZoom = Math.max(zoom - 0.15, 0.35);
+                  const newZoom = Math.max(zoom - 0.15, 0.2);
                   setZoom(parseFloat(newZoom.toFixed(2)));
                   saveViewport(newZoom, pan);
                 }}
@@ -536,33 +537,42 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
           <div
             ref={containerRef}
             onMouseDown={handleCanvasMouseDown}
-            className={`flex-1 h-full relative overflow-hidden bg-slate-950/80 bg-[radial-gradient(rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:24px_24px] select-none ${
+            className={`flex-1 h-full relative overflow-hidden bg-slate-950/80 bg-[radial-gradient(rgba(255,255,255,0.08)_1px,transparent_1px)] select-none ${
               draggingNodeId
                 ? 'cursor-grabbing'
                 : isPanning
                 ? 'cursor-grabbing'
                 : 'cursor-grab'
             }`}
+            style={{
+              backgroundPosition: `${pan.x}px ${pan.y}px`,
+              backgroundSize: `${Math.round(24 * Math.max(0.6, Math.min(zoom, 1.4)))}px ${Math.round(24 * Math.max(0.6, Math.min(zoom, 1.4)))}px`,
+            }}
           >
-            {/* SVG Schematic Canvas */}
+            {/* SVG Schematic Canvas - Unbounded Infinite Viewport */}
             <svg
-              className="w-full h-full absolute inset-0 select-none"
-              style={{
-                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                transformOrigin: '0 0',
-                transition: isPanning || draggingNodeId ? 'none' : 'transform 0.12s ease-out',
-              }}
+              className="w-full h-full absolute inset-0 select-none overflow-visible pointer-events-auto"
+              style={{ overflow: 'visible' }}
             >
               <defs>
                 {/* Subtle shadow filter for links */}
-                <filter id="glow-trunk" x="-20%" y="-20%" width="140%" height="140%">
+                <filter id="glow-trunk" x="-30%" y="-30%" width="160%" height="160%">
                   <feDropShadow dx="0" dy="1" stdDeviation="2" floodColor="#7c3aed" floodOpacity="0.3" />
                 </filter>
-                <filter id="glow-access" x="-20%" y="-20%" width="140%" height="140%">
+                <filter id="glow-access" x="-30%" y="-30%" width="160%" height="160%">
                   <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#2563eb" floodOpacity="0.25" />
                 </filter>
               </defs>
 
+              {/* Infinite World Canvas Group - Pan & Zoom Coordinate Space */}
+              <g
+                className="canvas-world"
+                style={{
+                  transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                  transformOrigin: '0 0',
+                  transition: isPanning || draggingNodeId ? 'none' : 'transform 0.12s ease-out',
+                }}
+              >
               {/* Draw Topology Connection Links */}
               {topology?.links.map((link) => {
                 const sourcePos = nodePositions.get(link.source);
@@ -584,7 +594,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                 const midY = (y1 + y2) / 2;
 
                 return (
-                  <g key={link.id} className="transition-all">
+                  <g key={link.id} className="transition-all pointer-events-none">
                     {/* Link Line */}
                     <line
                       x1={x1}
@@ -610,7 +620,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
                     {/* Port and Protocol Badges on Links */}
                     {showPortLabels && (
-                      <g transform={`translate(${midX}, ${midY})`}>
+                      <g transform={`translate(${midX}, ${midY})`} className="pointer-events-none">
                         <rect
                           x="-45"
                           y="-10"
@@ -636,7 +646,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
                     {/* Source Port Tag */}
                     {showPortLabels && (
-                      <g transform={`translate(${x1 + (x2 - x1) * 0.24}, ${y1 + (y2 - y1) * 0.24})`}>
+                      <g transform={`translate(${x1 + (x2 - x1) * 0.24}, ${y1 + (y2 - y1) * 0.24})`} className="pointer-events-none">
                         <rect x="-24" y="-8" width="48" height="16" rx="3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
                         <text textAnchor="middle" dominantBaseline="central" fill="#4f46e5" fontSize="8" fontFamily="monospace" fontWeight="bold">
                           {link.source_port}
@@ -646,7 +656,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
                     {/* Target Port Tag */}
                     {showPortLabels && (
-                      <g transform={`translate(${x1 + (x2 - x1) * 0.76}, ${y1 + (y2 - y1) * 0.76})`}>
+                      <g transform={`translate(${x1 + (x2 - x1) * 0.76}, ${y1 + (y2 - y1) * 0.76})`} className="pointer-events-none">
                         <rect x="-24" y="-8" width="48" height="16" rx="3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
                         <text textAnchor="middle" dominantBaseline="central" fill="#4f46e5" fontSize="8" fontFamily="monospace" fontWeight="bold">
                           {link.target_port}
@@ -669,9 +679,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     key={node.id}
                     x={pos.x}
                     y={pos.y}
-                    width="236"
-                    height="126"
+                    width="240"
+                    height="150"
                     className="overflow-visible interactive-node"
+                    style={{ overflow: 'visible' }}
                   >
                     <div
                       onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
@@ -793,6 +804,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   </foreignObject>
                 );
               })}
+              </g>
             </svg>
 
             {/* Bottom Floating Legend & Interactive Guide */}
