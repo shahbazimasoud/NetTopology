@@ -12,7 +12,7 @@
 - **Auto-Commit and Push**: Whenever changes or updates are made to the codebase in response to user requests, automatically commit the changes with a clear, descriptive Persian/English commit message and push to the `master` branch on GitHub (`git push origin master`).
 - Remote origin is configured with user GitHub PAT on repository `shahbazimasoud/NetTopology`.
 
-## 3. UI/UX Standards
+## 3. UI/UX Standards & Consistency
 - **Modal Backdrops**: All modals must use `.modal-backdrop-blur` with `data-modal-backdrop="true"` for a dark blurred glassmorphism backdrop.
 - **Light Theme Modal Harmonization (Mandatory / اجباری)**:
   - All modals must match the clean styling standard of `CloneTemplateModal`.
@@ -26,8 +26,26 @@
 ## 4. Semantic Versioning on Every Change (Mandatory / اجباری - نسخه‌گذاری دائمی)
 - **قانون الزامی ثبت نسخه (Versioning)**: بعد از هر تغییر، رفع باگ، اصلاح اسکریپت یا اضافه شدن قابلیت، هوش مصنوعی **موظف است نسخه پروژه (Version) را به‌روزرسانی و ثبت کند** (بر اساس سیستم نسخه‌بندی سمانتیک `MAJOR.MINOR.PATCH`).
 - نسخه جدید باید در تمام بخش‌های زیر ارتقا یابد:
-  1. فایل `package.json` (فیلد `"version"`)
-  2. متغیر `PANEL_VERSION` در اسکریپت‌های نصب (`setup-panel.sh` و `install.sh`)
-  3. فایل `README.md` (در بخش Badge و سربرگ نسخه فارسی و انگلیسی)
-  4. متن کامیت گیت (ذکر برچسب نسخه مثلاً `v1.1.0`)
+  1. فایل `src/version.ts`
+  2. فایل `package.json` (فیلد `"version"`)
+  3. متغیر `PANEL_VERSION` در اسکریپت‌های نصب (`setup-panel.sh` و `install.sh`)
+  4. فایل `README.md` (در بخش Badge و سربرگ نسخه فارسی و انگلیسی)
+  5. متن کامیت گیت (ذکر برچسب نسخه مثلاً `v1.2.0`)
 
+## 5. Multi-language (i18n) Support & Zero Persian in English Mode (Mandatory / اجباری)
+- **قانون چندزبانگی و پیش‌فرض انگلیسی**:
+  - تمام صفحات، ماژول‌ها، مودال‌ها، پیام‌ها، راهنماها، دکمه‌ها و جداول **باید از هر دو زبان انگلیسی (English) و فارسی (Persian) پشتیبانی کنند**.
+  - **زبان پیش‌فرض برنامه همیشه انگلیسی (English) است** (`language: 'en'`).
+  - **ممنوعیت کامل زبان فارسی در حالت انگلیسی**: در حالت انگلیسی، هیچ کلمه یا متن فارسی نباید در هیچ کجای برنامه (دکمه‌ها، عنوان‌ها، پیام‌ها، توابع، تولتیپ‌ها، فیلترها و جدول‌ها) نمایش داده شود.
+  - تعویض زبان باید به سادگی و از طریق سوئیچر زبان موجود در هدر (Navbar) با آیکون کره زمین (`Globe`) انجام شود و حالت راست‌به‌چپ (`dir="rtl"`) یا چپ‌به‌راست (`dir="ltr"`) را به صورت زنده و داینامیک تنظیم کند.
+  - رشته‌های متنی جدید باید در فایل `src/i18n/translations.ts` برای هر دو زبان ثبت و با هوک `useLanguage()` فراخوانی شوند.
+
+## 6. Sidebar Accordion Navigation Architecture
+- **معماری منوی سایدبار**:
+  - منوی سایدبار دارای گروه‌های والد (Parent) با برچسب‌های تفکیک‌شده و زیرمنوهای فرزند (Child) است.
+  - هر والد به صورت کارت تعاملی جمع‌شونده (Accordion) پیاده‌سازی شده و آیکون باز/بسته دارد.
+  - **حالت پیش‌فرض باز است (Default Open)**: در ورود اولیه گروه والد اول باز است.
+  - **رفتار آکاردئونی یکتای باز**: با کلیک روی هر والد، فرزندان آن نمایش داده می‌شوند و سایر والدهای دارای فرزند به صورت خودکار بسته می‌شوند.
+
+## 7. Action Button Size Harmonization
+- **هماهنگی سایز دکمه‌ها**: سایز و پدینگ تمام دکمه‌های اکشن بالای صفحات (از جمله صفحه مدیریت تمپلیت‌ها و الگوها) باید دقیقاً با استانداردهای صفحه «موجودی و مدیریت تجهیزات شبکه» (`px-3.5 py-1.5 rounded-xl text-xs font-medium gap-1.5`) هماهنگ باشد تا یکپارچگی بصری کامل حاصل شود.

@@ -17,6 +17,7 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import { Device, TopologyData } from '../types';
+import { useLanguage } from '../i18n';
 
 interface DashboardViewProps {
   devices: Device[];
@@ -41,6 +42,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onRefreshAll,
   isRefreshing,
 }) => {
+  const { t, isRtl, isEn } = useLanguage();
   const onlineDevices = devices.filter((d) => d.is_online);
   const offlineDevices = devices.filter((d) => !d.is_online);
   const switches = devices.filter((d) => d.type === 'switch');
@@ -48,51 +50,51 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const aps = devices.filter((d) => d.type === 'access_point');
 
   return (
-    <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto text-right text-slate-100">
+    <div className={`p-4 sm:p-6 space-y-5 max-w-7xl mx-auto ${isRtl ? 'text-right' : 'text-left'} text-slate-100`}>
       {/* Top Welcome & Health Banner */}
       <div className="spatial-glass rounded-2xl border border-white/10 shadow-2xl p-5 flex flex-wrap items-center justify-between gap-4 backdrop-blur-xl relative overflow-hidden">
         <div className="relative z-10">
           <div className="flex items-center gap-2.5 mb-2">
             <span className="px-2.5 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-[10px] font-mono font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(99,102,241,0.2)]">
-              NOC Live Monitor • Python 3.10 Backend
+              {t('dashboard_header_tag')}
             </span>
             <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-              CORE SYNCED
+              {t('dashboard_header_status')}
             </span>
           </div>
           <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight glow-text-cyan">
-            مرکز کنترل و مانیتورینگ متراکم زیرساخت شبکه سازمانی
+            {t('dashboard_header_title')}
           </h2>
           <p className="text-xs text-slate-300/80 mt-1 max-w-2xl leading-relaxed">
-            پایش بلادرنگ سوییچ‌ها، روترها و اکسس‌پوینت‌ها همراه با اکتشاف خودکار همسایگی‌ها با پروتکل‌های CDP و LLDP و رسم شماتیک فضایی
+            {t('dashboard_header_desc')}
           </p>
         </div>
 
         <div className="flex items-center flex-wrap gap-2.5 relative z-10">
           <button
             onClick={onOpenAddModal}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-medium text-xs shadow-[0_0_20px_rgba(99,102,241,0.35)] transition border border-white/15 active:scale-95"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-medium text-xs shadow-[0_0_20px_rgba(99,102,241,0.35)] transition border border-white/15 active:scale-95 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>معرفی تجهیز جدید</span>
+            <span>{t('dashboard_btn_add_device')}</span>
           </button>
 
           <button
             onClick={() => onNavigate('schematic')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs font-medium shadow-xs transition active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs font-medium shadow-xs transition active:scale-95 cursor-pointer"
           >
             <Map className="w-3.5 h-3.5 text-indigo-400" />
-            <span>نقشه شماتیک</span>
+            <span>{isEn ? 'Schematic Map' : 'نقشه شماتیک'}</span>
           </button>
 
           <button
             onClick={onScanCdpLldp}
             disabled={isScanning}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs font-medium transition disabled:opacity-50 active:scale-95 shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs font-medium transition disabled:opacity-50 active:scale-95 shadow-xs cursor-pointer"
           >
             <Zap className={`w-3.5 h-3.5 text-cyan-400 ${isScanning ? 'animate-spin' : ''}`} />
-            <span>{isScanning ? 'در حال اسکن...' : 'اسکن CDP/LLDP'}</span>
+            <span>{isScanning ? t('action_quick_scan_active') : t('dashboard_btn_scan_neighbors')}</span>
           </button>
         </div>
       </div>
@@ -105,20 +107,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           className="spatial-glass spatial-glass-hover spatial-depth-card p-4 rounded-xl border border-white/10 shadow-xl cursor-pointer transition group"
         >
           <div className="flex items-center justify-between text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-2">
-            <span>کل تجهیزات شبکه</span>
+            <span>{t('dashboard_kpi_total_devices')}</span>
             <Server className="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition" />
           </div>
           <div className="text-3xl font-bold text-white font-mono glow-text-cyan">{devices.length}</div>
           <div className="text-[11px] text-slate-400 mt-2 flex items-center gap-1.5 font-mono">
-            <span>{switches.length} سوییچ</span> • <span>{routers.length} روتر</span> •{' '}
-            <span>{aps.length} AP</span>
+            <span>{switches.length} {isEn ? 'Switches' : 'سوییچ'}</span> • <span>{routers.length} {isEn ? 'Routers' : 'روتر'}</span> •{' '}
+            <span>{aps.length} {isEn ? 'APs' : 'AP'}</span>
           </div>
         </div>
 
         {/* Online Status */}
         <div className="spatial-glass spatial-glass-hover spatial-depth-card p-4 rounded-xl border border-white/10 shadow-xl">
           <div className="flex items-center justify-between text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-2">
-            <span>وضعیت برخط (Online)</span>
+            <span>{t('dashboard_kpi_online_devices')}</span>
             <Activity className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="flex items-baseline gap-2">
@@ -129,13 +131,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               ({devices.length > 0 ? Math.round((onlineDevices.length / devices.length) * 100) : 0}%)
             </span>
             {offlineDevices.length > 0 && (
-              <span className="text-rose-400 text-xs font-mono font-bold mr-auto px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-500/30">
-                {offlineDevices.length} آفلاین
+              <span className={`text-rose-400 text-xs font-mono font-bold ${isRtl ? 'mr-auto' : 'ml-auto'} px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-500/30`}>
+                {offlineDevices.length} {isEn ? 'Offline' : 'آفلاین'}
               </span>
             )}
           </div>
           <div className="text-[11px] text-slate-400 mt-2">
-            پایداری اتصالات شبکه: <span className="font-mono text-emerald-400 font-bold">۹۹.۴٪</span>
+            {isEn ? 'Network Uptime SLA: ' : 'پایداری اتصالات شبکه: '}
+            <span className="font-mono text-emerald-400 font-bold">99.4%</span>
           </div>
         </div>
 
@@ -145,14 +148,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           className="spatial-glass spatial-glass-hover spatial-depth-card p-4 rounded-xl border border-white/10 shadow-xl cursor-pointer transition group"
         >
           <div className="flex items-center justify-between text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-2">
-            <span>اتصالات همسایگی CDP/LLDP</span>
+            <span>{isEn ? 'CDP/LLDP Discovered Links' : 'اتصالات همسایگی CDP/LLDP'}</span>
             <Cable className="w-4 h-4 text-slate-400 group-hover:text-cyan-400 transition" />
           </div>
           <div className="text-3xl font-bold text-indigo-400 font-mono glow-text-purple">
             {topology?.links.length || 0}
           </div>
           <div className="text-[11px] text-slate-400 mt-2">
-            پیوندهای Trunk (802.1Q) و Access
+            {isEn ? 'Trunk (802.1Q) & Access Matrix' : 'پیوندهای Trunk (802.1Q) و Access'}
           </div>
         </div>
 
@@ -162,14 +165,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           className="spatial-glass spatial-glass-hover spatial-depth-card p-4 rounded-xl border border-white/10 shadow-xl cursor-pointer transition group"
         >
           <div className="flex items-center justify-between text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-2">
-            <span>سایت‌های ساختمانی</span>
+            <span>{isEn ? 'Facility Sites & Buildings' : 'سایت‌های ساختمانی'}</span>
             <Building2 className="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition" />
           </div>
           <div className="text-3xl font-bold text-white font-mono">
             {topology?.buildings.length || 0}
           </div>
           <div className="text-[11px] text-slate-400 mt-2">
-            ساختمان مرکزی و مهندسی
+            {isEn ? 'Central & Engineering Campus' : 'ساختمان مرکزی و مهندسی'}
           </div>
         </div>
       </div>
@@ -180,20 +183,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <h3 className="font-bold text-white text-sm flex items-center gap-2">
               <Activity className="w-4 h-4 text-indigo-400" />
-              <span>پایش لحظه‌ای تجهیزات و وضعیت پینگ (Real-Time Ping & Telemetry)</span>
+              <span>{isEn ? 'Real-Time Ping & Equipment Telemetry' : 'پایش لحظه‌ای تجهیزات و وضعیت پینگ (Real-Time Ping & Telemetry)'}</span>
             </h3>
             <p className="text-[11px] text-slate-400 mt-1">
-              آزمایش وضعیت برخط بودن پورت‌های مدیریتی، زمان پاسخ‌دهی (Latency) و پکت‌لاس با پایتون
+              {isEn
+                ? 'Automated monitoring of management interfaces, round-trip latency, and packet loss.'
+                : 'آزمایش وضعیت برخط بودن پورت‌های مدیریتی، زمان پاسخ‌دهی (Latency) و پکت‌لاس با پایتون'}
             </p>
           </div>
 
           <button
             onClick={onRefreshAll}
             disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs transition disabled:opacity-50 shadow-xs active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs transition disabled:opacity-50 shadow-xs active:scale-95 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-indigo-400' : ''}`} />
-            <span>پایش مجدد</span>
+            <span>{isEn ? 'Ping All' : 'پایش مجدد'}</span>
           </button>
         </div>
 
@@ -250,7 +255,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="flex items-center justify-between text-[11px] font-mono text-indigo-300 font-bold mb-1.5">
                 <span>{dev.ip}</span>
                 <span className="text-slate-400 text-[10px] font-normal">
-                  {dev.is_online ? `${dev.latency_ms || 1.2} ms` : '100% packet loss'}
+                  {dev.is_online ? `${dev.latency_ms || 1.2} ms` : (isEn ? '100% packet loss' : '۱۰۰٪ پکت‌لاس')}
                 </span>
               </div>
 
@@ -262,10 +267,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
                 <button
                   onClick={() => onInspectPorts(dev)}
-                  className="text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 text-[11px] transition hover:underline"
+                  className="text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 text-[11px] transition hover:underline cursor-pointer"
                 >
                   <Cable className="w-3.5 h-3.5" />
-                  <span>بررسی پورت‌ها ({dev.total_ports || 24})</span>
+                  <span>{isEn ? `Inspect Ports (${dev.total_ports || 24})` : `بررسی پورت‌ها (${dev.total_ports || 24})`}</span>
                 </button>
                 <span className="text-[10px] text-slate-400 font-mono px-1.5 py-0.5 rounded bg-white/5 border border-white/10">
                   {dev.role}

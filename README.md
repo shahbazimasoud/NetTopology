@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.3.4-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۳.۴
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.3.4
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۴.۰
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.4.0
 
 ---
 
@@ -111,6 +111,12 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 - **حذف کامل پورت‌های ناامن HTTP:** پورت 80 و پورت‌های مستقیم وب و بک‌اند کاملاً از اینترنت و شبکه عمومی حذف شده و صرفاً بر روی لوپ‌بک داخلی سرور (`127.0.0.1`) بایند می‌شوند.
 - **بازهدایت هوشمند خطای 497:** در صورت تلاش اشتباه برای باز کردن پورت امن با پروتکل `http://`، وب‌سرور Nginx به صورت خودکار درخواست را به `https://` بازهدایت می‌کند.
 - **ایزوله‌سازی فایروال UFW:** مسدودسازی پورت‌های داخلی 3000 و 5001 و باز نگه‌داشتن صرف پورت امن SSL تعیین‌شده توسط ادمین.
+
+### ۱۲. سیستم جامع چندزبانگی (i18n)، منوی آکاردئونی تاشو سایدبار و هماهنگ‌سازی دکمه‌ها
+- **پیش‌فرض زبان انگلیسی (English Default) و زبان دوم فارسی (Persian):** پشتیبانی کامل دوزبانه در تمام صفحات، داشبورد، جداول، فیلترها، مودال‌ها، راهنماها و توابع با پایبندی به قانون عدم نمایش هرگونه متن فارسی در زمان فعال بودن زبان انگلیسی.
+- **تغییر پویا و آنی چیدمان (LTR / RTL):** سوئیچر زبان هدر با تغییر بلادرنگ جهت چیدمان و هم‌ترازی المان‌ها و دکمه‌ها بدون نیاز به رفرش صفحه و ذخیره دائم در حافظه مرورگر.
+- **منوی سایدبار آکاردئونی با والدهای مجزا (Accordion Sidebar):** دسته‌بندی و گروه‌بندی ساختاریافته منوها به صورت والدهای مشخص با آیکون تاشو، حالت پیش‌فرض باز، و رفتار جمع‌شدن سایر والدها با کلیک روی والد جدید.
+- **یکپارچه‌سازی ابعاد دکمه‌ها:** هماهنگی کامل سایز، پدینگ و تایپوگرافی دکمه‌های اکشن در بالای صفحه مدیریت الگوها و تمپلیت‌ها با صفحه موجودی و مدیریت تجهیزات شبکه (`px-3.5 py-1.5 rounded-xl text-xs font-medium`).
 
 ---
 
@@ -285,6 +291,12 @@ npm start
 - **Loopback Isolation:** Node.js frontend and Python backend engines are bound strictly to internal loopback (`127.0.0.1`), terminating all incoming client connections via Nginx SSL reverse proxy.
 - **Automated 497 Redirect Handling:** Standard HTTP requests mistakenly sent to the SSL port automatically redirect to secure HTTPS without browser error.
 - **Firewall Hardening:** UFW firewall rules permit only the designated SSL port, blocking direct access to ports 3000 and 5001.
+
+### 12. Full Multi-Language (i18n) Engine, Accordion Sidebar Navigation & Button Harmonization
+- **English Default with Complete Persian Support:** End-to-end internationalization across all views, modals, notifications, tables, and device toolbars with strict zero-Persian enforcement when English mode is active.
+- **Dynamic LTR / RTL Directionality:** Live direction toggling via the navbar language switcher with instant visual alignment and local storage persistence.
+- **Collapsible Accordion Sidebar Navigation:** Parent categories with distinct interactive labels, collapsible chevron toggles, default open initial state, and single-expanded accordion logic.
+- **Action Button Sizing Harmonization:** Action buttons in Template Management and all page headers adhere strictly to the unified sizing standard established by the Device Management view (`px-3.5 py-1.5 rounded-xl text-xs font-medium`).
 
 ---
 

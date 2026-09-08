@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { RefreshCw, Zap, Palette, ChevronDown, Check, ShieldCheck, Sparkles } from 'lucide-react';
+import { RefreshCw, Zap, Palette, ChevronDown, Check, Globe } from 'lucide-react';
 import { APP_VERSION } from '../version';
+import { useLanguage, Language } from '../i18n';
 
 export type ThemeType = 'obsidian' | 'emerald' | 'cobalt' | 'rose' | 'amber' | 'light';
 
@@ -29,16 +30,18 @@ export const Navbar: React.FC<NavbarProps> = ({
   onChangeTheme,
   onOpenReleaseNotes,
 }) => {
+  const { t, language, setLanguage, isRtl, isEn } = useLanguage();
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
+  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const offlineCount = Math.max(0, totalDevices - onlineCount);
 
-  const themeOptions: { id: ThemeType; name: string; color: string; bgClass: string }[] = [
-    { id: 'obsidian', name: 'ابزیدین کیهانی (پیش‌فرض)', color: '#6366f1', bgClass: 'bg-indigo-600' },
-    { id: 'emerald', name: 'امرالد سایبر (ماتریکس)', color: '#10b981', bgClass: 'bg-emerald-500' },
-    { id: 'cobalt', name: 'کبالت تکنولوژی (اقیانوسی)', color: '#0284c7', bgClass: 'bg-sky-600' },
-    { id: 'rose', name: 'رز سایبرپانک (کریمسون)', color: '#f43f5e', bgClass: 'bg-rose-500' },
-    { id: 'amber', name: 'کهربایی نئون (زرین)', color: '#f59e0b', bgClass: 'bg-amber-500' },
-    { id: 'light', name: 'شفاف روشن (Light)', color: '#64748b', bgClass: 'bg-slate-400' },
+  const themeOptions: { id: ThemeType; nameKey: string; color: string; bgClass: string }[] = [
+    { id: 'obsidian', nameKey: 'theme_obsidian', color: '#6366f1', bgClass: 'bg-indigo-600' },
+    { id: 'emerald', nameKey: 'theme_emerald', color: '#10b981', bgClass: 'bg-emerald-500' },
+    { id: 'cobalt', nameKey: 'theme_cobalt', color: '#0284c7', bgClass: 'bg-sky-600' },
+    { id: 'rose', nameKey: 'theme_rose', color: '#f43f5e', bgClass: 'bg-rose-500' },
+    { id: 'amber', nameKey: 'theme_amber', color: '#f59e0b', bgClass: 'bg-amber-500' },
+    { id: 'light', nameKey: 'theme_light', color: '#64748b', bgClass: 'bg-slate-400' },
   ];
 
   const currentThemeObj = themeOptions.find((t) => t.id === panelTheme) || themeOptions[0];
@@ -53,30 +56,30 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-base font-bold tracking-tight text-white font-mono glow-text-cyan flex items-center gap-1.5">
-              NetTopology <span className="text-indigo-400 text-xs font-semibold px-1.5 py-0.5 rounded bg-indigo-500/20 border border-indigo-500/30">NOC Pro</span>
+              {t('app_title')} <span className="text-indigo-400 text-xs font-semibold px-1.5 py-0.5 rounded bg-indigo-500/20 border border-indigo-500/30">{t('app_edition')}</span>
             </h1>
             <button
               onClick={onOpenReleaseNotes}
-              className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 transition flex items-center gap-1 active:scale-95"
-              title="مشاهده تاریخچه نسخه‌ها و یادداشت‌های انتشار"
+              className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 transition flex items-center gap-1 active:scale-95 cursor-pointer"
+              title={t('app_version_tooltip')}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]"></span>
               <span>v{APP_VERSION}</span>
             </button>
           </div>
           <p className="text-[10px] text-slate-400 hidden sm:block font-sans">
-            سامانه مانیتورینگ متراکم تجهیزات شبکه سازمانی • Matrix Spatial Edition
+            {t('app_subtitle')}
           </p>
         </div>
       </div>
 
-      {/* Center/Right Status, Theme Selector & Action Controls */}
-      <div className="flex items-center gap-3 sm:gap-4">
+      {/* Center/Right Status, Language, Theme Selector & Action Controls */}
+      <div className="flex items-center gap-2.5 sm:gap-3.5">
         {/* Live Network Status Badges */}
         <div className="flex items-center gap-2 text-xs">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-mono font-bold shadow-[0_0_12px_rgba(16,185,129,0.15)]">
             <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
-            <span>{onlineCount} آنلاین</span>
+            <span>{t('status_online_count', { count: onlineCount })}</span>
           </div>
 
           <div
@@ -91,23 +94,98 @@ export const Navbar: React.FC<NavbarProps> = ({
                 offlineCount > 0 ? 'bg-rose-500 animate-ping' : 'bg-slate-500'
               }`}
             ></span>
-            <span>{offlineCount} بحرانی</span>
+            <span>{t('status_critical_count', { count: offlineCount })}</span>
           </div>
         </div>
 
         {/* Separator */}
         <div className="h-6 w-px bg-white/10 hidden sm:block"></div>
 
+        {/* Multi-Language Switcher */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setLangDropdownOpen(!langDropdownOpen);
+              setThemeDropdownOpen(false);
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-200 transition shadow-xs cursor-pointer active:scale-95"
+            title={isEn ? 'Switch Language (English / Persian)' : 'تغییر زبان (انگلیسی / فارسی)'}
+          >
+            <Globe className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="font-mono font-bold text-[11px] text-cyan-300 uppercase tracking-wider">
+              {language === 'en' ? 'EN' : 'FA'}
+            </span>
+            <ChevronDown className="w-3 h-3 text-slate-400" />
+          </button>
+
+          {langDropdownOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setLangDropdownOpen(false)}
+              ></div>
+              <div
+                className={`absolute ${isRtl ? 'left-0 text-right' : 'right-0 text-left'} mt-2 w-44 rounded-xl spatial-glass border border-white/15 p-1.5 shadow-2xl z-50 backdrop-blur-2xl`}
+              >
+                <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 border-b border-white/10 mb-1 flex items-center justify-between">
+                  <span>{t('language_switcher')}</span>
+                  <Globe className="w-3 h-3 text-cyan-400" />
+                </div>
+                <div className="space-y-0.5">
+                  <button
+                    onClick={() => {
+                      setLanguage('en');
+                      setLangDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition cursor-pointer ${
+                      language === 'en'
+                        ? 'bg-cyan-600/30 text-white font-bold border border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-cyan-300">EN</span>
+                      <span>English</span>
+                    </div>
+                    {language === 'en' && <Check className="w-3.5 h-3.5 text-cyan-400" />}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setLanguage('fa');
+                      setLangDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition cursor-pointer ${
+                      language === 'fa'
+                        ? 'bg-cyan-600/30 text-white font-bold border border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-cyan-300">FA</span>
+                      <span>فارسی</span>
+                    </div>
+                    {language === 'fa' && <Check className="w-3.5 h-3.5 text-cyan-400" />}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
         {/* Theme Switcher Button with Dropdown */}
         <div className="relative">
           <button
-            onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-200 transition shadow-xs"
-            title="تغییر تم و استایل رابط کاربری"
+            onClick={() => {
+              setThemeDropdownOpen(!themeDropdownOpen);
+              setLangDropdownOpen(false);
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-200 transition shadow-xs cursor-pointer active:scale-95"
+            title={isEn ? 'Change UI Theme & Palette' : 'تغییر تم و استایل رابط کاربری'}
           >
             <Palette className="w-3.5 h-3.5 text-indigo-400" />
             <span className={`w-2 h-2 rounded-full ${currentThemeObj.bgClass} shadow-xs`}></span>
-            <span className="hidden xl:inline text-[11px]">{currentThemeObj.name.split(' ')[0]}</span>
+            <span className="hidden xl:inline text-[11px]">{t(currentThemeObj.nameKey as any).split(' ')[0]}</span>
             <ChevronDown className="w-3 h-3 text-slate-400" />
           </button>
 
@@ -117,10 +195,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="fixed inset-0 z-40"
                 onClick={() => setThemeDropdownOpen(false)}
               ></div>
-              <div className="absolute left-0 mt-2 w-56 rounded-xl spatial-glass border border-white/15 p-1.5 shadow-2xl z-50 text-right backdrop-blur-2xl">
+              <div
+                className={`absolute ${isRtl ? 'left-0 text-right' : 'right-0 text-left'} mt-2 w-56 rounded-xl spatial-glass border border-white/15 p-1.5 shadow-2xl z-50 backdrop-blur-2xl`}
+              >
                 <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 border-b border-white/10 mb-1 flex items-center justify-between">
-                  <span>انتخاب تم ماتریکس:</span>
-                  <span className="font-mono text-indigo-400">Themes</span>
+                  <span>{t('theme_select_title')}</span>
+                  <span className="font-mono text-indigo-400">{t('theme_label')}</span>
                 </div>
                 <div className="space-y-0.5">
                   {themeOptions.map((opt) => {
@@ -132,7 +212,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           onChangeTheme(opt.id);
                           setThemeDropdownOpen(false);
                         }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition cursor-pointer ${
                           isSelected
                             ? 'bg-indigo-600/30 text-white font-bold border border-indigo-500/40 shadow-[0_0_10px_rgba(99,102,241,0.2)]'
                             : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -143,7 +223,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             className="w-2.5 h-2.5 rounded-full shadow-xs"
                             style={{ backgroundColor: opt.color }}
                           ></span>
-                          <span>{opt.name}</span>
+                          <span>{t(opt.nameKey as any)}</span>
                         </div>
                         {isSelected && <Check className="w-3.5 h-3.5 text-indigo-400" />}
                       </button>
@@ -164,31 +244,33 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onQuickScan}
             disabled={isScanning}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-medium text-xs shadow-[0_0_15px_rgba(99,102,241,0.35)] transition disabled:opacity-50 border border-white/10 active:scale-95"
-            title="اسکن پروتکل‌های CDP و LLDP برای همسایگی‌ها"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-medium text-xs shadow-[0_0_15px_rgba(99,102,241,0.35)] transition disabled:opacity-50 border border-white/10 active:scale-95 cursor-pointer"
+            title={t('action_quick_scan_title')}
           >
             <Zap className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
-            <span className="hidden md:inline">{isScanning ? 'اسکن...' : 'اسکن CDP/LLDP'}</span>
+            <span className="hidden md:inline">
+              {isScanning ? t('action_quick_scan_active') : t('action_quick_scan')}
+            </span>
           </button>
 
           {/* Refresh / Ping Button */}
           <button
             onClick={onRefreshAll}
             disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs transition disabled:opacity-50 shadow-xs active:scale-95"
-            title="پایش و پینگ لحظه‌ای تمام تجهیزات"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs transition disabled:opacity-50 shadow-xs active:scale-95 cursor-pointer"
+            title={t('action_live_ping_title')}
           >
             <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-indigo-400' : ''}`} />
-            <span className="hidden lg:inline">پایش لحظه‌ای</span>
+            <span className="hidden lg:inline">{t('action_live_ping')}</span>
           </button>
 
           {/* Reset Demo Data */}
           <button
             onClick={onResetDemo}
-            className="text-[11px] text-slate-400 hover:text-indigo-300 underline decoration-white/20 hover:decoration-indigo-400 px-1 py-1 transition"
-            title="بازنشانی داده‌های نمونه سازمانی"
+            className="text-[11px] text-slate-400 hover:text-indigo-300 underline decoration-white/20 hover:decoration-indigo-400 px-1 py-1 transition cursor-pointer"
+            title={t('action_demo_data_title')}
           >
-            داده‌های نمونه
+            {t('action_demo_data')}
           </button>
         </div>
       </div>

@@ -25,8 +25,10 @@ import {
   resetDemoData,
   writeMemory
 } from './services/api';
+import { useLanguage } from './i18n';
 
 export default function App() {
+  const { t, isRtl, isEn } = useLanguage();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [devices, setDevices] = useState<Device[]>([]);
   const [topology, setTopology] = useState<TopologyData | null>(null);
@@ -167,9 +169,9 @@ export default function App() {
       setIsRefreshing(true);
       await pingAllDevices();
       await loadData();
-      showToast('پایش لحظه‌ای تمامی تجهیزات شبکه با موفقیت انجام شد.');
+      showToast(t('toast_refresh_success'));
     } catch (err: any) {
-      showToast('خطا در پایش تجهیزات: ' + err.message);
+      showToast(t('toast_refresh_error', { error: err.message }));
     } finally {
       setIsRefreshing(false);
     }
@@ -180,13 +182,16 @@ export default function App() {
     try {
       const res = await pingDevice(id);
       setDevices((prev) => prev.map((d) => (d.id === id ? res.device : d)));
+      const statusLabel = res.device.is_online ? (isEn ? 'Online' : 'آنلاین') : (isEn ? 'Offline' : 'آفلاین');
       showToast(
-        `تجهیز ${res.device.name} پایش شد: ${
-          res.device.is_online ? `آنلاین (${res.device.latency_ms}ms)` : 'آفلاین'
-        }`
+        t('toast_ping_result', {
+          name: res.device.name,
+          status: statusLabel,
+          latency: res.device.latency_ms ?? 0,
+        })
       );
     } catch (err: any) {
-      showToast('خطا در پینگ تجهیز: ' + err.message);
+      showToast(t('toast_ping_error', { error: err.message }));
     }
   };
 
@@ -196,9 +201,9 @@ export default function App() {
       setIsScanning(true);
       const res = await runCdpLldpScan();
       await loadData();
-      showToast(res.message || 'اسکن همسایگی CDP/LLDP انجام شد.');
+      showToast(isEn ? ((res as any).message_en || t('toast_scan_done')) : (res.message || t('toast_scan_done')));
     } catch (err: any) {
-      showToast('خطا در اسکن همسایگی: ' + err.message);
+      showToast(t('toast_scan_error', { error: err.message }));
     } finally {
       setIsScanning(false);
     }
@@ -208,7 +213,7 @@ export default function App() {
   const handleAddDevice = async (newDev: Partial<Device>) => {
     const res = await addDevice(newDev);
     await loadData();
-    showToast(`تجهیز جدید ${newDev.name} با موفقیت به شبکه افزوده شد.`);
+    showToast(t('toast_device_added', { name: newDev.name || '' }));
     return res.device;
   };
 
@@ -217,21 +222,21 @@ export default function App() {
     try {
       await deleteDevice(id);
       await loadData();
-      showToast('تجهیز با موفقیت حذف گردید.');
+      showToast(t('toast_device_deleted'));
     } catch (err: any) {
-      showToast('خطا در حذف تجهیز: ' + err.message);
+      showToast(t('toast_device_delete_error', { error: err.message }));
     }
   };
 
   // Reset to corporate seed
   const handleResetDemo = async () => {
-    if (window.confirm('آیا مایلید اطلاعات شبکه به داده‌های نمونه پیش‌فرض سازمانی بازنشانی شوند؟')) {
+    if (window.confirm(t('toast_reset_confirm'))) {
       try {
         await resetDemoData();
         await loadData();
-        showToast('داده‌های شبکه سازمانی بازنشانی گردید.');
+        showToast(t('toast_reset_done'));
       } catch (err: any) {
-        showToast('خطا در بازنشانی: ' + err.message);
+        showToast(t('toast_reset_error', { error: err.message }));
       }
     }
   };
@@ -241,9 +246,9 @@ export default function App() {
     try {
       const res = await writeMemory(deviceId);
       await loadData();
-      showToast(res.message || 'پیکربندی با موفقیت در NVRAM (Startup-Config) ذخیره شد [OK].');
+      showToast(isEn ? ((res as any).message_en || t('toast_write_mem_success')) : (res.message || t('toast_write_mem_success')));
     } catch (err: any) {
-      showToast('خطا در اجرای write memory: ' + err.message);
+      showToast(t('toast_write_mem_error', { error: err.message }));
     }
   };
 
@@ -252,8 +257,10 @@ export default function App() {
 
   return (
     <div
-      className={`h-screen min-h-screen max-h-screen relative flex flex-col justify-between theme-${panelTheme} dir-rtl font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-300 overflow-hidden`}
-      dir="rtl"
+      className={`h-screen min-h-screen max-h-screen relative flex flex-col justify-between theme-${panelTheme} ${
+        isRtl ? 'dir-rtl text-right' : 'dir-ltr text-left'
+      } font-sans selection:bg-indigo-500 selection:text-white transition-colors duration-300 overflow-hidden`}
+      dir={isRtl ? 'rtl' : 'ltr'}
     >
       {/* Dynamic Ambient Glow Background */}
       <div className="ambient-glow-background" />
@@ -363,23 +370,23 @@ export default function App() {
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
-              وضعیت شبکه: <b className="text-emerald-400 font-mono font-bold">Nominal Pro</b>
+              {t('footer_network_status')} <b className="text-emerald-400 font-mono font-bold">{t('footer_status_nominal')}</b>
             </span>
             <span className="hidden sm:inline text-slate-400">
-              تاخیر هسته: <b className="text-cyan-400 font-mono">1.2ms</b>
+              {t('footer_core_latency')} <b className="text-cyan-400 font-mono">1.2ms</b>
             </span>
             <span>
-              تجهیزات متصل: <b className="text-indigo-400 font-mono font-bold">{onlineCount}</b>/{devices.length}
+              {t('footer_connected_devices')} <b className="text-indigo-400 font-mono font-bold">{onlineCount}</b>/{devices.length}
             </span>
             <span className="hidden md:inline text-slate-400">
-              موتور همسایگی: <b className="text-purple-400 font-mono">CDP v2 / LLDP Matrix</b>
+              {t('footer_neighbor_engine')} <b className="text-purple-400 font-mono">CDP v2 / LLDP Matrix</b>
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsReleaseNotesOpen(true)}
-              className="font-mono text-slate-400 hover:text-cyan-300 text-[10px] hidden sm:flex items-center gap-1.5 transition"
-              title="مشاهده نسخه و تاریخچه تغییرات"
+              className="font-mono text-slate-400 hover:text-cyan-300 text-[10px] hidden sm:flex items-center gap-1.5 transition cursor-pointer"
+              title={t('footer_view_release')}
             >
               <span>NetTopology OS</span>
               <span className="text-cyan-400 font-bold bg-white/5 hover:bg-white/10 px-1.5 py-0.2 rounded border border-white/10">
@@ -392,12 +399,12 @@ export default function App() {
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-10 left-6 z-50 spatial-glass border border-indigo-500/50 text-indigo-100 px-4 py-2.5 rounded-xl shadow-[0_0_30px_rgba(99,102,241,0.4)] text-xs flex items-center gap-3 backdrop-blur-2xl">
+        <div className={`fixed bottom-10 ${isRtl ? 'left-6' : 'right-6'} z-50 spatial-glass border border-indigo-500/50 text-indigo-100 px-4 py-2.5 rounded-xl shadow-[0_0_30px_rgba(99,102,241,0.4)] text-xs flex items-center gap-3 backdrop-blur-2xl animate-fadeIn`}>
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
           <span>{toastMessage}</span>
           <button
             onClick={() => setToastMessage(null)}
-            className="text-slate-400 hover:text-white mr-2"
+            className="text-slate-400 hover:text-white mr-2 cursor-pointer"
           >
             ✕
           </button>
@@ -427,7 +434,7 @@ export default function App() {
         preselectedTemplateId={applyPreselectedTemplateId}
         onApplied={(updatedDevice) => {
           loadData();
-          showToast(`کانفیگ تمپلیت با موفقیت بر روی «${updatedDevice.name}» اعمال گردید.`);
+          showToast(t('toast_template_applied', { name: updatedDevice.name }));
         }}
       />
 

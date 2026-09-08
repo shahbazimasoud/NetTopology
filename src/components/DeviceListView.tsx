@@ -21,6 +21,7 @@ import {
   MoreVertical
 } from 'lucide-react';
 import { Device, DeviceType } from '../types';
+import { useLanguage } from '../i18n';
 
 interface DeviceListViewProps {
   devices: Device[];
@@ -47,6 +48,7 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
   onRefreshAll,
   isRefreshing,
 }) => {
+  const { t, isRtl, isEn } = useLanguage();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | DeviceType>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'offline' | 'unsaved'>('all');
@@ -101,18 +103,20 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
   const offlineCount = devices.filter((d) => !d.is_online).length;
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 max-w-7xl mx-auto text-right text-slate-100">
+    <div className={`p-4 sm:p-6 space-y-4 max-w-7xl mx-auto ${isRtl ? 'text-right' : 'text-left'} text-slate-100`}>
       {/* Page Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 spatial-glass p-5 rounded-2xl border border-white/10 shadow-xl backdrop-blur-xl">
         <div>
           <div className="flex items-center gap-2.5">
-            <h2 className="text-base sm:text-lg font-bold text-white glow-text-cyan">موجودی و مدیریت تجهیزات شبکه</h2>
+            <h2 className="text-base sm:text-lg font-bold text-white glow-text-cyan">
+              {t('devicelist_title')}
+            </h2>
             <span className="text-xs font-mono px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">
-              {devices.length} تجهیز
+              {t('status_devices_count', { count: devices.length })}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            ثبت، مدیریت و پایش برخط بودن سوئیچ‌ها، روترها و اکسس‌پوینت‌ها همراه با مشخصات استقرار (ساختمان، طبقه، واحد و رک)
+          <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+            {t('devicelist_subtitle')}
           </p>
         </div>
 
@@ -120,18 +124,18 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
           <button
             onClick={onRefreshAll}
             disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs font-medium shadow-xs transition active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 text-xs font-medium shadow-xs transition active:scale-95 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-indigo-400' : ''}`} />
-            <span>پایش و پینگ همگانی</span>
+            <span>{t('devicelist_btn_ping_all')}</span>
           </button>
 
           <button
             onClick={onOpenAddModal}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-medium shadow-[0_0_15px_rgba(99,102,241,0.35)] transition border border-white/10 active:scale-95"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-medium shadow-[0_0_15px_rgba(99,102,241,0.35)] transition border border-white/10 active:scale-95 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>معرفی تجهیز جدید</span>
+            <span>{t('devicelist_btn_add_device')}</span>
           </button>
         </div>
       </div>
@@ -140,7 +144,9 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
         <div className="p-3.5 rounded-xl spatial-glass spatial-glass-hover spatial-depth-card border border-white/10 shadow-lg flex items-center justify-between">
           <div>
-            <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">سوئیچ‌های شبکه</div>
+            <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">
+              {t('dashboard_card_switches')}
+            </div>
             <div className="text-2xl font-bold text-white font-mono mt-1 glow-text-cyan">
               {devices.filter((d) => d.type === 'switch').length}
             </div>
@@ -152,7 +158,9 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
 
         <div className="p-3.5 rounded-xl spatial-glass spatial-glass-hover spatial-depth-card border border-white/10 shadow-lg flex items-center justify-between">
           <div>
-            <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">روترها و گیت‌وی‌ها</div>
+            <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">
+              {t('dashboard_card_routers')}
+            </div>
             <div className="text-2xl font-bold text-white font-mono mt-1">
               {devices.filter((d) => d.type === 'router').length}
             </div>
@@ -164,7 +172,9 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
 
         <div className="p-3.5 rounded-xl spatial-glass spatial-glass-hover spatial-depth-card border border-white/10 shadow-lg flex items-center justify-between">
           <div>
-            <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">اکسس‌پوینت‌های وای‌فای</div>
+            <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">
+              {t('dashboard_card_aps')}
+            </div>
             <div className="text-2xl font-bold text-white font-mono mt-1">
               {devices.filter((d) => d.type === 'access_point').length}
             </div>
@@ -176,7 +186,9 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
 
         <div className="p-3.5 rounded-xl spatial-glass spatial-glass-hover spatial-depth-card border border-white/10 shadow-lg flex items-center justify-between">
           <div>
-            <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">وضعیت آنلاین / آفلاین</div>
+            <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">
+              {isEn ? 'Reachability Status' : 'وضعیت آنلاین / آفلاین'}
+            </div>
             <div className="text-2xl font-bold font-mono mt-1">
               <span className="text-emerald-400">{onlineCount}</span> /{' '}
               <span className="text-rose-400">{offlineCount}</span>
@@ -194,12 +206,12 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
         <div className="relative flex-1 min-w-[240px]">
           <input
             type="text"
-            placeholder="جستجوی نام، آدرس IP، مدل، ساختمان یا واحد..."
+            placeholder={isEn ? 'Search by name, IP, model, building or unit...' : 'جستجوی نام، آدرس IP، مدل، ساختمان یا واحد...'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-3.5 py-2 pr-9 rounded-xl bg-slate-900/70 border border-white/15 text-slate-100 text-xs placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 shadow-inner"
+            className={`w-full px-3.5 py-2 ${isRtl ? 'pr-9 pl-3.5' : 'pl-9 pr-3.5'} rounded-xl bg-slate-900/70 border border-white/15 text-slate-100 text-xs placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 shadow-inner`}
           />
-          <Search className="w-4 h-4 text-slate-400 absolute right-3 top-2.5" />
+          <Search className={`w-4 h-4 text-slate-400 absolute ${isRtl ? 'right-3' : 'left-3'} top-2.5`} />
         </div>
 
         {/* Filters */}
@@ -208,33 +220,35 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as any)}
-            className="px-3 py-2 rounded-xl bg-slate-900/70 border border-white/15 text-slate-200 text-xs focus:outline-none focus:border-indigo-400"
+            className="px-3 py-2 rounded-xl bg-slate-900/70 border border-white/15 text-slate-200 text-xs focus:outline-none focus:border-indigo-400 cursor-pointer"
           >
-            <option value="all">همه انواع تجهیزات</option>
-            <option value="switch">فقط سوئیچ‌ها (Switches)</option>
-            <option value="router">فقط روترها (Routers)</option>
-            <option value="access_point">فقط اکسس‌پوینت‌ها (APs)</option>
+            <option value="all">{isEn ? 'All Equipment Types' : 'همه انواع تجهیزات'}</option>
+            <option value="switch">{isEn ? 'Switches Only' : 'فقط سوئیچ‌ها (Switches)'}</option>
+            <option value="router">{isEn ? 'Routers Only' : 'فقط روترها (Routers)'}</option>
+            <option value="access_point">{isEn ? 'Access Points Only' : 'فقط اکسس‌پوینت‌ها (APs)'}</option>
           </select>
 
           {/* Status Filter */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="px-3 py-2 rounded-xl bg-slate-900/70 border border-white/15 text-slate-200 text-xs focus:outline-none focus:border-indigo-400"
+            className="px-3 py-2 rounded-xl bg-slate-900/70 border border-white/15 text-slate-200 text-xs focus:outline-none focus:border-indigo-400 cursor-pointer"
           >
-            <option value="all">همه وضعیت‌ها</option>
-            <option value="online">آنلاین (Online)</option>
-            <option value="offline">آفلاین (Offline)</option>
-            <option value="unsaved">⚠️ تغییرات رایت‌نشده ({unsavedCount})</option>
+            <option value="all">{isEn ? 'All Statuses' : 'همه وضعیت‌ها'}</option>
+            <option value="online">{isEn ? 'Online (Reachable)' : 'آنلاین (Online)'}</option>
+            <option value="offline">{isEn ? 'Offline (Critical)' : 'آفلاین (Offline)'}</option>
+            <option value="unsaved">
+              {isEn ? `Unsaved Changes (${unsavedCount})` : `⚠️ تغییرات رایت‌نشده (${unsavedCount})`}
+            </option>
           </select>
 
           {/* Building Filter */}
           <select
             value={buildingFilter}
             onChange={(e) => setBuildingFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-slate-900/70 border border-white/15 text-slate-200 text-xs focus:outline-none focus:border-indigo-400"
+            className="px-3 py-2 rounded-xl bg-slate-900/70 border border-white/15 text-slate-200 text-xs focus:outline-none focus:border-indigo-400 cursor-pointer"
           >
-            <option value="all">همه ساختمان‌ها</option>
+            <option value="all">{isEn ? 'All Buildings' : 'همه ساختمان‌ها'}</option>
             {buildings.map((b) => (
               <option key={b} value={b}>
                 {b}
@@ -247,24 +261,40 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
       {/* Devices List Table */}
       <div className="spatial-glass border border-white/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-xl">
         <div className="overflow-x-auto min-h-[380px]">
-          <table className="w-full text-right text-xs device-table">
+          <table className={`w-full ${isRtl ? 'text-right' : 'text-left'} text-xs device-table`}>
             <thead>
               <tr className="bg-slate-950/80 text-slate-300 border-b-2 border-white/15 text-[11px] font-bold uppercase tracking-wider font-mono">
-                <th className="p-3.5 border-l border-white/15">نام و شناسه تجهیز</th>
-                <th className="p-3.5 border-l border-white/15">نوع و مدل</th>
-                <th className="p-3.5 border-l border-white/15">آدرس IP</th>
-                <th className="p-3.5 border-l border-white/15">محل استقرار (ساختمان / طبقه / واحد)</th>
-                <th className="p-3.5 border-l border-white/15">وضعیت لحظه‌ای</th>
-                <th className="p-3.5 border-l border-white/15">پروتکل همسایگی</th>
-                <th className="p-3.5 border-l border-white/15 text-center">پورت‌ها و ویلن</th>
-                <th className="p-3.5 text-center">عملیات</th>
+                <th className={`p-3.5 ${isRtl ? 'border-l' : 'border-r'} border-white/15`}>
+                  {isEn ? 'Device Name & ID' : 'نام و شناسه تجهیز'}
+                </th>
+                <th className={`p-3.5 ${isRtl ? 'border-l' : 'border-r'} border-white/15`}>
+                  {isEn ? 'Role & Model' : 'نوع و مدل'}
+                </th>
+                <th className={`p-3.5 ${isRtl ? 'border-l' : 'border-r'} border-white/15`}>
+                  {isEn ? 'IP Address' : 'آدرس IP'}
+                </th>
+                <th className={`p-3.5 ${isRtl ? 'border-l' : 'border-r'} border-white/15`}>
+                  {isEn ? 'Location (Rack / Room)' : 'محل استقرار (ساختمان / طبقه / واحد)'}
+                </th>
+                <th className={`p-3.5 ${isRtl ? 'border-l' : 'border-r'} border-white/15`}>
+                  {isEn ? 'Live Status' : 'وضعیت لحظه‌ای'}
+                </th>
+                <th className={`p-3.5 ${isRtl ? 'border-l' : 'border-r'} border-white/15`}>
+                  {isEn ? 'Discovery' : 'پروتکل همسایگی'}
+                </th>
+                <th className={`p-3.5 ${isRtl ? 'border-l' : 'border-r'} border-white/15 text-center`}>
+                  {isEn ? 'Ports & VLAN' : 'پورت‌ها و ویلن'}
+                </th>
+                <th className="p-3.5 text-center">
+                  {isEn ? 'Actions' : 'عملیات'}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
               {filteredDevices.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="p-10 text-center text-slate-400">
-                    تجهیزی با معیارهای جستجو یافت نشد.
+                    {t('devicelist_no_devices')}
                   </td>
                 </tr>
               ) : (
@@ -296,7 +326,7 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-white font-mono text-xs">{dev.name}</span>
                               {dev.has_unsaved_changes && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold" title="دارای تغییرات ذخیره نشده در Startup-Config (Running vs Startup)">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold" title={isEn ? 'Unsaved changes in NVRAM (Startup-Config)' : 'دارای تغییرات ذخیره نشده در Startup-Config (Running vs Startup)'}>
                                   <AlertTriangle className="w-2.5 h-2.5 text-amber-400" />
                                   <span>Write Needed</span>
                                 </span>
@@ -310,11 +340,11 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                                 <button
                                   onClick={() => handleWriteMem(dev.id)}
                                   disabled={writingId === dev.id}
-                                  className="px-2 py-0.5 rounded bg-amber-500/30 hover:bg-amber-500/50 text-amber-200 border border-amber-500/50 font-bold text-[10px] transition flex items-center gap-1 shadow-sm"
-                                  title="اجرای دستور write memory و ذخیره دائم در NVRAM"
+                                  className="px-2 py-0.5 rounded bg-amber-500/30 hover:bg-amber-500/50 text-amber-200 border border-amber-500/50 font-bold text-[10px] transition flex items-center gap-1 shadow-sm cursor-pointer"
+                                  title={isEn ? 'Execute "write memory" to commit running-config to NVRAM' : 'اجرای دستور write memory و ذخیره دائم در NVRAM'}
                                 >
                                   <Save className="w-2.5 h-2.5" />
-                                  <span>{writingId === dev.id ? 'در حال رایت...' : 'Write Memory'}</span>
+                                  <span>{writingId === dev.id ? (isEn ? 'Writing...' : 'در حال رایت...') : 'Write Memory'}</span>
                                 </button>
                               </div>
                             )}
@@ -344,7 +374,7 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                         </div>
                         {dev.rack && (
                           <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            رک: {dev.rack}
+                            {isEn ? 'Rack:' : 'رک:'} {dev.rack}
                           </div>
                         )}
                       </td>
@@ -364,21 +394,21 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                                 dev.is_online ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)] animate-pulse' : 'bg-rose-500'
                               }`}
                             ></span>
-                            <span>{dev.is_online ? 'آنلاین' : 'آفلاین'}</span>
+                            <span>{dev.is_online ? (isEn ? 'Online' : 'آنلاین') : (isEn ? 'Offline' : 'آفلاین')}</span>
                           </span>
 
                           <button
                             onClick={() => handlePing(dev.id)}
                             disabled={isPinging}
-                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition border border-white/10"
-                            title="پینگ مجدد لحظه‌ای"
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition border border-white/10 cursor-pointer"
+                            title={isEn ? 'Ping device now' : 'پینگ مجدد لحظه‌ای'}
                           >
                             <RefreshCw className={`w-3 h-3 ${isPinging ? 'animate-spin text-indigo-400' : ''}`} />
                           </button>
                         </div>
                         {dev.is_online && dev.latency_ms !== null && (
                           <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            تأخیر: {dev.latency_ms} ms
+                            {isEn ? 'Latency:' : 'تأخیر:'} {dev.latency_ms} ms
                           </div>
                         )}
                       </td>
@@ -403,10 +433,10 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                       <td className="p-3.5 text-center">
                         <button
                           onClick={() => onInspectPorts(dev)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-indigo-600/30 hover:text-white hover:border-indigo-400/50 text-slate-300 border border-white/10 transition text-xs shadow-xs"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-indigo-600/30 hover:text-white hover:border-indigo-400/50 text-slate-300 border border-white/10 transition text-xs shadow-xs cursor-pointer"
                         >
                           <Cable className="w-3.5 h-3.5 text-indigo-400" />
-                          <span>{dev.total_ports || 24} پورت</span>
+                          <span>{dev.total_ports || 24} {isEn ? 'Ports' : 'پورت'}</span>
                         </button>
                       </td>
 
@@ -418,12 +448,12 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                               e.stopPropagation();
                               setOpenActionMenuId(openActionMenuId === dev.id ? null : dev.id);
                             }}
-                            className={`p-1.5 sm:p-2 rounded-xl border transition active:scale-95 shadow-xs ${
+                            className={`p-1.5 sm:p-2 rounded-xl border transition active:scale-95 shadow-xs cursor-pointer ${
                               openActionMenuId === dev.id
                                 ? 'bg-indigo-600 text-white border-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.4)]'
                                 : 'bg-white/5 hover:bg-white/15 text-slate-300 border-white/10 hover:text-white'
                             }`}
-                            title="عملیات و گزینه‌ها"
+                            title={isEn ? 'Actions & Options' : 'عملیات و گزینه‌ها'}
                           >
                             <MoreVertical className="w-4 h-4" />
                           </button>
@@ -431,7 +461,7 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                           {/* Dropdown Menu */}
                           {openActionMenuId === dev.id && (
                             <>
-                              {/* Backdrop for closing dropdown on outside click */}
+                              {/* Backdrop */}
                               <div
                                 className="fixed inset-0 z-40"
                                 onClick={(e) => {
@@ -441,8 +471,7 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                               />
 
                               <div
-                                className="absolute left-2 top-full mt-1.5 w-60 z-50 rounded-2xl shadow-2xl p-1.5 border border-white/15 backdrop-blur-2xl bg-slate-950/95 text-right font-sans device-action-dropdown animate-fadeIn"
-                                dir="rtl"
+                                className={`absolute ${isRtl ? 'left-2 text-right' : 'right-2 text-left'} top-full mt-1.5 w-64 z-50 rounded-2xl shadow-2xl p-1.5 border border-white/15 backdrop-blur-2xl bg-slate-950/95 font-sans device-action-dropdown animate-fadeIn`}
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between text-[11px] font-mono">
@@ -458,12 +487,12 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                                         setOpenActionMenuId(null);
                                         onConnectTerminal(dev);
                                       }}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-emerald-300 hover:bg-emerald-500/15 hover:text-emerald-200 transition text-right group/item"
+                                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-emerald-300 hover:bg-emerald-500/15 hover:text-emerald-200 transition ${isRtl ? 'text-right' : 'text-left'} group/item cursor-pointer`}
                                     >
                                       <Terminal className="w-4 h-4 text-emerald-400 group-hover/item:scale-110 transition shrink-0" />
-                                      <div className="flex flex-col text-right">
-                                        <span>کانکت به ترمینال سیسکو</span>
-                                        <span className="text-[10px] text-emerald-500/80 font-mono">SSH / CLI Direct</span>
+                                      <div className="flex flex-col">
+                                        <span>{isEn ? 'SSH Console Direct' : 'کانکت به ترمینال سیسکو'}</span>
+                                        <span className="text-[10px] text-emerald-500/80 font-mono">CLI Terminal</span>
                                       </div>
                                     </button>
                                   )}
@@ -475,12 +504,12 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                                         setOpenActionMenuId(null);
                                         onApplyTemplate(dev);
                                       }}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-cyan-300 hover:bg-cyan-500/15 hover:text-cyan-200 transition text-right group/item"
+                                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-cyan-300 hover:bg-cyan-500/15 hover:text-cyan-200 transition ${isRtl ? 'text-right' : 'text-left'} group/item cursor-pointer`}
                                     >
                                       <FileCode2 className="w-4 h-4 text-cyan-400 group-hover/item:scale-110 transition shrink-0" />
-                                      <div className="flex flex-col text-right">
-                                        <span>اعمال تمپلیت کانفیگ</span>
-                                        <span className="text-[10px] text-cyan-400/70">تکمیل متغیرها و اجرا</span>
+                                      <div className="flex flex-col">
+                                        <span>{isEn ? 'Apply Config Template' : 'اعمال تمپلیت کانفیگ'}</span>
+                                        <span className="text-[10px] text-cyan-400/70">{isEn ? 'Variables & Deploy' : 'تکمیل متغیرها و اجرا'}</span>
                                       </div>
                                     </button>
                                   )}
@@ -492,11 +521,11 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                                       handlePing(dev.id);
                                     }}
                                     disabled={isPinging}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:bg-white/10 transition text-right"
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:bg-white/10 transition ${isRtl ? 'text-right' : 'text-left'} cursor-pointer`}
                                   >
                                     <RefreshCw className={`w-4 h-4 text-indigo-400 shrink-0 ${isPinging ? 'animate-spin' : ''}`} />
-                                    <div className="flex flex-col text-right">
-                                      <span>تست پینگ و تاخیر لحظه‌ای</span>
+                                    <div className="flex flex-col">
+                                      <span>{isEn ? 'Ping & Keepalive Telemetry' : 'تست پینگ و تاخیر لحظه‌ای'}</span>
                                       <span className="text-[10px] text-slate-400 font-mono">ICMP Keepalive Check</span>
                                     </div>
                                   </button>
@@ -507,11 +536,11 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                                       setOpenActionMenuId(null);
                                       onInspectPorts(dev);
                                     }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:bg-white/10 transition text-right"
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:bg-white/10 transition ${isRtl ? 'text-right' : 'text-left'} cursor-pointer`}
                                   >
                                     <Cable className="w-4 h-4 text-indigo-400 shrink-0" />
-                                    <div className="flex flex-col text-right">
-                                      <span>مشاهده وضعیت پورت‌ها و VLAN</span>
+                                    <div className="flex flex-col">
+                                      <span>{isEn ? 'Inspect Interfaces & VLANs' : 'مشاهده وضعیت پورت‌ها و VLAN'}</span>
                                       <span className="text-[10px] text-slate-400 font-mono">{dev.total_ports || 24} Interfaces</span>
                                     </div>
                                   </button>
@@ -523,11 +552,11 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                                         setOpenActionMenuId(null);
                                         handleWriteMem(dev.id);
                                       }}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-300 hover:bg-amber-500/15 transition text-right"
+                                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-300 hover:bg-amber-500/15 transition ${isRtl ? 'text-right' : 'text-left'} cursor-pointer`}
                                     >
                                       <Save className="w-4 h-4 text-amber-400 shrink-0" />
-                                      <div className="flex flex-col text-right">
-                                        <span>ذخیره در NVRAM (Write Memory)</span>
+                                      <div className="flex flex-col">
+                                        <span>{isEn ? 'Save to NVRAM (Write Memory)' : 'ذخیره در NVRAM (Write Memory)'}</span>
                                         <span className="text-[10px] text-amber-400/80 font-mono">Running &gt; Startup Config</span>
                                       </div>
                                     </button>
@@ -539,14 +568,17 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                                   <button
                                     onClick={() => {
                                       setOpenActionMenuId(null);
-                                      if (window.confirm(`آیا از حذف تجهیز «${dev.name}» از لیست اطمینان دارید؟`)) {
+                                      const confirmMsg = isEn
+                                        ? `Are you sure you want to remove device "${dev.name}" from the inventory?`
+                                        : `آیا از حذف تجهیز «${dev.name}» از لیست اطمینان دارید؟`;
+                                      if (window.confirm(confirmMsg)) {
                                         onDeleteDevice(dev.id);
                                       }
                                     }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition text-right"
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition ${isRtl ? 'text-right' : 'text-left'} cursor-pointer`}
                                   >
                                     <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
-                                    <span>حذف تجهیز از سیستم</span>
+                                    <span>{isEn ? 'Delete Device from System' : 'حذف تجهیز از سیستم'}</span>
                                   </button>
                                 </div>
                               </div>
