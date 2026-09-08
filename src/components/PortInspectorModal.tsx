@@ -3,6 +3,7 @@ import { X, Cable, Zap, Shield, ShieldCheck, ShieldAlert, CheckCircle2, AlertCir
 import { Device, SwitchPort } from '../types';
 import { fetchDevicePorts, updateSwitchPort, writeMemory } from '../services/api';
 import { NetworkPortSvg } from './NetworkPortSvg';
+import { CiscoPortContextMenu } from './CiscoPortContextMenu';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface PortInspectorModalProps {
@@ -30,6 +31,13 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
   const [filterMode, setFilterMode] = useState<'all' | 'up' | 'down' | 'trunk' | 'access' | 'port-sec'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Right-click Cisco Context Menu state
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    port: SwitchPort;
+  } | null>(null);
+
   // Editing state
   const [isEditing, setIsEditing] = useState(false);
   const [editAdminStatus, setEditAdminStatus] = useState<'enabled' | 'disabled'>('enabled');
@@ -49,6 +57,66 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
   // Confirmation Summary Modal state
   const [showConfirmSummary, setShowConfirmSummary] = useState(false);
   const [isWritingMem, setIsWritingMem] = useState(false);
+
+  const handlePortContextMenu = (e: React.MouseEvent, port: SwitchPort) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      port,
+    });
+  };
+
+  const handleExecuteContextMenuAction = async (action: string, extra?: any) => {
+    if (!contextMenu || !device) return;
+    const targetPort = contextMenu.port;
+    let updates: Partial<SwitchPort> = {};
+
+    switch (action) {
+      case 'shutdown':
+        updates = { admin_status: 'disabled', status: 'down' };
+        break;
+      case 'no_shutdown':
+        updates = { admin_status: 'enabled', status: 'up' };
+        break;
+      case 'mode_trunk':
+        updates = { mode: 'trunk' };
+        break;
+      case 'mode_access':
+        updates = { mode: 'access' };
+        break;
+      case 'port_sec_enable':
+        updates = {
+          port_security_enabled: true,
+          mode: 'access',
+          port_security_mode: 'sticky',
+          port_security_violation: 'restrict',
+          port_security_max_mac: 1,
+        };
+        break;
+      case 'port_sec_disable':
+        updates = { port_security_enabled: false };
+        break;
+      case 'change_vlan':
+        updates = { vlan: Number(extra) || 1 };
+        break;
+      default:
+        break;
+    }
+
+    try {
+      await updateSwitchPort(device.id, targetPort.port_id, updates);
+      setPorts((prev) =>
+        prev.map((p) => (p.port_id === targetPort.port_id ? { ...p, ...updates } : p))
+      );
+      if (selectedPort?.port_id === targetPort.port_id) {
+        setSelectedPort((prev) => (prev ? { ...prev, ...updates } : null));
+      }
+      if (onPortUpdated) onPortUpdated();
+    } catch (err: any) {
+      console.error('Failed to update port from context menu:', err);
+    }
+  };
 
   useEffect(() => {
     if (device && isOpen) {
@@ -454,6 +522,7 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
                         port={port}
                         isSelected={selectedPort?.port_id === port.port_id}
                         onClick={() => handleSelectPort(port)}
+                        onContextMenu={(e) => handlePortContextMenu(e, port)}
                       />
                     ))}
                   </div>
@@ -474,10 +543,11 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
                     <div className="flex items-center gap-2">
                       <h4 className="text-xs font-bold text-white font-mono">{selectedPort.name}</h4>
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded font-bold font-mono ${
+                        data-badge={selectedPort.mode === 'trunk' ? 'port-mode-trunk' : 'port-mode-access'}
+                        className={`text-[10px] px-2 py-0.5 rounded font-bold font-mono text-white shadow-xs ${
                           selectedPort.mode === 'trunk'
-                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                            : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                            ? 'port-mode-badge-trunk bg-purple-600 border border-purple-500'
+                            : 'port-mode-badge-access bg-indigo-600 border border-indigo-500'
                         }`}
                       >
                         {selectedPort.mode === 'trunk' ? (isEn ? 'TRUNK' : 'TRUNK (ترانک)') : (isEn ? 'ACCESS' : 'ACCESS (اکسس)')}
@@ -716,7 +786,7 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
                         <div>
                           <div className="flex items-center gap-2">
                             <h5 className="font-bold text-white text-xs">{isEn ? 'Cisco Port Security' : 'امنیت پورت سیسکو (Cisco Port Security)'}</h5>
-                            <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono px-1.5 py-0.5 rounded">
+                            <span className="layer2-security-badge text-[10px] font-mono px-2 py-0.5 rounded font-bold" data-badge="layer2-security">
                               Layer 2 Security
                             </span>
                           </div>
@@ -1065,10 +1135,11 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
                         </td>
                         <td className="px-3 py-2.5">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                            data-badge={port.mode === 'trunk' ? 'port-mode-trunk' : 'port-mode-access'}
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono text-white shadow-xs ${
                               port.mode === 'trunk'
-                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                                : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                                ? 'port-mode-badge-trunk bg-purple-600 border border-purple-500'
+                                : 'port-mode-badge-access bg-indigo-600 border border-indigo-500'
                             }`}
                           >
                             {port.mode.toUpperCase()}
@@ -1236,6 +1307,19 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {/* Cisco Right-Click Port Actions Context Menu */}
+        {contextMenu && device && (
+          <CiscoPortContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            port={contextMenu.port}
+            deviceName={device.name}
+            onClose={() => setContextMenu(null)}
+            onExecuteAction={handleExecuteContextMenuAction}
+            onOpenTerminal={onConnectTerminal ? () => onConnectTerminal(device) : undefined}
+          />
         )}
       </div>
     </div>

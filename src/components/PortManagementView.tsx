@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Server, Cable, Zap, Shield, Search, Filter, Edit3, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Device, SwitchPort } from '../types';
 import { fetchDevicePorts, updateSwitchPort } from '../services/api';
+import { CiscoPortContextMenu } from './CiscoPortContextMenu';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface PortManagementViewProps {
@@ -17,6 +18,13 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
   const [ports, setPorts] = useState<SwitchPort[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPort, setSelectedPort] = useState<SwitchPort | null>(null);
+
+  // Right-click Cisco Context Menu state
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    port: SwitchPort;
+  } | null>(null);
 
   // Edit port state
   const [isEditing, setIsEditing] = useState(false);
@@ -51,6 +59,56 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExecuteContextMenuAction = async (action: string, extra?: any) => {
+    if (!contextMenu || !currentDevice) return;
+    const targetPort = contextMenu.port;
+    let updates: Partial<SwitchPort> = {};
+
+    switch (action) {
+      case 'shutdown':
+        updates = { admin_status: 'disabled', status: 'down' };
+        break;
+      case 'no_shutdown':
+        updates = { admin_status: 'enabled', status: 'up' };
+        break;
+      case 'mode_trunk':
+        updates = { mode: 'trunk' };
+        break;
+      case 'mode_access':
+        updates = { mode: 'access' };
+        break;
+      case 'port_sec_enable':
+        updates = {
+          port_security_enabled: true,
+          mode: 'access',
+          port_security_mode: 'sticky',
+          port_security_violation: 'restrict',
+          port_security_max_mac: 1,
+        };
+        break;
+      case 'port_sec_disable':
+        updates = { port_security_enabled: false };
+        break;
+      case 'change_vlan':
+        updates = { vlan: Number(extra) || 1 };
+        break;
+      default:
+        break;
+    }
+
+    try {
+      await updateSwitchPort(currentDevice.id, targetPort.port_id, updates);
+      setPorts((prev) =>
+        prev.map((p) => (p.port_id === targetPort.port_id ? { ...p, ...updates } : p))
+      );
+      if (selectedPort?.port_id === targetPort.port_id) {
+        setSelectedPort((prev) => (prev ? { ...prev, ...updates } : null));
+      }
+    } catch (err: any) {
+      console.error('Failed to update port from context menu:', err);
     }
   };
 
@@ -213,7 +271,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
               <span>{t('ports_legend_down')}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2 rounded bg-purple-500"></span>
+              <span className="w-2.5 h-2 rounded bg-purple-600"></span>
               <span>{t('ports_legend_trunk')}</span>
             </div>
           </div>
@@ -239,6 +297,14 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                       setSelectedPort(port);
                       setIsEditing(false);
                     }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setContextMenu({
+                        x: e.clientX,
+                        y: e.clientY,
+                        port,
+                      });
+                    }}
                     className={`relative group p-1.5 rounded-xl border transition-all flex flex-col items-center w-12 cursor-pointer ${
                       isSelected
                         ? 'bg-indigo-600/30 border-cyan-400 ring-2 ring-cyan-400/40 text-white shadow-[0_0_12px_rgba(6,182,212,0.4)]'
@@ -260,7 +326,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                         }`}
                       ></span>
                       {isTrunk && (
-                        <span className="text-[7px] font-bold text-purple-300 bg-purple-900/80 px-0.5 rounded">
+                        <span className="text-[7px] font-bold text-white bg-purple-600 px-1 rounded-xs">
                           T
                         </span>
                       )}
@@ -293,10 +359,11 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-bold text-white font-mono">{selectedPort.name}</h4>
                   <span
-                    className={`text-[9px] px-2 py-0.5 rounded-md font-bold font-mono ${
+                    data-badge={selectedPort.mode === 'trunk' ? 'port-mode-trunk' : 'port-mode-access'}
+                    className={`text-[9px] px-2 py-0.5 rounded-md font-bold font-mono text-white shadow-xs ${
                       selectedPort.mode === 'trunk'
-                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                        : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                        ? 'port-mode-badge-trunk bg-purple-600 border border-purple-500'
+                        : 'port-mode-badge-access bg-indigo-600 border border-indigo-500'
                     }`}
                   >
                     {selectedPort.mode === 'trunk' ? (isEn ? 'TRUNK' : 'TRUNK (ترانک)') : (isEn ? 'ACCESS' : 'ACCESS (اکسس)')}
@@ -581,10 +648,11 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                   </td>
                   <td className="p-3.5">
                     <span
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold font-mono ${
+                      data-badge={port.mode === 'trunk' ? 'port-mode-trunk' : 'port-mode-access'}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold font-mono text-white shadow-xs ${
                         port.mode === 'trunk'
-                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                          : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                          ? 'port-mode-badge-trunk bg-purple-600 border border-purple-500'
+                          : 'port-mode-badge-access bg-indigo-600 border border-indigo-500'
                       }`}
                     >
                       {port.mode.toUpperCase()}
@@ -613,6 +681,18 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
           </table>
         </div>
       </div>
+
+      {/* Cisco Right-Click Port Actions Context Menu */}
+      {contextMenu && currentDevice && (
+        <CiscoPortContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          port={contextMenu.port}
+          deviceName={currentDevice.name}
+          onClose={() => setContextMenu(null)}
+          onExecuteAction={handleExecuteContextMenuAction}
+        />
+      )}
     </div>
   );
 };

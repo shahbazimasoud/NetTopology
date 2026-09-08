@@ -1473,3 +1473,57 @@
   animation: gentleShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
+/* Cisco Terminal Login & Banner Styling */
+.cisco-terminal-login-banner {
+  color: #94a3b8 !important;
+  font-weight: 600;
+}
+
+.theme-light .cisco-terminal-login-banner {
+  color: #334155 !important;
+  font-weight: 700 !important;
+}
+
+/* Layer 2 Security Badge - black and bold text globally as requested */
+.layer2-security-badge,
+[data-badge="layer2-security"] {
+  color: #000000 !important;
+  font-weight: 800 !important;
+  background-color: #e0e7ff !important;
+  border: 1px solid #818cf8 !important;
+}
+
+.theme-dark .layer2-security-badge,
+.theme-dark [data-badge="layer2-security"] {
+  color: #000000 !important;
+  font-weight: 800 !important;
+  background-color: #c7d2fe !important;
+  border: 1px solid #a5b4fc !important;
+}
+
+.theme-light .layer2-security-badge,
+.theme-light [data-badge="layer2-security"] {
+  color: #000000 !important;
+  font-weight: 800 !important;
+  background-color: #e0e7ff !important;
+  border: 1px solid #6366f1 !important;
+}
+
+/* Port Mode Badges (Trunk / Access) - White and bold text in both themes */
+.port-mode-badge-trunk,
+[data-badge="port-mode-trunk"] {
+  background-color: #7c3aed !important;
+  border: 1px solid #6d28d9 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.port-mode-badge-access,
+[data-badge="port-mode-access"] {
+  background-color: #4f46e5 !important;
+  border: 1px solid #4338ca !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+

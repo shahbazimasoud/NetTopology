@@ -5,12 +5,14 @@ interface NetworkPortSvgProps {
   port: SwitchPort;
   isSelected?: boolean;
   onClick?: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
 export const NetworkPortSvg: React.FC<NetworkPortSvgProps> = ({
   port,
   isSelected = false,
   onClick,
+  onContextMenu,
 }) => {
   const isUp = port.status === 'up';
   const isDisabled = port.admin_status === 'disabled';
@@ -31,6 +33,12 @@ export const NetworkPortSvg: React.FC<NetworkPortSvgProps> = ({
     <button
       type="button"
       onClick={onClick}
+      onContextMenu={(e) => {
+        if (onContextMenu) {
+          e.preventDefault();
+          onContextMenu(e);
+        }
+      }}
       className={`group relative flex flex-col items-center p-1 rounded-lg transition-all select-none ${
         isSelected
           ? 'bg-indigo-950/90 border-2 border-indigo-400 ring-2 ring-indigo-500/40 shadow-lg scale-105 z-10'

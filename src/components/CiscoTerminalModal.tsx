@@ -74,6 +74,19 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const interfaceDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!isInterfaceDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (interfaceDropdownRef.current && !interfaceDropdownRef.current.contains(e.target as Node)) {
+        setIsInterfaceDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isInterfaceDropdownOpen]);
 
   // Initialize terminal session
   useEffect(() => {
@@ -720,7 +733,8 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
               {/* Collapsible Interface Table / Drawer */}
               {isInterfaceDropdownOpen && (
                 <div
-                  className={`absolute ${isEn ? 'left-0' : 'right-0'} mt-2 w-[340px] sm:w-[480px] max-h-[380px] overflow-y-auto bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 z-50 text-xs`}
+                  ref={interfaceDropdownRef}
+                  className={`absolute ${isEn ? 'right-0 left-auto' : 'left-0 right-auto'} mt-2 w-[min(480px,calc(100vw-2.5rem))] max-h-[380px] overflow-y-auto bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 z-50 text-xs custom-scrollbar`}
                   dir={isEn ? 'ltr' : 'rtl'}
                 >
                   <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-2">
@@ -729,7 +743,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                     </span>
                     <button
                       onClick={() => setIsInterfaceDropdownOpen(false)}
-                      className="text-slate-400 hover:text-white p-0.5"
+                      className="text-slate-400 hover:text-white p-0.5 cursor-pointer"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -761,15 +775,16 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
                           <div className="flex items-center gap-2 text-[10px] font-mono">
                             <span
-                              className={`px-1.5 py-0.5 rounded ${
+                              data-badge={p.mode === 'trunk' ? 'port-mode-trunk' : 'port-mode-access'}
+                              className={`px-2 py-0.5 rounded font-bold font-mono text-white shadow-xs ${
                                 p.mode === 'trunk'
-                                  ? 'bg-purple-950 text-purple-300 border border-purple-800'
-                                  : 'bg-indigo-950 text-indigo-300 border border-indigo-800'
+                                  ? 'port-mode-badge-trunk bg-purple-600 border border-purple-500'
+                                  : 'port-mode-badge-access bg-indigo-600 border border-indigo-500'
                               }`}
                             >
-                              {p.mode}
+                              {p.mode.toUpperCase()}
                             </span>
-                            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700 font-bold">
                               VLAN {p.vlan}
                             </span>
                           </div>
@@ -848,8 +863,23 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                     </div>
                   );
                 }
+                const isLoginBanner =
+                  line.id === 'sys-3' ||
+                  line.id === 'sys-4' ||
+                  line.text.includes('User Access Verification') ||
+                  line.text.includes('Username:') ||
+                  line.text.includes('Password:') ||
+                  line.text.includes('****************');
+
                 return (
-                  <div key={line.id} className="text-slate-200 whitespace-pre-wrap">
+                  <div
+                    key={line.id}
+                    className={`${
+                      isLoginBanner
+                        ? 'cisco-terminal-login-banner text-slate-300 font-semibold'
+                        : 'text-slate-200'
+                    } whitespace-pre-wrap font-mono`}
+                  >
                     {line.text}
                   </div>
                 );

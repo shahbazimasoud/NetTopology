@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.6.1-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۶.۰
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.6.0
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۶.۱
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.6.1
 
 ---
 
@@ -41,6 +41,7 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 - **چراغ‌های وضعیت LED:** پایش وضعیت فیزیکی پورت (Up، Down، Administratively Disabled) همراه با افکت‌های نوری و پالس آنلاین.
 - **نشان‌های هوشمند مود و VLAN:** تفکیک پورت‌های Access و Trunk با تگ‌های رنگی پرکنتراست و نمایش آنی شماره VLAN.
 - **تغییرات بلادرنگ پورت:** امکان ویرایش نام، وضعیت فعال/غیرفعال، جابجایی بین مدهای اکسس و ترانک، و تعیین Allowed VLANs با ارائه پیش‌نمایش تفاوت‌ها (Diff Preview) قبل از اعمال.
+- **منوی راست‌کلیک پورت‌ها (Right-Click Context Menu):** کلیک راست روی هر پورت فیزیکی جهت نمایش منوی اختصاصی عملیات سوئیچ شامل خاموش/روشن کردن پورت (`shutdown` / `no shutdown`)، جابجایی سریع حالت `Trunk` و `Access`، فعال‌سازی پورت سکیوریتی و تنظیم مستقیم VLAN بدون نیاز به ورود به فرم‌های تو در تو.
 
 ### ۲. امنیت پورت لایه ۲ سیسکو (Cisco Port Security)
 - **فعال‌سازی با کلید تعاملی با کنتراست بالا:** اعمال پیکربندی `switchport port-security` روی پورت‌های اکسس.
@@ -209,6 +210,19 @@ npm start
 > ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
 
 ### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
+- **نسخه ۱.۶.۱ (v1.6.1 - منوی راست‌کلیک پورت‌های فیس‌پلیت، رفع مشکل دراپ‌داون اینترفیس‌های ترمینال و کنتراست بالای لیبل‌ها در تم روشن)**:
+  - **منوی راست‌کلیک پورت‌های سوئیچ (Cisco Port Context Menu):** افزودن قابلیت راست‌کلیک روی پورت‌های فیزیکی سوئیچ در فیس‌پلیت جهت اعمال دستورات shutdown / no shutdown، تغییر حالت Trunk/Access، فعال‌سازی پورت سکیوریتی و تنظیم سریع شماره VLAN.
+  - **رفع مشکل خروج لیست اینترفیس‌های ترمینال از کادر:** اصلاح موقعیت‌دهی، محدودسازی ارتفاع، اسکرول روان و بسته‌شدن هوشمند با کلیک در بیرون کادر.
+  - **اصلاح کنتراست تگ‌های Trunk و Access:** تغییر استایل برچسب‌های ترانک و اکسس در تم روشن به متن سفید کاملاً بولد و خوانا بر روی پس‌زمینه بنفش و نیلی پررنگ.
+  - **اصلاح رنگ بنر لاگین ترمینال در تم روشن:** تغییر رنگ پیام‌های User Access Verification، نام کاربری و رمز عبور و کادر ستاره‌ها در تم روشن به خاکستری تیره استاندارد و باکنتراست.
+  - **کنتراست بالای کادر Layer 2 Security:** تثبیت جهانی متن مشکی و فونت بولد برای برچسب لایه ۲ در تمامی تم‌ها.
+
+- **نسخه ۱.۶.۰ (v1.6.0 - مدیریت سلسله‌مراتبی پیشرفته استقرار فیزیکی ساختمان > طبقه > بخش > رک با درگ اند دراپ و پورت سفارشی بک‌اند)**:
+  - **ساختار سلسله‌مراتبی کامل فیزیکی:** پیاده‌سازی سطوح ساختمانی، طبقات، بخش‌ها/اتاق‌ها و رک‌های سرور.
+  - **پشتیبانی درگ اند دراپ بین تمامی سطوح:** جابجایی بصری تجهیزات بین ساختمان‌ها، طبقات، بخش‌ها و رک‌ها با بازخورد زنده.
+  - **مدیریت کامل (CRUD):** قابلیت ایجاد، ویرایش نام (Rename) و حذف (Delete) در تمامی سطوح سلسله‌مراتب فیزیکی.
+  - **پورت سفارشی بک‌اند در نصب خودکار:** امکان وارد کردن پورت سفارشی برای پنل در `install.sh` و `setup-panel.sh`.
+
 - **نسخه ۱.۵.۰ (v1.5.0 - قابلیت کشیدن و رها کردن تجهیزات بین طبقات و ساختمان‌ها در نقشه استقرار فیزیکی)**:
   - **قابلیت درگ اند دراپ (Drag & Drop):** پشتیبانی کامل از کشیدن و رها کردن تعاملی تجهیزات شبکه بین طبقات مختلف یک ساختمان و یا انتقال به ساختمان‌های دیگر در نمای شماتیک فیزیکی (`Physical Placement`).
   - **به‌روزرسانی آنی و زنده (Optimistic UI):** جابجایی بلافاصله در رابط کاربری منعکس شده و درخواست ویرایش مشخصات فیزیکی به اندپوینت `PUT /api/devices/:id` ارسال می‌شود؛ در صورت بروز خطا وضعیت به طور خودکار بازگردانی (Rollback) می‌شود.
@@ -259,6 +273,7 @@ npm start
 - **Dynamic Port Status LEDs:** Real-time visual feedback reflecting operational states (Up, Down, Administratively Disabled) with pulsating glow effects.
 - **VLAN & Mode Indicators:** Distinct visual badges for Access vs. Trunk modes, with high-contrast VLAN tags readable in both light and dark aesthetics.
 - **Interactive Port Inspector:** One-click modal to inspect port parameters, toggle operational states, reassign VLANs, and preview configuration diffs before execution.
+- **Right-Click Port Context Menu (`CiscoPortContextMenu`):** Right-click any physical port on the Switch Faceplate for instant operational control: shutdown/no-shutdown, switch between Trunk and Access mode, enable Port Security, or assign VLAN directly without nested menus.
 
 ### 2. Cisco Layer-2 Port Security Management
 - **One-Touch Port Security Toggle:** Effortlessly apply `switchport port-security` with dedicated high-contrast controls.
@@ -428,6 +443,19 @@ Any AI assistant, coding agent, or human contributor working on this repository 
 3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
 
 ### Release Notes & Bug Fixes
+- **Version 1.6.1 (Cisco Switch Port Right-Click Context Menu, Terminal Interface Dropdown Fix & High-Contrast Light Theme Badges)**:
+  - **Cisco Switch Port Right-Click Context Menu (`CiscoPortContextMenu`):** Added intuitive right-click action menu on physical ports in the Switch Faceplate for immediate shutdown/no shutdown toggles, Trunk vs. Access switching, Layer-2 Port Security activation, and quick VLAN configuration.
+  - **Fixed Terminal Interface Dropdown Overflow:** Corrected dropdown boundaries, maximum height, smooth scrolling, and click-outside closing mechanism in `CiscoTerminalModal`.
+  - **High-Contrast Trunk & Access Badges in Light Theme:** Restyled port mode badges to use crisp white bold typography on vibrant purple and indigo backgrounds, completely eliminating low-contrast text.
+  - **Dark Gray Login Banner in Light Terminal:** Updated User Access Verification, username/password prompts, and asterisk separator lines to dark slate/gray in light mode for effortless readability.
+  - **Global Bold Black Text for Layer 2 Security:** Standardized the Cisco Port Security header badge with bold black typography across all themes.
+
+- **Version 1.6.0 (Advanced Hierarchical Physical Placement: Building > Floor > Unit > Rack with Drag & Drop & Custom Backend Port)**:
+  - **Hierarchical Physical Structure:** Structured network device layout across Building > Floor > Unit/Room > Server Rack levels.
+  - **Multi-Level Drag & Drop:** Move devices interactively across buildings, floors, rooms, and racks with live visual drop feedback.
+  - **Full Hierarchy CRUD:** Create, rename, and delete buildings, floors, units, and server racks.
+  - **Configurable Backend Port:** Added interactive port prompt with fallback defaults in `install.sh` and `setup-panel.sh`.
+
 - **Version 1.5.0 (Drag & Drop Physical Device Placement Across Buildings & Floors)**:
   - **Interactive Drag & Drop:** Full HTML5 drag-and-drop mechanics enabling network operators to move switches, routers, and access points freely across floors within the same building or relocate them to different buildings in the Physical Placement view.
   - **Optimistic UI with Real-time Backend Sync:** Instant DOM updates with immediate API calls to `PUT /api/devices/:id` (`building`, `floor`) and automatic graceful rollback if the backend request fails.
