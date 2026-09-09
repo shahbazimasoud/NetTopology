@@ -20,7 +20,11 @@ import {
   Cable,
   Check,
   Play,
-  Palette
+  Palette,
+  PanelRightClose,
+  PanelRightOpen,
+  History as HistoryIcon,
+  Clock,
 } from 'lucide-react';
 import { Device, SwitchPort, VlanInfo } from '../types';
 import {
@@ -55,7 +59,7 @@ interface CommandGuideItem {
   descEn: string;
   category: 'exec' | 'config' | 'show' | 'action';
   mode: CliMode;
-  forType?: 'switch' | 'router' | 'all';
+  forType?: 'switch' | 'router' | 'mikrotik' | 'all';
 }
 
 const TERMINAL_BG_OPTIONS = [
@@ -103,6 +107,15 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('cisco_terminal_sidebar_open');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+  const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
   const [isWritingMemory, setIsWritingMemory] = useState(false);
   const [sshSessionMode, setSshSessionMode] = useState<'connecting' | 'real_ssh' | 'fallback_emulation'>('connecting');
   const [sshLatency, setSshLatency] = useState<number | null>(null);
@@ -110,7 +123,19 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const interfaceDropdownRef = useRef<HTMLDivElement>(null);
+  const historyDropdownRef = useRef<HTMLDivElement>(null);
   const activeSessionIdRef = useRef<string | null>(null);
+  const draftInputRef = useRef<string>('');
+
+  const handleToggleSidebar = () => {
+    setIsSidebarOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('cisco_terminal_sidebar_open', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const handleCloseModal = () => {
     if (device) {
@@ -138,6 +163,18 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isInterfaceDropdownOpen]);
+
+  // Close history dropdown on click outside
+  useEffect(() => {
+    if (!isHistoryOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (historyDropdownRef.current && !historyDropdownRef.current.contains(e.target as Node)) {
+        setIsHistoryOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isHistoryOpen]);
 
   // Initialize terminal session
   useEffect(() => {
@@ -272,10 +309,22 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
   if (!isOpen || !device) return null;
 
-  const isRouter = device.type === 'router';
+  const isMikroTik =
+    !!device.model?.toLowerCase().includes('mikrotik') ||
+    !!device.model?.toLowerCase().includes('routerboard') ||
+    !!device.model?.toLowerCase().includes('crs') ||
+    !!device.model?.toLowerCase().includes('ccr') ||
+    !!device.name?.toLowerCase().includes('mikrotik') ||
+    !!device.firmware?.toLowerCase().includes('routeros');
+
+  const isRouter = device.type === 'router' && !isMikroTik;
+  const isSwitch = device.type === 'switch' && !isMikroTik;
 
   // Compute Current Prompt
   const getPrompt = (): string => {
+    if (isMikroTik) {
+      return `[admin@${hostname}] >`;
+    }
     switch (cliMode) {
       case 'USER_EXEC':
         return `${hostname}>`;
@@ -719,6 +768,61 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
       return;
     }
 
+    // MikroTik RouterOS command emulation handlers
+    if (isMikroTik) {
+      if (cmdLower === '/ip address print' || cmdLower === 'ip address print' || cmdLower === '/ip address pr' || cmdLower === 'ip address pr') {
+        const out = `Flags: X - disabled, I - invalid, D - dynamic \n #   ADDRESS            NETWORK         INTERFACE\n 0   ${device.ip}/24    ${device.ip.split('.').slice(0, 3).join('.')}.0    ether1\n 1   192.168.88.1/24    192.168.88.0    bridge1`;
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: out }]);
+        return;
+      }
+      if (cmdLower === '/interface print' || cmdLower === 'interface print' || cmdLower === '/interface pr' || cmdLower === 'interface pr') {
+        const portLines = ports.length > 0
+          ? ports.map((p, i) => ` ${i}  R  ${p.name || `ether${i + 1}`}                              ether            1500`).join('\n')
+          : ` 0  R  ether1                              ether            1500\n 1  R  ether2                              ether            1500\n 2  R  bridge1                             bridge           1500`;
+        const out = `Flags: D - dynamic, X - disabled, R - running, S - slave \n #     NAME                                TYPE       ACTUAL-MTU\n${portLines}`;
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: out }]);
+        return;
+      }
+      if (cmdLower === '/ip route print' || cmdLower === 'ip route print' || cmdLower === '/ip route pr') {
+        const out = `Flags: X - disabled, A - active, D - dynamic, C - connect, S - static, r - rip, b - bgp, o - ospf \n #      DST-ADDRESS        PREF-SRC        GATEWAY            DISTANCE\n 0 A S  0.0.0.0/0                          192.168.88.254            1\n 1 ADC  192.168.88.0/24    ${device.ip}    ether1                    0`;
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: out }]);
+        return;
+      }
+      if (cmdLower === '/system resource print' || cmdLower === 'system resource print') {
+        const out = `                   uptime: 42d 16h 24m 12s\n                  version: 7.15.2 (stable)\n               build-time: Jun/12/2024 10:14:00\n              free-memory: 842.6MiB\n             total-memory: 1024.0MiB\n                      cpu: ARM64\n                cpu-count: 4\n            cpu-frequency: 1400MHz\n                 cpu-load: 3%\n           free-hdd-space: 112.4MiB\n          total-hdd-space: 128.0MiB`;
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: out }]);
+        return;
+      }
+      if (cmdLower === '/system identity print' || cmdLower === 'system identity print') {
+        const out = `  name: "${hostname}"`;
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: out }]);
+        return;
+      }
+      if (cmdLower.startsWith('/system identity set name=') || cmdLower.startsWith('system identity set name=')) {
+        const newName = trimmed.split('=')[1] || hostname;
+        setHostname(newName.trim().replace(/["']/g, ''));
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'success', text: `System identity changed to: ${newName}` }]);
+        return;
+      }
+      if (cmdLower === '/export compact' || cmdLower === '/export' || cmdLower === 'export compact' || cmdLower === 'export') {
+        const out = `# ${new Date().toISOString()} by RouterOS 7.15.2\n# model = ${device.model}\n/interface bridge\nadd name=bridge1\n/ip address\nadd address=${device.ip}/24 interface=ether1 network=192.168.88.0\n/system identity\nset name=${hostname}`;
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: out }]);
+        return;
+      }
+      if (cmdLower === '/system reboot' || cmdLower === 'system reboot') {
+        appendLines([
+          inputLine,
+          { id: String(Date.now() + 1), type: 'system', text: 'Rebooting system...\nBroadcast message from admin: System will reboot now!' },
+        ]);
+        return;
+      }
+      if (cmdLower === 'quit' || cmdLower === '/quit') {
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'system', text: 'Closing session...' }]);
+        setTimeout(() => handleCloseModal(), 400);
+        return;
+      }
+    }
+
     // 10. Default / Unrecognized Cisco CLI output
     appendLines([
       inputLine,
@@ -732,33 +836,461 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
     ]);
   };
 
+  // Get available commands tailored for Cisco Switch, Cisco Router, or MikroTik RouterOS
+  const getAvailableCommands = (): string[] => {
+    if (isMikroTik) {
+      return [
+        '/ip address print',
+        '/ip address add',
+        '/ip address remove',
+        '/ip route print',
+        '/ip route add',
+        '/ip pool print',
+        '/ip pool add',
+        '/ip dhcp-server print',
+        '/ip dhcp-server network print',
+        '/ip dhcp-client print',
+        '/ip firewall filter print',
+        '/ip firewall filter add',
+        '/ip firewall nat print',
+        '/ip firewall nat add',
+        '/ip firewall mangle print',
+        '/ip dns print',
+        '/ip dns set servers=',
+        '/ip service print',
+        '/ip neighbor print',
+        '/ip arp print',
+        '/interface print',
+        '/interface ethernet print',
+        '/interface ethernet set',
+        '/interface bridge print',
+        '/interface bridge port print',
+        '/interface bridge port add',
+        '/interface vlan print',
+        '/interface vlan add',
+        '/interface wireless print',
+        '/interface wireguard print',
+        '/system identity print',
+        '/system identity set name=',
+        '/system resource print',
+        '/system routerboard print',
+        '/system health print',
+        '/system clock print',
+        '/system reboot',
+        '/system reset-configuration',
+        '/system backup save name=',
+        '/system package print',
+        '/system user print',
+        '/system logging print',
+        '/routing ospf instance print',
+        '/routing bgp connection print',
+        '/tool ping',
+        '/tool traceroute',
+        '/tool profile',
+        '/tool torch',
+        '/export compact',
+        '/export file=',
+        '/log print',
+        '/ping',
+        'quit',
+        'exit',
+        'clear',
+      ];
+    }
+
+    if (isRouter) {
+      switch (cliMode) {
+        case 'USER_EXEC':
+          return [
+            'enable',
+            'ping',
+            'traceroute',
+            'show version',
+            'show ip interface brief',
+            'show ip route',
+            'show clock',
+            'exit',
+            'quit',
+            'clear',
+          ];
+        case 'PRIVILEGED_EXEC':
+          return [
+            'configure terminal',
+            'disable',
+            'write memory',
+            'copy running-config startup-config',
+            'show running-config',
+            'show startup-config',
+            'show version',
+            'show ip interface brief',
+            'show ip route',
+            'show ip route summary',
+            'show ip protocols',
+            'show ip ospf neighbor',
+            'show ip bgp summary',
+            'show ip nat translations',
+            'show interfaces',
+            'show arp',
+            'show cdp neighbors',
+            'show lldp neighbors',
+            'show access-lists',
+            'show ip dhcp binding',
+            'show logging',
+            'reload',
+            'terminal length 0',
+            'ping',
+            'traceroute',
+            'exit',
+            'quit',
+            'clear',
+          ];
+        case 'GLOBAL_CONFIG':
+          return [
+            'hostname',
+            'interface',
+            ...ports.map((p) => `interface ${p.port_id}`),
+            'ip route 0.0.0.0 0.0.0.0',
+            'router ospf 1',
+            'router bgp',
+            'ip dhcp pool',
+            'ip dhcp excluded-address',
+            'ip nat inside source list 1 interface',
+            'ip domain-name',
+            'crypto key generate rsa',
+            'access-list',
+            'line console 0',
+            'line vty 0 4',
+            'enable secret',
+            'banner motd',
+            'do show ip route',
+            'do show ip interface brief',
+            'do show running-config',
+            'do write memory',
+            'exit',
+            'end',
+            'clear',
+          ];
+        case 'INTERFACE_CONFIG':
+          return [
+            'ip address',
+            'no ip address',
+            'ip nat inside',
+            'ip nat outside',
+            'encapsulation dot1Q',
+            'description',
+            'bandwidth',
+            'clock rate 64000',
+            'ip ospf 1 area 0',
+            'shutdown',
+            'no shutdown',
+            'do show ip interface brief',
+            'do write memory',
+            'exit',
+            'end',
+            'clear',
+          ];
+        default:
+          return ['enable', 'show ip route', 'show ip interface brief', 'exit'];
+      }
+    }
+
+    // Default: Cisco Switch
+    switch (cliMode) {
+      case 'USER_EXEC':
+        return [
+          'enable',
+          'ping',
+          'traceroute',
+          'show version',
+          'show ip interface brief',
+          'show interfaces status',
+          'show clock',
+          'show terminal',
+          'exit',
+          'quit',
+          'clear',
+        ];
+      case 'PRIVILEGED_EXEC':
+        return [
+          'configure terminal',
+          'disable',
+          'write memory',
+          'copy running-config startup-config',
+          'show running-config',
+          'show startup-config',
+          'show version',
+          'show ip interface brief',
+          'show interfaces status',
+          'show interfaces trunk',
+          'show vlan brief',
+          'show vlan summary',
+          'show mac address-table',
+          'show cdp neighbors',
+          'show cdp neighbors detail',
+          'show lldp neighbors',
+          'show spanning-tree',
+          'show spanning-tree summary',
+          'show port-security',
+          'show port-security address',
+          'show power inline',
+          'show environment',
+          'show ip route',
+          'show arp',
+          'show logging',
+          'show clock',
+          'show inventory',
+          'reload',
+          'clear counters',
+          'clear mac address-table',
+          'terminal length 0',
+          'ping',
+          'traceroute',
+          'exit',
+          'quit',
+          'clear',
+        ];
+      case 'GLOBAL_CONFIG':
+        return [
+          'hostname',
+          'interface',
+          ...ports.map((p) => `interface ${p.port_id}`),
+          'interface range',
+          'interface vlan 1',
+          'vlan',
+          ...vlans.map((v) => `vlan ${v.id}`),
+          'ip default-gateway',
+          'ip routing',
+          'spanning-tree mode rapid-pvst',
+          'spanning-tree portfast default',
+          'banner motd',
+          'enable secret',
+          'service password-encryption',
+          'line console 0',
+          'line vty 0 15',
+          'snmp-server community',
+          'ntp server',
+          'logging buffered',
+          'do show running-config',
+          'do show ip interface brief',
+          'do show vlan brief',
+          'do show interfaces status',
+          'do write memory',
+          'exit',
+          'end',
+          'clear',
+        ];
+      case 'INTERFACE_CONFIG':
+        return [
+          'switchport mode access',
+          'switchport mode trunk',
+          'switchport access vlan 10',
+          'switchport access vlan 20',
+          'switchport access vlan 30',
+          'switchport trunk allowed vlan 1,10,20,30,50',
+          'switchport trunk allowed vlan add',
+          'switchport trunk native vlan 1',
+          'switchport nonegotiate',
+          'switchport port-security',
+          'switchport port-security maximum 2',
+          'switchport port-security violation shutdown',
+          'switchport port-security violation restrict',
+          'switchport port-security mac-address sticky',
+          'spanning-tree portfast',
+          'spanning-tree bpduguard enable',
+          'description',
+          'speed 1000',
+          'duplex full',
+          'shutdown',
+          'no shutdown',
+          'no switchport',
+          'ip address',
+          'no ip address',
+          'do show running-config',
+          'do show ip interface brief',
+          'do write memory',
+          'exit',
+          'end',
+          'clear',
+        ];
+      case 'VLAN_CONFIG':
+        return [
+          'name',
+          'state active',
+          'state suspend',
+          'no shutdown',
+          'shutdown',
+          'exit',
+          'end',
+          'clear',
+        ];
+      default:
+        return ['enable', 'show ip interface brief', 'show vlan brief', 'exit'];
+    }
+  };
+
+  // Tab Autocomplete / Suggestion Handler
+  const handleTabCompletion = () => {
+    const input = currentInput.trimStart();
+    const available = getAvailableCommands();
+    const promptText = getPrompt();
+
+    if (!input) {
+      const topList = available.slice(0, 15);
+      const devTitle = isMikroTik
+        ? 'MikroTik RouterOS'
+        : isRouter
+        ? 'Cisco Router'
+        : 'Cisco Switch';
+      appendLines([
+        { id: String(Date.now()), type: 'input', text: promptText },
+        {
+          id: String(Date.now() + 1),
+          type: 'output',
+          text:
+            (isEn ? `Available commands for ${devTitle} (${isMikroTik ? 'RouterOS' : cliMode}):\n` : `دستورات قابل استفاده برای ${devTitle} (${isMikroTik ? 'RouterOS' : cliMode}):\n`) +
+            topList.map((c) => `  ${c}`).join('\n') +
+            (available.length > 15 ? `\n  ... (+${available.length - 15} ${isEn ? 'more in guide' : 'مورد دیگر در راهنما'})` : ''),
+        },
+      ]);
+      return;
+    }
+
+    const inputLower = input.toLowerCase();
+
+    // 1. Exact or prefix matches
+    let matches = available.filter((c) => c.toLowerCase().startsWith(inputLower));
+
+    // 2. Substring matches if prefix not matched
+    if (matches.length === 0) {
+      matches = available.filter((c) => c.toLowerCase().includes(inputLower));
+    }
+
+    if (matches.length === 1) {
+      // Exactly one unique match - auto-complete!
+      const completed = matches[0];
+      setCurrentInput(completed);
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          const len = completed.length;
+          inputRef.current.setSelectionRange(len, len);
+        }
+      }, 0);
+    } else if (matches.length > 1) {
+      // Multiple matches: find longest common prefix (LCP)
+      let lcp = matches[0];
+      for (let i = 1; i < matches.length; i++) {
+        let j = 0;
+        while (
+          j < lcp.length &&
+          j < matches[i].length &&
+          lcp[j].toLowerCase() === matches[i][j].toLowerCase()
+        ) {
+          j++;
+        }
+        lcp = lcp.slice(0, j);
+      }
+
+      if (lcp.length > input.length) {
+        setCurrentInput(lcp);
+      }
+
+      // Display candidate suggestions in the terminal
+      appendLines([
+        { id: String(Date.now()), type: 'input', text: `${promptText} ${input}` },
+        {
+          id: String(Date.now() + 1),
+          type: 'output',
+          text:
+            (isEn ? '% Possible completions:\n' : '% گزینه‌های پیشنهادی برای تکمیل:\n') +
+            matches.slice(0, 18).map((m) => `  ${m}`).join('\n') +
+            (matches.length > 18 ? `\n  ... (+${matches.length - 18} ${isEn ? 'more' : 'مورد دیگر'})` : ''),
+        },
+      ]);
+    } else {
+      // No match
+      appendLines([
+        { id: String(Date.now()), type: 'input', text: `${promptText} ${input}` },
+        {
+          id: String(Date.now() + 1),
+          type: 'error',
+          text: isEn
+            ? `% No matching commands found for '${input}'. Press '?' or see Command Guide.`
+            : `% هیچ دستور منطبقی برای '${input}' یافت نشد. از کلید '?' یا سایدبار راهنما استفاده کنید.`,
+        },
+      ]);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       executeCommand(currentInput);
       setCurrentInput('');
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      handleTabCompletion();
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (history.length > 0) {
+        if (historyIndex === -1) {
+          draftInputRef.current = currentInput;
+        }
         const nextIdx = Math.min(historyIndex + 1, history.length - 1);
         setHistoryIndex(nextIdx);
-        setCurrentInput(history[nextIdx]);
+        const val = history[nextIdx];
+        setCurrentInput(val);
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.setSelectionRange(val.length, val.length);
+          }
+        }, 0);
       }
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (historyIndex > 0) {
         const nextIdx = historyIndex - 1;
         setHistoryIndex(nextIdx);
-        setCurrentInput(history[nextIdx]);
+        const val = history[nextIdx];
+        setCurrentInput(val);
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.setSelectionRange(val.length, val.length);
+          }
+        }, 0);
       } else if (historyIndex === 0) {
         setHistoryIndex(-1);
-        setCurrentInput('');
+        const draft = draftInputRef.current;
+        setCurrentInput(draft);
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.setSelectionRange(draft.length, draft.length);
+          }
+        }, 0);
       }
     }
   };
 
   // Sidebar commands guide data
   const COMMAND_GUIDES: CommandGuideItem[] = [
+    // MIKROTIK COMMANDS
+    { cmd: '/ip address print', desc: 'نمایش آدرس‌های IP تنظیم‌شده روی اینترفیس‌های میکروتیک', descEn: 'Print IP addresses configured on MikroTik interfaces', category: 'show', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/interface print', desc: 'مشاهده لیست تمامی کارت‌های شبکه، پورت‌ها و بریج‌ها', descEn: 'Display list of network interfaces, ports and bridges', category: 'show', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/ip route print', desc: 'نمایش جدول روتینگ کامل RouterOS (استاتیک، متصل و داینامیک)', descEn: 'Display complete RouterOS IP routing table', category: 'show', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/interface ethernet print', desc: 'مشاهده مشخصات فیزیکی، سرعت، Duplex پورت‌های اترنت', descEn: 'Display physical Ethernet port details and speed', category: 'show', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/ip firewall nat print', desc: 'نمایش رول‌های NAT فعال (مانند Masquerade یا Port Forwarding)', descEn: 'Display active NAT firewall rules (masquerade/port-forward)', category: 'show', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/ip firewall filter print', desc: 'مشاهده قوانین فیلترینگ و دیوار آتشین امنیتی RouterOS', descEn: 'Display firewall traffic security and filter rules', category: 'show', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/ip dhcp-server print', desc: 'نمایش تنظیمات و وضعیت سرور DHCP در میکروتیک', descEn: 'Display active DHCP server configuration and status', category: 'show', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/ip pool print', desc: 'مشاهده استخرهای آدرس IP تعریف‌شده برای شبکه', descEn: 'Display defined IP address pools', category: 'show', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/system resource print', desc: 'نمایش آمار سخت‌افزاری: مصرف CPU، رم، حافظه دیسک و نسخه', descEn: 'Display hardware specs: CPU load, RAM, disk and version', category: 'show', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/system routerboard print', desc: 'مشاهده مدل سخت‌افزار، شماره سریال و نسخه RouterBOOT', descEn: 'Display RouterBOARD model, serial and firmware info', category: 'show', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/system identity set name=MikroTik-HQ', desc: 'تغییر نام و شناسه هاست روتربورد در شبکه', descEn: 'Set device identity and hostname', category: 'config', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/interface bridge add name=bridge1', desc: 'ساخت اینترفیس جدید Bridge جهت تجمیع پورت‌ها', descEn: 'Create a new bridge interface to aggregate ports', category: 'config', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/interface bridge port add bridge=bridge1 interface=ether2', desc: 'افزودن پورت فیزیکی به عضویت اینترفیس Bridge', descEn: 'Add physical port into bridge membership', category: 'config', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/ip address add address=192.168.88.1/24 interface=bridge1', desc: 'اختصاص آدرس IP جدید و ساب‌نت به اینترفیس مورد نظر', descEn: 'Assign new IP address and subnet to an interface', category: 'config', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/export compact', desc: 'اکسپورت کانفیگ خلاصه و فعال RouterOS به صورت اسکریپت', descEn: 'Export active compact configuration script', category: 'action', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/ping 8.8.8.8', desc: 'تست ارسال پاکت‌های پینگ ICMP جهت بررسی ارتباط شبکه', descEn: 'Test network connectivity using ICMP ping', category: 'action', mode: 'USER_EXEC', forType: 'mikrotik' },
+    { cmd: '/system reboot', desc: 'راه‌اندازی مجدد و ریبوت دستگاه روتربورد میکروتیک', descEn: 'Reboot MikroTik RouterBOARD system', category: 'action', mode: 'USER_EXEC', forType: 'mikrotik' },
     // USER_EXEC
     { cmd: 'enable', desc: 'ورود به حالت دسترسی ویژه و مدیریتی (Privileged EXEC #)', descEn: 'Enter Privileged EXEC mode (level 15 #)', category: 'exec', mode: 'USER_EXEC' },
     { cmd: 'show version', desc: 'نمایش نسخه IOS-XE، مشخصات سخت‌افزار، حافظه و Uptime', descEn: 'Display IOS-XE version, hardware specs, memory and uptime', category: 'show', mode: 'USER_EXEC' },
@@ -807,8 +1339,11 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
   // Filter commands for sidebar
   const relevantCommands = COMMAND_GUIDES.filter((item) => {
-    if (item.mode !== cliMode) return false;
-    if (item.forType && item.forType !== 'all') {
+    if (isMikroTik) {
+      if (item.forType !== 'mikrotik') return false;
+    } else {
+      if (item.forType === 'mikrotik') return false;
+      if (item.mode !== cliMode) return false;
       if (item.forType === 'switch' && isRouter) return false;
       if (item.forType === 'router' && !isRouter) return false;
     }
@@ -1014,7 +1549,23 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
               </div>
             </div>
 
-            {/* Window Controls */}
+            {/* Window & View Controls */}
+            <button
+              onClick={handleToggleSidebar}
+              className={`p-1.5 rounded transition ${
+                isSidebarOpen
+                  ? 'text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+              title={
+                isSidebarOpen
+                  ? (isEn ? 'Collapse Command Guide Sidebar' : 'جمع کردن سایدبار راهنما برای بزرگ‌تر شدن ترمینال')
+                  : (isEn ? 'Expand Command Guide Sidebar' : 'نمایش سایدبار راهنمای دستورات')
+              }
+            >
+              {isSidebarOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
+            </button>
+
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
               className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
@@ -1100,7 +1651,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             </div>
 
             {/* Input Prompt Box */}
-            <div className="mt-2 pt-2 border-t border-slate-800/90 flex items-center gap-2 bg-slate-900/60 px-3 py-1.5 rounded-lg" dir="ltr">
+            <div className="mt-2 pt-2 border-t border-slate-800/90 flex items-center gap-2 bg-slate-900/60 px-3 py-1.5 rounded-lg relative" dir="ltr">
               <span className="text-emerald-400 font-bold whitespace-nowrap font-mono">{getPrompt()}</span>
               <input
                 ref={inputRef}
@@ -1108,11 +1659,101 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                 value={currentInput}
                 onChange={(e) => setCurrentInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={isEn ? "Type Cisco IOS command (e.g. enable, show ip int brief)..." : "دستور سیسکو را تایپ کنید (مثلاً enable یا show ip int brief)..."}
+                placeholder={
+                  isMikroTik
+                    ? (isEn ? "Type RouterOS command (e.g. /ip address print, /interface print, Tab to autocomplete)..." : "دستور میکروتیک را تایپ کنید (مثلاً ip address print/، کلید Tab برای تکمیل)...")
+                    : (isEn ? "Type Cisco IOS command (e.g. enable, show ip int brief, Tab to autocomplete)..." : "دستور سیسکو را تایپ کنید (مثلاً enable یا show ip int brief، کلید Tab برای تکمیل)...")
+                }
                 className="cisco-cli-input flex-1 bg-transparent font-mono outline-none border-none text-xs"
                 autoFocus
                 dir="ltr"
               />
+
+              {/* History Button & Dropdown Menu */}
+              <div className="relative" ref={historyDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition shadow-sm border ${
+                    isHistoryOpen
+                      ? 'bg-indigo-600 text-white border-indigo-500 shadow-md'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                  }`}
+                  title={isEn ? "Command History (Click to view & select)" : "تاریخچه دستورات ترمینال (کلیک برای مشاهده و انتخاب)"}
+                >
+                  <HistoryIcon className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="hidden sm:inline">{isEn ? 'History' : 'تاریخچه'}</span>
+                  {history.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-500/30 text-indigo-200 font-mono">
+                      {history.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* History Dropdown Menu */}
+                {isHistoryOpen && (
+                  <div
+                    className="absolute bottom-full mb-2 right-0 w-72 sm:w-80 max-h-64 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 flex flex-col font-sans"
+                    dir={isEn ? 'ltr' : 'rtl'}
+                  >
+                    <div className="px-3 py-2 bg-slate-950 border-b border-slate-800 flex items-center justify-between text-xs font-semibold text-slate-300">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>{isEn ? 'Command History' : 'تاریخچه دستورات کاربر'}</span>
+                      </div>
+                      {history.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setHistory([]);
+                            setHistoryIndex(-1);
+                          }}
+                          className="text-[10px] text-rose-400 hover:text-rose-300 transition"
+                          title={isEn ? 'Clear command history' : 'پاک کردن کل تاریخچه'}
+                        >
+                          {isEn ? 'Clear' : 'پاک‌سازی'}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="overflow-y-auto max-h-52 p-1.5 space-y-1">
+                      {history.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-slate-500 font-mono">
+                          {isEn ? 'No commands entered yet' : 'هنوز دستوری در این ترمینال تایپ نشده است'}
+                        </div>
+                      ) : (
+                        history.map((cmd, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setCurrentInput(cmd);
+                              setIsHistoryOpen(false);
+                              setTimeout(() => {
+                                if (inputRef.current) {
+                                  inputRef.current.focus();
+                                  const len = cmd.length;
+                                  inputRef.current.setSelectionRange(len, len);
+                                }
+                              }, 0);
+                            }}
+                            className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-mono text-emerald-400 hover:bg-slate-800 hover:text-emerald-300 transition flex items-center justify-between group border border-transparent hover:border-slate-700"
+                            dir="ltr"
+                          >
+                            <span className="truncate flex-1 font-mono">{cmd}</span>
+                            <span className="text-[10px] text-slate-500 opacity-0 group-hover:opacity-100 transition whitespace-nowrap ml-2">
+                              {isEn ? 'Insert' : 'انتخاب'}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Send Button */}
               <button
                 onClick={() => {
                   executeCommand(currentInput);
@@ -1126,32 +1767,42 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             </div>
           </div>
 
-          {/* Context-Aware Cisco Commands Sidebar */}
-          <div className={`cisco-sidebar-guide w-full md:w-80 lg:w-96 border-t md:border-t-0 ${isEn ? 'md:border-l' : 'md:border-r'} flex flex-col overflow-hidden ${isEn ? 'text-left' : 'text-right'}`}>
-            {/* Sidebar Header */}
-            <div className="p-3 bg-white/50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <HelpCircle className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>{isEn ? 'Command Guide' : 'راهنمای هوشمند دستورات مرحله'}</span>
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800 font-bold">
-                  {cliMode}
-                </span>
-              </div>
+          {/* Context-Aware Cisco / MikroTik Commands Sidebar */}
+          {isSidebarOpen && (
+            <div className={`cisco-sidebar-guide w-full md:w-80 lg:w-96 border-t md:border-t-0 ${isEn ? 'md:border-l' : 'md:border-r'} flex flex-col overflow-hidden ${isEn ? 'text-left' : 'text-right'}`}>
+              {/* Sidebar Header */}
+              <div className="p-3 bg-white/50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <HelpCircle className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>{isEn ? 'Command Guide' : 'راهنمای هوشمند دستورات'}</span>
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800 font-bold">
+                      {isMikroTik ? 'RouterOS' : cliMode}
+                    </span>
+                    <button
+                      onClick={handleToggleSidebar}
+                      className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition"
+                      title={isEn ? 'Collapse Sidebar' : 'جمع کردن سایدبار'}
+                    >
+                      <PanelRightClose className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
 
-              {/* Search Commands */}
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder={isEn ? "Search command or description..." : "جستجوی دستور یا کاربرد..."}
-                  value={commandSearch}
-                  onChange={(e) => setCommandSearch(e.target.value)}
-                  className={`w-full px-2.5 py-1.5 ${isEn ? 'pl-7 pr-2.5' : 'pr-7 pl-2.5'} rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white text-[11px] placeholder:text-slate-400 focus:outline-none focus:border-indigo-500`}
-                />
-                <Search className={`w-3.5 h-3.5 text-slate-400 absolute ${isEn ? 'left-2' : 'right-2'} top-2`} />
+                {/* Search Commands */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder={isEn ? "Search command or description..." : "جستجوی دستور یا کاربرد..."}
+                    value={commandSearch}
+                    onChange={(e) => setCommandSearch(e.target.value)}
+                    className={`w-full px-2.5 py-1.5 ${isEn ? 'pl-7 pr-2.5' : 'pr-7 pl-2.5'} rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white text-[11px] placeholder:text-slate-400 focus:outline-none focus:border-indigo-500`}
+                  />
+                  <Search className={`w-3.5 h-3.5 text-slate-400 absolute ${isEn ? 'left-2' : 'right-2'} top-2`} />
+                </div>
               </div>
-            </div>
 
             {/* Current Mode Badge Explanation */}
             <div className="p-2.5 bg-indigo-50/70 dark:bg-indigo-950/30 border-b border-indigo-100 dark:border-indigo-900/40 text-[11px] text-slate-700 dark:text-slate-300 space-y-1">
@@ -1253,6 +1904,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
               </button>
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>
