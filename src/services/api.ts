@@ -94,6 +94,7 @@ export async function batchUpdateSwitchPorts(
 
 export async function testDeviceConnection(data: {
   ip: string;
+  ssh_host?: string;
   ssh_port?: number;
   ssh_username?: string;
   ssh_password?: string;
@@ -111,8 +112,8 @@ export async function testDeviceConnection(data: {
     body: JSON.stringify(data),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Connection failed' }));
-    throw new Error(err.error || 'Connection failed');
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'خطا در برقراری اتصال SSH به سوییچ/روتر');
   }
   return res.json();
 }
@@ -271,15 +272,21 @@ export async function sshConnect(params: {
   port?: number;
   username?: string;
   password?: string;
+  enable_password?: string;
+  deviceId?: string;
   timeout?: number;
 }): Promise<{
   success: boolean;
-  mode: 'real_ssh' | 'unreachable';
+  sessionId?: string;
+  session_id?: string;
+  mode: 'real_ssh' | 'fallback_emulation' | 'unreachable';
+  isReal?: boolean;
   banner?: string;
   cipher?: string;
   latency_ms?: number;
   error?: string;
   code?: string;
+  message?: string;
 }> {
   const res = await fetch(`${API_BASE}/ssh/connect`, {
     method: 'POST',
@@ -290,11 +297,12 @@ export async function sshConnect(params: {
 }
 
 export async function sshExecute(params: {
-  host: string;
+  host?: string;
   port?: number;
   username?: string;
   password?: string;
   command: string;
+  sessionId?: string;
   timeout?: number;
 }): Promise<{
   success: boolean;
@@ -308,5 +316,46 @@ export async function sshExecute(params: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
+  return res.json();
+}
+
+export async function sshDisconnect(params: {
+  sessionId?: string;
+  deviceId?: string;
+  host?: string;
+  port?: number;
+}): Promise<{
+  success: boolean;
+  closed_sessions?: string[];
+  message: string;
+}> {
+  const res = await fetch(`${API_BASE}/ssh/disconnect`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  return res.json();
+}
+
+export async function fetchActiveSshSessions(): Promise<{
+  total_active: number;
+  sessions: Array<{
+    session_id: string;
+    sessionId: string;
+    host: string;
+    port: number;
+    username: string;
+    device_id?: string;
+    mode: string;
+    is_real: boolean;
+    connected_at: string;
+    last_activity: number;
+    latency_ms: number;
+    status: string;
+    banner: string;
+  }>;
+}> {
+  const res = await fetch(`${API_BASE}/ssh/sessions`);
+  if (!res.ok) throw new Error('Failed to fetch active SSH sessions');
   return res.json();
 }

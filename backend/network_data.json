@@ -28,7 +28,8 @@
       "ssh_username": "admin",
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
-      "ssh_status": "authenticated"
+      "ssh_status": "authenticated",
+      "ssh_host": "192.168.1.1"
     },
     {
       "id": "dev-router-gw",
@@ -56,7 +57,8 @@
       "ssh_username": "admin",
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
-      "ssh_status": "authenticated"
+      "ssh_status": "authenticated",
+      "ssh_host": "192.168.1.254"
     },
     {
       "id": "dev-dist-bldg-a",
@@ -84,7 +86,8 @@
       "ssh_username": "admin",
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
-      "ssh_status": "authenticated"
+      "ssh_status": "authenticated",
+      "ssh_host": "192.168.1.10"
     },
     {
       "id": "dev-acc-bldg-a-f3",
@@ -112,7 +115,8 @@
       "ssh_username": "admin",
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
-      "ssh_status": "authenticated"
+      "ssh_status": "authenticated",
+      "ssh_host": "192.168.1.21"
     },
     {
       "id": "dev-dist-bldg-b",
@@ -140,7 +144,8 @@
       "ssh_username": "admin",
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
-      "ssh_status": "authenticated"
+      "ssh_status": "authenticated",
+      "ssh_host": "192.168.1.11"
     },
     {
       "id": "dev-acc-bldg-b-f2",
@@ -168,7 +173,8 @@
       "ssh_username": "admin",
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
-      "ssh_status": "authenticated"
+      "ssh_status": "authenticated",
+      "ssh_host": "192.168.1.32"
     },
     {
       "id": "dev-ap-bldg-a-f1",
@@ -198,7 +204,8 @@
       "ssh_username": "admin",
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
-      "ssh_status": "authenticated"
+      "ssh_status": "authenticated",
+      "ssh_host": "192.168.1.101"
     },
     {
       "id": "dev-ap-bldg-a-f3",
@@ -226,7 +233,8 @@
       "ssh_username": "admin",
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
-      "ssh_status": "authenticated"
+      "ssh_status": "authenticated",
+      "ssh_host": "192.168.1.103"
     },
     {
       "id": "dev-ap-bldg-b-f1",
@@ -254,7 +262,8 @@
       "ssh_username": "admin",
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
-      "ssh_status": "authenticated"
+      "ssh_status": "authenticated",
+      "ssh_host": "192.168.1.105"
     }
   ],
   "ports": {

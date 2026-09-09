@@ -360,7 +360,12 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
 
                       {/* IP */}
                       <td className="p-3.5 font-mono font-bold text-indigo-400 text-xs">
-                        {dev.ip}
+                        <div>{dev.ip}</div>
+                        {dev.ssh_host && dev.ssh_host !== dev.ip && (
+                          <div className="text-[10px] text-slate-400 font-normal mt-0.5" title={isEn ? "SSH Target Host" : "آدرس اتصال SSH"}>
+                            SSH: {dev.ssh_host}:{dev.ssh_port || 22}
+                          </div>
+                        )}
                       </td>
 
                       {/* Location (Building, Floor, Unit, Rack) */}

@@ -29,6 +29,7 @@ import {
   fetchVlans,
   sshConnect,
   sshExecute,
+  sshDisconnect,
 } from '../services/api';
 import { useLanguage } from '../i18n/LanguageContext';
 
@@ -84,6 +85,22 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const interfaceDropdownRef = useRef<HTMLDivElement>(null);
+  const activeSessionIdRef = useRef<string | null>(null);
+
+  const handleCloseModal = () => {
+    if (device) {
+      const targetHost = device.ssh_host || device.ip;
+      const sshPort = device.ssh_port || 22;
+      sshDisconnect({
+        sessionId: activeSessionIdRef.current || undefined,
+        deviceId: device.id,
+        host: targetHost,
+        port: sshPort,
+      }).catch(() => {});
+      activeSessionIdRef.current = null;
+    }
+    onClose();
+  };
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -101,6 +118,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   useEffect(() => {
     if (isOpen && device) {
       const devHost = device.name.toUpperCase();
+      const targetHost = device.ssh_host || device.ip;
       const sshPort = device.ssh_port || 22;
       const sshUser = device.ssh_username || 'admin';
       const sshPass = device.ssh_password || 'cisco123';
@@ -117,24 +135,29 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
         {
           id: 'sys-init-1',
           type: 'system',
-          text: `[SSH CLIENT v2.0] Initiating direct SSH socket connection to ${device.name} (${device.ip}:${sshPort})...`,
+          text: `[SSH CLIENT v2.5] Initiating direct SSH socket connection to ${device.name} (Host: ${targetHost}:${sshPort})...`,
         },
         {
           id: 'sys-init-2',
           type: 'system',
-          text: `[CREDENTIALS] Target User: '${sshUser}' | Auth: RSA/ECDSA Key & Password Verification`,
+          text: `[CREDENTIALS] Target User: '${sshUser}' | Target Host: '${targetHost}' | Auth: RSA/ECDSA Key & Password Verification`,
         },
       ]);
 
-      // Attempt real SSH connection via backend native ssh2 client
+      // Attempt real SSH connection via backend Python client
       sshConnect({
-        host: device.ip,
+        host: targetHost,
         port: sshPort,
         username: sshUser,
         password: device.ssh_password || '',
+        enable_password: device.enable_password || '',
+        deviceId: device.id,
         timeout: 3500,
       })
         .then((res) => {
+          if (res.sessionId || res.session_id) {
+            activeSessionIdRef.current = res.sessionId || res.session_id || null;
+          }
           if (res.success) {
             setSshSessionMode('real_ssh');
             setSshLatency(res.latency_ms || 2.2);
@@ -142,14 +165,14 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
               {
                 id: 'sys-ssh-ok',
                 type: 'success',
-                text: `[LIVE SSH ESTABLISHED] Authenticated to ${device.ip}:${sshPort} in ${res.latency_ms || 2}ms.\nCipher: ${res.cipher || 'aes256-gcm@openssh.com'} | MAC: hmac-sha2-512\nBanner: ${res.banner || 'Cisco IOS Software, Catalyst Series'}`,
+                text: `[LIVE SSH ESTABLISHED] Authenticated to ${targetHost}:${sshPort} in ${res.latency_ms || 2}ms.\nCipher: ${res.cipher || 'aes256-gcm@openssh.com'} | MAC: hmac-sha2-512\nBanner: ${res.banner || 'Cisco IOS Software, Catalyst Series'}\nActive Session ID: ${activeSessionIdRef.current || 'online'}`,
               },
               {
                 id: 'sys-ssh-ready',
                 type: 'system',
                 text: isEn
-                  ? "Live SSH session active. Terminal commands execute directly on the target hardware."
-                  : "نشست لایو SSH فعال شد. دستورات مستقیماً روی تجهیز سخت‌افزاری اجرا می‌شوند.",
+                  ? "Live SSH session active. Terminal commands execute directly on target device via Python SSH engine."
+                  : "نشست لایو SSH فعال شد. دستورات مستقیماً از طریق موتور پایتون روی تجهیز اجرا می‌شوند.",
               },
             ]);
           } else {
@@ -158,12 +181,12 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
               {
                 id: 'sys-ssh-err',
                 type: 'system',
-                text: `[SSH STATUS] Direct socket probe to ${device.ip}:${sshPort} unreachable (${res.error || 'Connection timed out'}).`,
+                text: `[SSH STATUS] Socket probe to ${targetHost}:${sshPort} unreachable (${res.error || 'Connection timed out'}). Switching to managed Cisco IOS CLI emulation.`,
               },
               {
                 id: 'sys-ssh-banner',
                 type: 'output',
-                text: `User Access Verification\nUsername: ${sshUser}\nPassword: ${'*'.repeat(Math.max(6, sshPass.length))}\n\n************************************************************************\n* Cisco Systems Corporate Network Infrastructure - Authorized Access * \n* Device: ${device.model} | Role: ${device.role} \n* Software: ${device.firmware || 'Cisco IOS-XE 17.09.03'} \n* Location: ${device.building} - ${device.floor} (${device.unit}) \n************************************************************************\n`,
+                text: `User Access Verification\nUsername: ${sshUser}\nPassword: ${'*'.repeat(Math.max(6, sshPass.length))}\n\n************************************************************************\n* Cisco Systems Corporate Network Infrastructure - Authorized Access * \n* Device: ${device.model} | Role: ${device.role} \n* Connection Host: ${targetHost}:${sshPort} | Management IP: ${device.ip} \n* Software: ${device.firmware || 'Cisco IOS-XE 17.09.03'} \n* Location: ${device.building} - ${device.floor} (${device.unit}) \n************************************************************************\n`,
               },
               {
                 id: 'sys-ssh-ready',
@@ -186,9 +209,21 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
           ]);
         });
 
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         if (inputRef.current) inputRef.current.focus();
       }, 150);
+
+      return () => {
+        clearTimeout(timer);
+        const curTarget = device.ssh_host || device.ip;
+        sshDisconnect({
+          sessionId: activeSessionIdRef.current || undefined,
+          deviceId: device.id,
+          host: curTarget,
+          port: device.ssh_port || 22,
+        }).catch(() => {});
+        activeSessionIdRef.current = null;
+      };
     }
   }, [isOpen, device, isEn]);
 
@@ -296,12 +331,14 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
     // If active in real SSH session, attempt direct hardware command execution
     if (sshSessionMode === 'real_ssh' && device) {
       try {
+        const targetHost = device.ssh_host || device.ip;
         const res = await sshExecute({
-          host: device.ip,
+          host: targetHost,
           port: device.ssh_port || 22,
           username: device.ssh_username || 'admin',
           password: device.ssh_password || '',
           command: trimmed,
+          sessionId: activeSessionIdRef.current || undefined,
         });
         if (res.success && res.isReal && res.output !== undefined) {
           appendLines([
@@ -372,7 +409,11 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
         setCliMode('USER_EXEC');
         appendLines([inputLine]);
       } else {
-        appendLines([inputLine, { id: String(Date.now() + 1), type: 'system', text: '% Connection to 192.168.1.1 closed by foreign host.' }]);
+        const targetHost = device ? (device.ssh_host || device.ip) : 'foreign host';
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'system', text: `% Connection to ${targetHost} closed by foreign host.` }]);
+        setTimeout(() => {
+          handleCloseModal();
+        }, 350);
       }
       return;
     }
@@ -759,6 +800,11 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 modal-backdrop-blur overflow-y-auto"
       data-modal-backdrop="true"
       dir={isEn ? 'ltr' : 'rtl'}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          handleCloseModal();
+        }
+      }}
     >
       <div
         className={`bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100 transition-all my-auto max-h-[94vh] sm:max-h-[90vh] ${
@@ -778,9 +824,14 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-white font-mono text-sm tracking-wide">{device.name}</span>
-                <span className="terminal-header-ip text-xs font-mono font-bold px-2 py-0.5 rounded-md shadow-xs" title={isEn ? "Device IP Address" : "آدرس آی‌پی دستگاه"}>
-                  {device.ip}:{device.ssh_port || 22}
+                <span className="terminal-header-ip text-xs font-mono font-bold px-2 py-0.5 rounded-md shadow-xs" title={isEn ? "SSH Connection Target Host" : "آدرس اتصال و پورت SSH"}>
+                  {device.ssh_host || device.ip}:{device.ssh_port || 22}
                 </span>
+                {device.ssh_host && device.ssh_host !== device.ip && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700" title={isEn ? "Device Management IP" : "آدرس IP تجهیز"}>
+                    IP: {device.ip}
+                  </span>
+                )}
                 {sshSessionMode === 'real_ssh' ? (
                   <span className="terminal-header-ssh text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-xs" title="Connected via Real SSH Socket">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
@@ -922,7 +973,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             </button>
 
             <button
-              onClick={onClose}
+              onClick={handleCloseModal}
               className="p-1.5 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
               title={isEn ? 'Close Terminal' : 'بستن ترمینال'}
             >

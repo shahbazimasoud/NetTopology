@@ -31,6 +31,7 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
   const [cdpEnabled, setCdpEnabled] = useState(true);
   const [lldpEnabled, setLldpEnabled] = useState(true);
   const [snmpCommunity, setSnmpCommunity] = useState('public');
+  const [sshHost, setSshHost] = useState('');
   const [sshPort, setSshPort] = useState(22);
   const [sshUsername, setSshUsername] = useState('admin');
   const [sshPassword, setSshPassword] = useState('cisco123');
@@ -55,8 +56,9 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
   if (!isOpen) return null;
 
   const handleTestConnection = async () => {
-    if (!ip.trim() || !/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(ip.trim())) {
-      setError(isEn ? 'Please enter a valid IP address first to test connection' : 'لطفاً ابتدا آدرس IP معتبر وارد کنید تا اتصال تست شود');
+    const targetHost = (sshHost.trim() || ip.trim());
+    if (!targetHost || !/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(targetHost)) {
+      setError(isEn ? 'Please enter a valid IP address for SSH connection' : 'لطفاً ابتدا آدرس IP معتبر وارد کنید تا اتصال تست شود');
       return;
     }
     try {
@@ -64,7 +66,8 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
       setSshTestResult(null);
       setError(null);
       const res = await testDeviceConnection({
-        ip: ip.trim(),
+        ip: targetHost,
+        ssh_host: targetHost,
         ssh_port: Number(sshPort) || 22,
         ssh_username: sshUsername.trim(),
         ssh_password: sshPassword,
@@ -102,6 +105,7 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
       const created = await onAdd({
         name: name.trim(),
         ip: ip.trim(),
+        ssh_host: sshHost.trim() || ip.trim(),
         type,
         role,
         model: model.trim(),
@@ -367,8 +371,23 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                <div className="sm:col-span-8">
+                  <label className="block text-[11px] font-medium text-slate-700 mb-1 flex items-center justify-between">
+                    <span className="font-semibold text-indigo-700">{isEn ? 'SSH Target Host / IP:' : 'آدرس IP اتصال SSH (کانکشن اصلی):'}</span>
+                    <span className="text-[10px] text-slate-500">{isEn ? 'Terminal connection target' : 'مقصد اتصال ترمینال مودال‌ها'}</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={sshHost}
+                    onChange={(e) => setSshHost(e.target.value)}
+                    placeholder={ip || '192.168.1.50'}
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-indigo-200 text-slate-800 text-xs focus:outline-none focus:border-indigo-500 font-mono text-left"
+                    dir="ltr"
+                  />
+                </div>
+
+                <div className="sm:col-span-4">
                   <label className="block text-[11px] font-medium text-slate-700 mb-1">
                     {isEn ? 'SSH Port:' : 'پورت SSH:'}
                   </label>
@@ -381,7 +400,7 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
                   />
                 </div>
 
-                <div>
+                <div className="sm:col-span-4">
                   <label className="block text-[11px] font-medium text-slate-700 mb-1">
                     {isEn ? 'SSH Username:' : 'نام کاربری SSH:'}
                   </label>
@@ -395,7 +414,7 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
                   />
                 </div>
 
-                <div>
+                <div className="sm:col-span-4">
                   <label className="block text-[11px] font-medium text-slate-700 mb-1 flex items-center justify-between">
                     <span>{isEn ? 'SSH Password:' : 'رمز عبور SSH:'}</span>
                     <button
@@ -416,7 +435,7 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
                   />
                 </div>
 
-                <div>
+                <div className="sm:col-span-4">
                   <label className="block text-[11px] font-medium text-slate-700 mb-1">
                     {isEn ? 'Enable Secret:' : 'رمز Enable (اختیاری):'}
                   </label>
