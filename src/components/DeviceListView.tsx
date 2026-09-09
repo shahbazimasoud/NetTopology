@@ -19,10 +19,13 @@ import {
   AlertTriangle,
   Save,
   FileCode2,
-  MoreVertical
+  MoreVertical,
+  Edit3
 } from 'lucide-react';
 import { Device, DeviceType } from '../types';
 import { useLanguage } from '../i18n';
+import { updateDevice } from '../services/api';
+import { EditDeviceModal } from './EditDeviceModal';
 
 interface DeviceListViewProps {
   devices: Device[];
@@ -35,6 +38,7 @@ interface DeviceListViewProps {
   onWriteMemory?: (deviceId: string) => Promise<void>;
   onRefreshAll: () => void;
   isRefreshing: boolean;
+  onEditDevice?: (device: Device) => void;
 }
 
 export const DeviceListView: React.FC<DeviceListViewProps> = ({
@@ -48,6 +52,7 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
   onWriteMemory,
   onRefreshAll,
   isRefreshing,
+  onEditDevice,
 }) => {
   const { t, isRtl, isEn } = useLanguage();
   const [search, setSearch] = useState('');
@@ -56,6 +61,7 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
   const [buildingFilter, setBuildingFilter] = useState<string>('all');
   const [pingingId, setPingingId] = useState<string | null>(null);
   const [writingId, setWritingId] = useState<string | null>(null);
+  const [internalEditingDevice, setInternalEditingDevice] = useState<Device | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<{
     id: string;
     top?: number;
@@ -605,6 +611,28 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                   </button>
                 )}
 
+                {/* Edit Device Properties */}
+                <button
+                  onClick={() => {
+                    const dev = menuAnchor.device;
+                    setMenuAnchor(null);
+                    if (onEditDevice) {
+                      onEditDevice(dev);
+                    } else {
+                      setInternalEditingDevice(dev);
+                    }
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-amber-300 hover:bg-amber-500/15 hover:text-amber-200 transition ${
+                    isRtl ? 'text-right' : 'text-left'
+                  } group/item cursor-pointer`}
+                >
+                  <Edit3 className="w-4 h-4 text-amber-400 group-hover/item:scale-110 transition shrink-0" />
+                  <div className="flex flex-col">
+                    <span>{isEn ? 'Edit Device Properties' : 'ویرایش مشخصات تجهیز'}</span>
+                    <span className="text-[10px] text-amber-400/80 font-mono">Hostname, IP, Role & Location</span>
+                  </div>
+                </button>
+
                 {/* Quick Ping */}
                 <button
                   onClick={() => {
@@ -688,6 +716,20 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
           </>,
           document.body
         )}
+
+      {/* Internal Edit Device Modal fallback */}
+      {internalEditingDevice && (
+        <EditDeviceModal
+          isOpen={!!internalEditingDevice}
+          device={internalEditingDevice}
+          onClose={() => setInternalEditingDevice(null)}
+          onSave={async (deviceId, updates) => {
+            await updateDevice(deviceId, updates);
+            onRefreshAll();
+            setInternalEditingDevice(null);
+          }}
+        />
+      )}
     </div>
   );
 };

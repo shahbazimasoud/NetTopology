@@ -8,6 +8,7 @@ import { PortManagementView } from './components/PortManagementView';
 import { CdpLldpScannerView } from './components/CdpLldpScannerView';
 import { TemplateManagementView } from './components/TemplateManagementView';
 import { AddDeviceModal } from './components/AddDeviceModal';
+import { EditDeviceModal } from './components/EditDeviceModal';
 import { PortInspectorModal } from './components/PortInspectorModal';
 import { CiscoTerminalModal } from './components/CiscoTerminalModal';
 import { ApplyTemplateModal } from './components/ApplyTemplateModal';
@@ -18,6 +19,7 @@ import {
   fetchDevices,
   fetchTopology,
   addDevice,
+  updateDevice,
   deleteDevice,
   pingAllDevices,
   pingDevice,
@@ -69,6 +71,7 @@ export default function App() {
 
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [portInspectorDevice, setPortInspectorDevice] = useState<Device | null>(null);
   const [terminalDevice, setTerminalDevice] = useState<Device | null>(null);
   const [applyTemplateDevice, setApplyTemplateDevice] = useState<Device | null>(null);
@@ -217,6 +220,19 @@ export default function App() {
     return res.device;
   };
 
+  // Update existing device
+  const handleUpdateDevice = async (id: string, updates: Partial<Device>) => {
+    try {
+      const res = await updateDevice(id, updates);
+      await loadData();
+      showToast(isEn ? `Device "${res.device.name}" updated successfully.` : `مشخصات تجهیز «${res.device.name}» با موفقیت ویرایش و ذخیره شد.`);
+      return res.device;
+    } catch (err: any) {
+      showToast(isEn ? `Error updating device: ${err.message}` : `خطا در به‌روزرسانی مشخصات تجهیز: ${err.message}`);
+      throw err;
+    }
+  };
+
   // Delete device
   const handleDeleteDevice = async (id: string) => {
     try {
@@ -321,6 +337,7 @@ export default function App() {
               onOpenAddModal={() => setIsAddModalOpen(true)}
               onPingDevice={handlePingDevice}
               onDeleteDevice={handleDeleteDevice}
+              onEditDevice={(dev) => setEditingDevice(dev)}
               onInspectPorts={(dev) => setPortInspectorDevice(dev)}
               onConnectTerminal={(dev) => setTerminalDevice(dev)}
               onApplyTemplate={(dev) => {
@@ -421,6 +438,19 @@ export default function App() {
           setApplyPreselectedTemplateId(templateId);
         }}
       />
+
+      {/* Edit Device Modal */}
+      {editingDevice && (
+        <EditDeviceModal
+          isOpen={!!editingDevice}
+          device={editingDevice}
+          onClose={() => setEditingDevice(null)}
+          onSave={async (deviceId, updates) => {
+            await handleUpdateDevice(deviceId, updates);
+            setEditingDevice(null);
+          }}
+        />
+      )}
 
       {/* Apply Template Interactive Modal */}
       <ApplyTemplateModal
