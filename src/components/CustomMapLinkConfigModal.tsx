@@ -26,12 +26,16 @@ interface CustomMapLinkConfigModalProps {
   sourceDevice: Device;
   sourcePort: string;
   sourceInitialPortData?: SwitchPort;
+  sourceInitialData?: SwitchPort;
   targetDevice: Device;
   targetPort: string;
   targetInitialPortData?: SwitchPort;
+  targetInitialData?: SwitchPort;
   existingLink?: CustomTopologyLink | null;
-  onSave: (linkData: Omit<CustomTopologyLink, 'id'>) => void;
+  onSave?: (linkData: Omit<CustomTopologyLink, 'id'>) => void;
+  onSaveLink?: (linkData: Omit<CustomTopologyLink, 'id'>) => void;
   onDelete?: () => void;
+  onDeleteLink?: () => void;
 }
 
 export const CustomMapLinkConfigModal: React.FC<CustomMapLinkConfigModalProps> = ({
@@ -40,21 +44,30 @@ export const CustomMapLinkConfigModal: React.FC<CustomMapLinkConfigModalProps> =
   sourceDevice,
   sourcePort,
   sourceInitialPortData,
+  sourceInitialData,
   targetDevice,
   targetPort,
   targetInitialPortData,
+  targetInitialData,
   existingLink,
   onSave,
+  onSaveLink,
   onDelete,
+  onDeleteLink,
 }) => {
   const { t, isEn, isRtl } = useLanguage();
 
+  const effectiveSave = onSave || onSaveLink;
+  const effectiveDelete = onDelete || onDeleteLink;
+  const effectiveSourcePortData = sourceInitialPortData || sourceInitialData;
+  const effectiveTargetPortData = targetInitialPortData || targetInitialData;
+
   // Source side state
   const [sourceMode, setSourceMode] = useState<'trunk' | 'access'>(
-    existingLink?.sourceMode || sourceInitialPortData?.mode || 'trunk'
+    existingLink?.sourceMode || effectiveSourcePortData?.mode || 'trunk'
   );
   const [sourceVlan, setSourceVlan] = useState<number>(
-    existingLink?.sourceVlan || sourceInitialPortData?.vlan || (sourceMode === 'trunk' ? 1 : 10)
+    existingLink?.sourceVlan || effectiveSourcePortData?.vlan || (sourceMode === 'trunk' ? 1 : 10)
   );
   const [sourceIp, setSourceIp] = useState<string>(
     existingLink?.sourceIp || ''
@@ -62,10 +75,10 @@ export const CustomMapLinkConfigModal: React.FC<CustomMapLinkConfigModalProps> =
 
   // Target side state
   const [targetMode, setTargetMode] = useState<'trunk' | 'access'>(
-    existingLink?.targetMode || targetInitialPortData?.mode || 'trunk'
+    existingLink?.targetMode || effectiveTargetPortData?.mode || 'trunk'
   );
   const [targetVlan, setTargetVlan] = useState<number>(
-    existingLink?.targetVlan || targetInitialPortData?.vlan || (targetMode === 'trunk' ? 1 : 10)
+    existingLink?.targetVlan || effectiveTargetPortData?.vlan || (targetMode === 'trunk' ? 1 : 10)
   );
   const [targetIp, setTargetIp] = useState<string>(
     existingLink?.targetIp || ''
@@ -76,7 +89,7 @@ export const CustomMapLinkConfigModal: React.FC<CustomMapLinkConfigModalProps> =
     existingLink?.cableType || 'copper'
   );
   const [speed, setSpeed] = useState<string>(
-    existingLink?.speed || (sourceInitialPortData?.speed || '1G')
+    existingLink?.speed || (effectiveSourcePortData?.speed || '1G')
   );
   const [status, setStatus] = useState<'active' | 'down' | 'testing'>(
     existingLink?.status || 'active'
@@ -89,22 +102,24 @@ export const CustomMapLinkConfigModal: React.FC<CustomMapLinkConfigModalProps> =
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
-      sourceDeviceId: sourceDevice.id,
-      targetDeviceId: targetDevice.id,
-      sourcePort,
-      targetPort,
-      sourceMode,
-      targetMode,
-      sourceVlan: Number(sourceVlan) || 1,
-      targetVlan: Number(targetVlan) || 1,
-      sourceIp: sourceIp.trim() || undefined,
-      targetIp: targetIp.trim() || undefined,
-      cableType,
-      speed,
-      status,
-      notes: notes.trim() || undefined,
-    });
+    if (typeof effectiveSave === 'function') {
+      effectiveSave({
+        sourceDeviceId: sourceDevice.id,
+        targetDeviceId: targetDevice.id,
+        sourcePort,
+        targetPort,
+        sourceMode,
+        targetMode,
+        sourceVlan: Number(sourceVlan) || 1,
+        targetVlan: Number(targetVlan) || 1,
+        sourceIp: sourceIp.trim() || undefined,
+        targetIp: targetIp.trim() || undefined,
+        cableType,
+        speed,
+        status,
+        notes: notes.trim() || undefined,
+      });
+    }
   };
 
   return (
@@ -448,10 +463,10 @@ export const CustomMapLinkConfigModal: React.FC<CustomMapLinkConfigModalProps> =
 
           {/* Modal Footer Actions */}
           <div className="pt-2 flex items-center justify-between gap-3">
-            {existingLink && onDelete ? (
+            {existingLink && effectiveDelete ? (
               <button
                 type="button"
-                onClick={onDelete}
+                onClick={effectiveDelete}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-xs font-medium transition cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" />

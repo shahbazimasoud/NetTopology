@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.8.1-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.8.2-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۸.۱
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.8.1
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۸.۲
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.8.2
 
 ---
 
@@ -224,6 +224,9 @@ npm start
 > ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
 
 ### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
+- **نسخه ۱.۸.۲ (v1.8.2 - رفع خطای فراخوانی تابع ذخیره در مودال پیکربندی لینک)**:
+  - **رفع خطای ران‌تایم `TypeError: onSave is not a function`:** حل مشکل ذخیره‌سازی اتصالات کابل در نقشه سفارشی با برقراری سازگاری کامل دوطرفه میان پروپ‌های `onSave` و `onSaveLink` و همچنین `onDelete` و `onDeleteLink` همراه با گارد دفاعی جهت اطمینان از عملکرد بدون وقفه ثبت کابل‌ها و لینک‌ها.
+
 - **نسخه ۱.۸.۱ (v1.8.1 - رفع خطای برخورد نام آیکون Map با سازنده اصلی شیء جاوااسکریپت)**:
   - **رفع خطای ران‌تایم `TypeError: Map is not a constructor`:** تصحیح نامگذاری آیکون Map لوساید به `MapIcon` در صفحه شماتیک توپولوژی جهت برطرف کردن تداخل نام با کلاس داخلی `Map` در جاوااسکریپت و تضمین استقرار پایدار مختصات تجهیزات.
 
@@ -494,6 +497,9 @@ Any AI assistant, coding agent, or human contributor working on this repository 
 3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
 
 ### Release Notes & Bug Fixes
+- **Version 1.8.2 (Fix onSave Function Handler in Link Configuration Modal)**:
+  - **Runtime Exception Fix (`TypeError: onSave is not a function`):** Fixed callback invocation when creating and updating custom topology links by introducing backward-compatible support for both `onSave` / `onSaveLink` and `onDelete` / `onDeleteLink` with defensive type guards, ensuring seamless connection creation.
+
 - **Version 1.8.1 (Fix Map Name Collision with Native JavaScript Map Constructor)**:
   - **Runtime Exception Fix (`TypeError: Map is not a constructor`):** Fixed identifier collision in Schematic Topology View by aliasing the Lucide `Map` icon to `MapIcon`, restoring standard invocation of the native JavaScript `Map` collection constructor for canvas positioning.
 

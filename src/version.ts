@@ -10,9 +10,24 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.8.1';
+export const APP_VERSION = '1.8.2';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.8.2',
+    releaseDate: '2026-09-09',
+    type: 'patch',
+    title: 'رفع خطای فراخوانی تابع ذخیره در مودال پیکربندی لینک (Fix onSave Function Handler in Link Modal)',
+    title_en: 'Fix onSave Function Handler in Link Configuration Modal',
+    changes: [
+      'رفع خطای Uncaught TypeError: onSave is not a function هنگام ثبت کابل و ایجاد اتصال در نقشه سفارشی توپولوژی',
+      'پشتیبانی دوگانه از پروپ‌های onSave / onSaveLink و onDelete / onDeleteLink با فراخوانی ایمن در مودال پیکربندی کابل و لینک'
+    ],
+    changes_en: [
+      'Resolved Uncaught TypeError: onSave is not a function when connecting cables and creating links in custom topology maps',
+      'Added dual backward-compatible support for onSave/onSaveLink and onDelete/onDeleteLink with defensive invocation guards in the link configuration modal'
+    ]
+  },
   {
     version: '1.8.1',
     releaseDate: '2026-09-09',

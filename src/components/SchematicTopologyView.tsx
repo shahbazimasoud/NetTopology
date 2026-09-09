@@ -4140,9 +4140,13 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
           sourcePort={cableWorkflow.sourcePort || 'GigabitEthernet0/1'}
           targetPort={cableWorkflow.targetPort || 'GigabitEthernet0/1'}
           sourceInitialData={cableWorkflow.sourceInitialPortData}
+          sourceInitialPortData={cableWorkflow.sourceInitialPortData}
           targetInitialData={cableWorkflow.targetInitialPortData}
+          targetInitialPortData={cableWorkflow.targetInitialPortData}
           existingLink={cableWorkflow.editingLink || undefined}
+          onSave={handleSaveCustomLink}
           onSaveLink={handleSaveCustomLink}
+          onDelete={cableWorkflow.editingLink ? handleDeleteCustomLink : undefined}
           onDeleteLink={cableWorkflow.editingLink ? handleDeleteCustomLink : undefined}
         />
       )}
