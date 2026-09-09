@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   X,
-  Map,
   Plus,
   Edit2,
   Trash2,

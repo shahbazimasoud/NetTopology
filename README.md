@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.8.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.8.1-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۸.۰
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.8.0
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۸.۱
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.8.1
 
 ---
 
@@ -224,6 +224,9 @@ npm start
 > ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
 
 ### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
+- **نسخه ۱.۸.۱ (v1.8.1 - رفع خطای برخورد نام آیکون Map با سازنده اصلی شیء جاوااسکریپت)**:
+  - **رفع خطای ران‌تایم `TypeError: Map is not a constructor`:** تصحیح نامگذاری آیکون Map لوساید به `MapIcon` در صفحه شماتیک توپولوژی جهت برطرف کردن تداخل نام با کلاس داخلی `Map` در جاوااسکریپت و تضمین استقرار پایدار مختصات تجهیزات.
+
 - **نسخه ۱.۸.۰ (v1.8.0 - سیستم جامع نقشه‌های سفارشی توپولوژی، ابزار کابل‌کشی تعاملی و پیکربندی پورت‌ها و لینک‌ها)**:
   - **نقشه‌های سفارشی چندگانه (Custom Topology Maps):** امکان ایجاد نامحدود نقشه‌های سفارشی، تغییر نام، حذف و سوئیچ بین نقشه خودکار کشف‌شده و نقشه‌های کاربر با ذخیره‌سازی محلی.
   - **افزودن و چیدمان تجهیزات دلخواه:** قابلیت افزودن سوئیچ‌ها و روترها از موجودی شبکه به روی بوم نقشه سفارشی با موقعیت‌یابی و جابجایی آزاد.
@@ -491,6 +494,9 @@ Any AI assistant, coding agent, or human contributor working on this repository 
 3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
 
 ### Release Notes & Bug Fixes
+- **Version 1.8.1 (Fix Map Name Collision with Native JavaScript Map Constructor)**:
+  - **Runtime Exception Fix (`TypeError: Map is not a constructor`):** Fixed identifier collision in Schematic Topology View by aliasing the Lucide `Map` icon to `MapIcon`, restoring standard invocation of the native JavaScript `Map` collection constructor for canvas positioning.
+
 - **Version 1.8.0 (Custom Topology Maps, Interactive Cabling Tool, and Dual-End Port & Link Configuration Engine)**:
   - **Custom User-Defined Topology Maps:** Create, rename, delete, and switch between multiple user-defined topology maps alongside the default auto-discovered network map, stored locally.
   - **Inventory Device Placement:** Place switches and routers from network inventory onto custom map canvases with free coordinate positioning and drag-and-drop support.

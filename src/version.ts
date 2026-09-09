@@ -10,9 +10,24 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.8.0';
+export const APP_VERSION = '1.8.1';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.8.1',
+    releaseDate: '2026-09-09',
+    type: 'patch',
+    title: 'رفع خطای برخورد نام آیکون Map با سازنده اصلی جاوااسکریپت (Fix Map Constructor Conflict)',
+    title_en: 'Fix Map Name Collision with JavaScript Native Map Constructor',
+    changes: [
+      'رفع خطای Uncaught TypeError: Map is not a constructor در صفحه شماتیک توپولوژی با تغییر نام آیکون Map به MapIcon',
+      'تضمین عملکرد بی‌نقص نگاشت مختصات نودها در بوم نقشه با استفاده از شیء استاندارد JavaScript Map'
+    ],
+    changes_en: [
+      'Resolved Uncaught TypeError: Map is not a constructor in Schematic Topology View by aliasing the Lucide Map icon to MapIcon',
+      'Ensured seamless coordinate and node position mapping on the canvas using the native JavaScript Map object'
+    ]
+  },
   {
     version: '1.8.0',
     releaseDate: '2026-09-09',

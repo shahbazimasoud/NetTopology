@@ -37,7 +37,7 @@ import {
   Trash2,
   Box,
   Boxes,
-  Map,
+  Map as MapIcon,
   MousePointer
 } from 'lucide-react';
 import {
@@ -1883,7 +1883,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             {/* Map Selector & Management */}
             <div className="flex items-center flex-wrap gap-2">
               <div className="flex items-center gap-1.5 text-slate-300 font-medium">
-                <Map className="w-3.5 h-3.5 text-cyan-400" />
+                <MapIcon className="w-3.5 h-3.5 text-cyan-400" />
                 <span>{t('topology_map_selector_label')}</span>
               </div>
               <select
