@@ -7,7 +7,10 @@ import {
   ConfigTemplate,
   TemplateApplyResult,
   DeviceConfigExtractRequest,
-  DeviceConfigExtractResult
+  DeviceConfigExtractResult,
+  DeviceGroup,
+  ActiveDirectoryConfig,
+  AccessPolicy
 } from '../types';
 
 const API_BASE = '/api';
@@ -357,5 +360,73 @@ export async function fetchActiveSshSessions(): Promise<{
 }> {
   const res = await fetch(`${API_BASE}/ssh/sessions`);
   if (!res.ok) throw new Error('Failed to fetch active SSH sessions');
+  return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Settings & Access Control (Device Groups, Active Directory & RBAC) APIs
+// ---------------------------------------------------------------------------
+
+export async function fetchDeviceGroups(): Promise<{ groups: DeviceGroup[]; total: number }> {
+  const res = await fetch(`${API_BASE}/device-groups`);
+  if (!res.ok) throw new Error('Failed to fetch device groups');
+  return res.json();
+}
+
+export async function saveDeviceGroupsApi(groups: DeviceGroup[]): Promise<{ success: boolean; groups: DeviceGroup[] }> {
+  const res = await fetch(`${API_BASE}/device-groups`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ groups }),
+  });
+  if (!res.ok) throw new Error('Failed to save device groups');
+  return res.json();
+}
+
+export async function fetchActiveDirectoryConfig(): Promise<{ config: ActiveDirectoryConfig }> {
+  const res = await fetch(`${API_BASE}/active-directory`);
+  if (!res.ok) throw new Error('Failed to fetch active directory config');
+  return res.json();
+}
+
+export async function saveActiveDirectoryConfigApi(config: ActiveDirectoryConfig): Promise<{ success: boolean; config: ActiveDirectoryConfig }> {
+  const res = await fetch(`${API_BASE}/active-directory`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ config }),
+  });
+  if (!res.ok) throw new Error('Failed to save active directory config');
+  return res.json();
+}
+
+export async function testActiveDirectoryConnectionApi(config: ActiveDirectoryConfig): Promise<{
+  success: boolean;
+  latency_ms: number;
+  message: string;
+  serverBanner: string;
+  logs: string[];
+}> {
+  const res = await fetch(`${API_BASE}/active-directory/test`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ config }),
+  });
+  if (!res.ok) throw new Error('Active directory test probe failed');
+  return res.json();
+}
+
+export async function fetchAccessPolicies(): Promise<{ policies: AccessPolicy[]; total: number }> {
+  const res = await fetch(`${API_BASE}/access-policies`);
+  if (!res.ok) throw new Error('Failed to fetch access policies');
+  return res.json();
+}
+
+export async function saveAccessPoliciesApi(policies: AccessPolicy[]): Promise<{ success: boolean; policies: AccessPolicy[] }> {
+  const res = await fetch(`${API_BASE}/access-policies`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ policies }),
+  });
+  if (!res.ok) throw new Error('Failed to save access policies');
   return res.json();
 }

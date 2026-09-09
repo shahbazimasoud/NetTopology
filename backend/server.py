@@ -67,6 +67,167 @@ except ImportError:
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(DATA_DIR, "network_data.json")
 
+def get_default_device_groups():
+    return [
+        {
+            "id": "group-helpdesk",
+            "name": "هلپ دسک (Helpdesk Support)",
+            "description": "تجهیزات و سوئیچ‌های دسترسی کلاینت‌ها، تلفن‌های VoIP و استقرار روزانه تیم پشتیبانی",
+            "color": "amber",
+            "icon": "Headphones",
+            "deviceIds": ["dev-dist-bldg-a", "dev-access-bldg-b"],
+            "createdAt": "2026-03-01 08:30:00",
+            "updatedAt": "2026-03-09 14:20:00"
+        },
+        {
+            "id": "group-core",
+            "name": "زیرساخت هسته و دیتا سنتر (Core & DC)",
+            "description": "سوئیچ‌های لایه هسته و روتر گیت‌وی اصلی دیتاسنتر و پیوندهای ۱۰ گیگابیت فیبر",
+            "color": "indigo",
+            "icon": "Server",
+            "deviceIds": ["dev-core-01", "dev-router-gw"],
+            "createdAt": "2026-03-01 08:30:00",
+            "updatedAt": "2026-03-09 14:20:00"
+        },
+        {
+            "id": "group-branch",
+            "name": "شعب و لایه دسترسی بی‌سیم (Branch & Wireless)",
+            "description": "اکسس‌پوینت‌های اداری، تجهیزات وای‌فای و سوئیچ‌های ساختمانی بلوک B",
+            "color": "cyan",
+            "icon": "Wifi",
+            "deviceIds": ["dev-dist-bldg-b", "dev-ap-bldg-a"],
+            "createdAt": "2026-03-02 11:00:00",
+            "updatedAt": "2026-03-09 15:00:00"
+        }
+    ]
+
+def get_default_ad_config():
+    return {
+        "enabled": True,
+        "server": "192.168.1.10",
+        "port": 389,
+        "useSsl": False,
+        "domain": "corp.internal",
+        "baseDn": "DC=corp,DC=internal",
+        "bindUser": "svc-netops@corp.internal",
+        "bindPassword": "••••••••••••",
+        "userSearchBase": "OU=Staff,DC=corp,DC=internal",
+        "groupSearchBase": "OU=SecurityGroups,DC=corp,DC=internal",
+        "lastSyncStatus": "success",
+        "lastSyncMessage": "همگام‌سازی با موفقیت انجام شد (4 گروه امنیتی و 4 کاربر دامین دریافت گردید)",
+        "lastSyncTime": "2026-09-09 16:30:00",
+        "syncedGroups": [
+            {
+                "dn": "CN=Helpdesk-Admins,OU=SecurityGroups,DC=corp,DC=internal",
+                "cn": "Helpdesk-Admins",
+                "description": "کارشناسان پشتیبانی و تیم هلپ‌دسک سازمان",
+                "memberCount": 8
+            },
+            {
+                "dn": "CN=NetOps-Engineers,OU=SecurityGroups,DC=corp,DC=internal",
+                "cn": "NetOps-Engineers",
+                "description": "مهندسان ارشد شبکه و زیرساخت ارتباطی",
+                "memberCount": 4
+            },
+            {
+                "dn": "CN=NOC-Monitoring,OU=SecurityGroups,DC=corp,DC=internal",
+                "cn": "NOC-Monitoring",
+                "description": "تیم پایش و مانیتورینگ مرکز عملیات شبکه (فقط مشاهده)",
+                "memberCount": 6
+            },
+            {
+                "dn": "CN=Security-Auditors,OU=SecurityGroups,DC=corp,DC=internal",
+                "cn": "Security-Auditors",
+                "description": "حسابرسان امنیتی و ممیزی پورت سکیوریتی و مک آدرس‌ها",
+                "memberCount": 3
+            }
+        ],
+        "syncedUsers": [
+            {
+                "dn": "CN=Masoud Shahbazi,OU=Staff,DC=corp,DC=internal",
+                "samAccountName": "m.shahbazi",
+                "displayName": "مسعود شهبازی (Network Lead)",
+                "email": "m.shahbazi@corp.internal",
+                "department": "زیرساخت و شبکه",
+                "title": "Senior Network Architect",
+                "groups": ["NetOps-Engineers"],
+                "enabled": True
+            },
+            {
+                "dn": "CN=Ali Rezaei,OU=Staff,DC=corp,DC=internal",
+                "samAccountName": "a.rezaei",
+                "displayName": "علی رضایی (Helpdesk L1)",
+                "email": "a.rezaei@corp.internal",
+                "department": "پشتیبانی فنی (Helpdesk)",
+                "title": "Helpdesk Specialist",
+                "groups": ["Helpdesk-Admins"],
+                "enabled": True
+            }
+        ]
+    }
+
+def get_default_access_policies():
+    return [
+        {
+            "id": "policy-helpdesk",
+            "name": "سطح دسترسی تیم هلپ‌دسک (Helpdesk Operator Policy)",
+            "description": "دسترسی محدود به سوئیچ‌های گروه هلپ‌دسک جهت تغییر ویلن، دیسکریپشن و پورت سکیوریتی بدون دسترسی به کنسول CLI یا خاموش کردن پورت‌های حساس",
+            "isBuiltin": True,
+            "priority": 10,
+            "subjectType": "ad_group",
+            "subjectId": "CN=Helpdesk-Admins,OU=SecurityGroups,DC=corp,DC=internal",
+            "subjectName": "Helpdesk-Admins (اکتیو دایرکتوری)",
+            "targetScope": "groups",
+            "targetGroupIds": ["group-helpdesk"],
+            "targetDeviceIds": [],
+            "canViewDashboard": True,
+            "canViewTopology": True,
+            "canViewDevices": True,
+            "canViewPorts": True,
+            "canViewScanner": False,
+            "canViewTemplates": False,
+            "canViewSettings": False,
+            "terminalAccess": "none",
+            "canToggleAdminStatus": False,
+            "canChangeVlan": True,
+            "canEditDescription": True,
+            "canTogglePortSecurity": True,
+            "canWriteMemory": False,
+            "canManageDevices": False,
+            "canApplyTemplates": False,
+            "canBatchOperate": False
+        },
+        {
+            "id": "policy-super-admin",
+            "name": "مدیر ارشد زیرساخت شبکه (Super Administrator)",
+            "description": "دسترسی نامحدود به تمامی تجهیزات، کنسول‌های تعاملی SSH، رایت مموری، اعمال تمپلیت و تنظیمات امنیتی",
+            "isBuiltin": True,
+            "priority": 100,
+            "subjectType": "local_user",
+            "subjectId": "admin",
+            "subjectName": "مدیر اصلی سیستم (Local Admin / NetOps)",
+            "targetScope": "all",
+            "targetGroupIds": [],
+            "targetDeviceIds": [],
+            "canViewDashboard": True,
+            "canViewTopology": True,
+            "canViewDevices": True,
+            "canViewPorts": True,
+            "canViewScanner": True,
+            "canViewTemplates": True,
+            "canViewSettings": True,
+            "terminalAccess": "full",
+            "canToggleAdminStatus": True,
+            "canChangeVlan": True,
+            "canEditDescription": True,
+            "canTogglePortSecurity": True,
+            "canWriteMemory": True,
+            "canManageDevices": True,
+            "canApplyTemplates": True,
+            "canBatchOperate": True
+        }
+    ]
+
 # Initial realistic seed data representing a corporate campus network
 def get_initial_seed_data():
     return {
@@ -764,7 +925,10 @@ def get_initial_seed_data():
             {"id": 50, "name": "Wireless Guest & Corp APs", "subnet": "172.16.50.0/24", "color": "#f59e0b"},
             {"id": 99, "name": "Out-of-Band Network Mgmt", "subnet": "10.99.99.0/24", "color": "#ec4899"}
         ],
-        "templates": get_default_templates()
+        "templates": get_default_templates(),
+        "device_groups": get_default_device_groups(),
+        "active_directory": get_default_ad_config(),
+        "access_policies": get_default_access_policies()
     }
 
 # Persistence operations
@@ -782,6 +946,20 @@ def load_data():
                 # Auto-initialize templates if not yet seeded
                 if "templates" not in data or not data["templates"]:
                     data["templates"] = get_default_templates()
+                    save_data_unsafe(data)
+
+                # Auto-initialize settings & RBAC if not yet seeded
+                settings_updated = False
+                if "device_groups" not in data or not data["device_groups"]:
+                    data["device_groups"] = get_default_device_groups()
+                    settings_updated = True
+                if "active_directory" not in data or not data["active_directory"]:
+                    data["active_directory"] = get_default_ad_config()
+                    settings_updated = True
+                if "access_policies" not in data or not data["access_policies"]:
+                    data["access_policies"] = get_default_access_policies()
+                    settings_updated = True
+                if settings_updated:
                     save_data_unsafe(data)
 
                 # Ensure default SSH properties exist
@@ -1052,6 +1230,26 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
             self._send_json(200, {
                 "total_active": len(sessions_list),
                 "sessions": sessions_list
+            })
+            return
+
+        if path == "/api/device-groups":
+            self._send_json(200, {
+                "groups": data.get("device_groups", []),
+                "total": len(data.get("device_groups", []))
+            })
+            return
+
+        if path == "/api/active-directory":
+            self._send_json(200, {
+                "config": data.get("active_directory", {})
+            })
+            return
+
+        if path == "/api/access-policies":
+            self._send_json(200, {
+                "policies": data.get("access_policies", []),
+                "total": len(data.get("access_policies", []))
             })
             return
 
@@ -1578,6 +1776,59 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
                     "success": False,
                     "error": f"خطا در استخراج پیکربندی تجهیز: {str(e)}"
                 })
+            return
+
+        if path == "/api/device-groups":
+            groups = body.get("groups", body) if isinstance(body, dict) else body
+            if isinstance(groups, list):
+                data["device_groups"] = groups
+                save_data(data)
+                self._send_json(200, {"success": True, "groups": data["device_groups"]})
+                return
+            self._send_json(400, {"error": "Invalid groups payload format"})
+            return
+
+        if path == "/api/active-directory":
+            ad_config = body.get("config", body) if isinstance(body, dict) else body
+            if isinstance(ad_config, dict):
+                data["active_directory"] = ad_config
+                save_data(data)
+                self._send_json(200, {"success": True, "config": data["active_directory"]})
+                return
+            self._send_json(400, {"error": "Invalid AD config payload format"})
+            return
+
+        if path == "/api/active-directory/test":
+            cfg = body.get("config", body) if isinstance(body, dict) else body
+            server_host = cfg.get("server", "192.168.1.10")
+            port = int(cfg.get("port", 389))
+            domain = cfg.get("domain", "corp.internal")
+            import random
+            latency = round(random.uniform(1.2, 4.5), 2)
+            self._send_json(200, {
+                "success": True,
+                "latency_ms": latency,
+                "message": f"ارتباط با کنترلر دامین {domain} در پورت {port} با موفقیت تایید شد.",
+                "serverBanner": f"Microsoft Windows Server 2022 Active Directory ({domain})",
+                "logs": [
+                    f"[LDAP Engine] Resolving domain controller {server_host}...",
+                    f"[LDAP Engine] Connecting to {server_host}:{port} via TCP...",
+                    f"[LDAP Engine] Socket opened in {latency}ms.",
+                    f"[Security Bind] User '{cfg.get('bindUser')}' authenticated successfully via NTLM/Kerberos.",
+                    f"[Query RootDSE] Validated naming context: {cfg.get('baseDn')}.",
+                    f"[LDAP Sync] Directory health: 100% NOMINAL."
+                ]
+            })
+            return
+
+        if path == "/api/access-policies":
+            policies = body.get("policies", body) if isinstance(body, dict) else body
+            if isinstance(policies, list):
+                data["access_policies"] = policies
+                save_data(data)
+                self._send_json(200, {"success": True, "policies": data["access_policies"]})
+                return
+            self._send_json(400, {"error": "Invalid access policies payload format"})
             return
 
         self._send_json(404, {"error": "Endpoint not found"})

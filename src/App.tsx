@@ -13,6 +13,7 @@ import { PortInspectorModal } from './components/PortInspectorModal';
 import { CiscoTerminalModal } from './components/CiscoTerminalModal';
 import { ApplyTemplateModal } from './components/ApplyTemplateModal';
 import { ReleaseNotesModal } from './components/ReleaseNotesModal';
+import { SettingsView } from './components/settings/SettingsView';
 import { APP_VERSION } from './version';
 import { Device, TopologyData } from './types';
 import {
@@ -294,6 +295,7 @@ export default function App() {
           panelTheme={panelTheme}
           onChangeTheme={changeTheme}
           onOpenReleaseNotes={() => setIsReleaseNotesOpen(true)}
+          onOpenSettings={() => setActiveTab('settings')}
         />
       )}
 
@@ -377,6 +379,10 @@ export default function App() {
 
           {activeTab === 'scanner' && (
             <CdpLldpScannerView onNavigateToTopology={() => setActiveTab('schematic')} />
+          )}
+
+          {activeTab === 'settings' && (
+            <SettingsView devices={devices} />
           )}
         </main>
       </div>

@@ -10,11 +10,13 @@ import {
   ChevronDown,
   FileCode2,
   Layers,
-  Activity
+  Activity,
+  Settings,
+  ShieldCheck
 } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
-export type ActiveTab = 'dashboard' | 'devices' | 'schematic' | 'templates' | 'ports' | 'scanner';
+export type ActiveTab = 'dashboard' | 'devices' | 'schematic' | 'templates' | 'ports' | 'scanner' | 'settings';
 
 interface SidebarProps {
   activeTab: ActiveTab;
@@ -34,7 +36,7 @@ interface NavItem {
 }
 
 interface NavParentGroup {
-  id: 'infra' | 'monitor';
+  id: 'infra' | 'monitor' | 'system';
   titleKey: string;
   tagKey: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -104,6 +106,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'scanner',
           labelKey: 'tab_scanner',
           icon: Radar,
+          badge: null,
+        },
+      ],
+    },
+    {
+      id: 'system',
+      titleKey: 'parent_system_title',
+      tagKey: 'parent_system_tag',
+      icon: Settings,
+      colorClass: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
+      items: [
+        {
+          id: 'settings',
+          labelKey: 'tab_settings',
+          icon: ShieldCheck,
           badge: null,
         },
       ],

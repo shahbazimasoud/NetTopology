@@ -16,6 +16,7 @@ interface NavbarProps {
   panelTheme: ThemeType;
   onChangeTheme: (theme: ThemeType) => void;
   onOpenReleaseNotes?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -27,6 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   panelTheme,
   onChangeTheme,
   onOpenReleaseNotes,
+  onOpenSettings,
 }) => {
   const { t, language, setLanguage, isRtl, isEn } = useLanguage();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -245,6 +247,27 @@ export const Navbar: React.FC<NavbarProps> = ({
                     })}
                   </div>
                 </div>
+
+                {/* Section 2.5: Settings & RBAC Quick Nav */}
+                {onOpenSettings && (
+                  <div className="mb-3">
+                    <button
+                      onClick={() => {
+                        setProfileOpen(false);
+                        onOpenSettings();
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 border border-amber-500/30 text-amber-200 text-xs font-semibold transition cursor-pointer shadow-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-amber-400" />
+                        <span>{t('tab_settings')}</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/30 text-amber-100">
+                        RBAC
+                      </span>
+                    </button>
+                  </div>
+                )}
 
                 {/* Section 3: Release Notes & System Status Link */}
                 <div className="pt-2 border-t border-white/10 flex items-center justify-between">

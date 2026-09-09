@@ -215,3 +215,114 @@ export interface DeviceConfigExtractResult {
   description: string;
   logs: string[];
 }
+
+// ==========================================
+// Settings: Device Grouping & Tagging
+// ==========================================
+export type GroupColor = 'amber' | 'indigo' | 'emerald' | 'cyan' | 'rose' | 'purple' | 'blue' | 'slate';
+
+export interface DeviceGroup {
+  id: string;
+  name: string;
+  description: string;
+  color: GroupColor;
+  icon?: string;
+  deviceIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==========================================
+// Settings: Active Directory / LDAP Integration
+// ==========================================
+export interface ADSecurityGroup {
+  dn: string;
+  cn: string;
+  description: string;
+  memberCount: number;
+}
+
+export interface ADUser {
+  dn: string;
+  samAccountName: string;
+  displayName: string;
+  email: string;
+  department: string;
+  title: string;
+  groups: string[];
+  enabled: boolean;
+}
+
+export interface ActiveDirectoryConfig {
+  enabled: boolean;
+  server: string;
+  port: number;
+  useSsl: boolean;
+  domain: string;
+  baseDn: string;
+  bindUser: string;
+  bindPassword?: string;
+  userSearchBase: string;
+  groupSearchBase: string;
+  lastSyncStatus: 'idle' | 'testing' | 'success' | 'failed';
+  lastSyncMessage?: string;
+  lastSyncTime?: string | null;
+  syncedGroups: ADSecurityGroup[];
+  syncedUsers: ADUser[];
+}
+
+export interface ADTestResult {
+  success: boolean;
+  latency_ms: number;
+  message: string;
+  serverBanner?: string;
+  sslValid?: boolean;
+  bindSuccess?: boolean;
+  logs: string[];
+}
+
+// ==========================================
+// Settings: Role-Based Access Control (RBAC)
+// ==========================================
+export interface LocalUser {
+  id: string;
+  username: string;
+  fullName: string;
+  email: string;
+  status: 'active' | 'disabled';
+}
+
+export interface AccessPolicy {
+  id: string;
+  name: string;
+  description: string;
+  isBuiltin?: boolean;
+  priority: number;
+  // Subject: Who does this policy apply to?
+  subjectType: 'local_user' | 'ad_group' | 'ad_user';
+  subjectId: string;
+  subjectName: string;
+  // Target: Which devices does this cover?
+  targetScope: 'all' | 'groups' | 'specific';
+  targetGroupIds: string[];
+  targetDeviceIds: string[];
+  // Page / Module Access: Where can they go?
+  canViewDashboard: boolean;
+  canViewTopology: boolean;
+  canViewDevices: boolean;
+  canViewPorts: boolean;
+  canViewScanner: boolean;
+  canViewTemplates: boolean;
+  canViewSettings: boolean;
+  // Granular Device / Port Capabilities: What can they execute?
+  terminalAccess: 'none' | 'view_only' | 'full';
+  canToggleAdminStatus: boolean;      // shutdown / no shutdown
+  canChangeVlan: boolean;             // assign VLAN
+  canEditDescription: boolean;        // set port description
+  canTogglePortSecurity: boolean;     // port security enable/disable
+  canWriteMemory: boolean;            // copy run start / write memory
+  canManageDevices: boolean;          // add, edit, delete device
+  canApplyTemplates: boolean;         // apply config template
+  canBatchOperate: boolean;           // batch port configuration
+}
+
