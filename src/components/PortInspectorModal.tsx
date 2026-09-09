@@ -5,6 +5,7 @@ import { fetchDevicePorts, updateSwitchPort, writeMemory, batchUpdateSwitchPorts
 import { NetworkPortSvg } from './NetworkPortSvg';
 import { CiscoPortContextMenu } from './CiscoPortContextMenu';
 import { CiscoCommandConfirmModal } from './CiscoCommandConfirmModal';
+import { CiscoPortConfigConfirmModal, PortConfigUpdates } from './CiscoPortConfigConfirmModal';
 import { AssignVlanModal } from './AssignVlanModal';
 import { useLanguage } from '../i18n/LanguageContext';
 
@@ -56,8 +57,13 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
   const [editPortSecViolation, setEditPortSecViolation] = useState<'shutdown' | 'restrict' | 'protect'>('shutdown');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Confirmation Summary Modal state
-  const [showConfirmSummary, setShowConfirmSummary] = useState(false);
+  // Cisco Port Config / Batch Apply Confirmation Modal state
+  const [portConfigConfirmModal, setPortConfigConfirmModal] = useState<{
+    targetPortIds: string[];
+    updates: PortConfigUpdates;
+    isBatch: boolean;
+  } | null>(null);
+  const [isExecutingPortConfig, setIsExecutingPortConfig] = useState(false);
   const [isWritingMem, setIsWritingMem] = useState(false);
 
   // Right-click action confirmation modal state (Yes/No with device CLI preview)
@@ -256,67 +262,55 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
     setIsEditing(false);
   };
 
-  const handleApplyBatch = async () => {
-    if (!device || selectedPortIds.length <= 1) return;
-    try {
-      setIsBatchApplying(true);
-      setError(null);
-      setBatchSuccessMessage(null);
+  const handleOpenBatchConfirm = () => {
+    if (!device || selectedPortIds.length === 0) return;
 
-      const updates: Partial<SwitchPort> = {};
-      if (batchAdminStatus !== 'no_change') {
-        updates.admin_status = batchAdminStatus;
-        updates.status = batchAdminStatus === 'disabled' ? 'down' : 'up';
-      }
-      if (batchMode !== 'no_change') {
-        updates.mode = batchMode;
-      }
-      if (batchVlan.trim() !== '') {
-        const v = parseInt(batchVlan.trim(), 10);
-        if (!isNaN(v) && v >= 1 && v <= 4094) {
-          updates.vlan = v;
-        }
-      }
-      if (batchAllowedVlans.trim() !== '') {
-        updates.allowed_vlans = batchAllowedVlans.trim();
-      }
-      if (batchPortSec !== 'no_change') {
-        updates.port_security_enabled = batchPortSec === 'enabled';
-        if (batchPortSec === 'enabled') {
-          updates.port_security_mode = batchPortSecMode;
-          updates.port_security_max_mac = batchPortSecMaxMac;
-        }
-      }
+    const hasAnyChange =
+      batchAdminStatus !== 'no_change' ||
+      batchMode !== 'no_change' ||
+      batchVlan.trim() !== '' ||
+      batchAllowedVlans.trim() !== '' ||
+      batchPortSec !== 'no_change';
 
-      const res = await batchUpdateSwitchPorts(device.id, selectedPortIds, updates);
-
-      // Update local ports
-      const updatedPortMap = new Map(res.ports.map((p) => [p.port_id, p]));
-      setPorts((prev) => prev.map((p) => updatedPortMap.get(p.port_id) || p));
-
-      if (selectedPort && updatedPortMap.has(selectedPort.port_id)) {
-        setSelectedPort(updatedPortMap.get(selectedPort.port_id)!);
-      }
-
-      device.has_unsaved_changes = true;
-      setBatchSuccessMessage(
+    if (!hasAnyChange) {
+      setError(
         isEn
-          ? `Successfully applied batch configuration to ${res.updatedCount} ports!`
-          : `تنظیمات با موفقیت روی ${res.updatedCount} پورت انتخابی اعمال شد!`
+          ? 'Please specify at least one configuration parameter to apply in batch.'
+          : 'لطفاً حداقل یکی از پارامترهای تنظیماتی را برای اعمال دسته‌ای مشخص نمایید.'
       );
-      if (onPortUpdated) onPortUpdated();
-
-      // Reset batch inputs
-      setBatchAdminStatus('no_change');
-      setBatchMode('no_change');
-      setBatchVlan('');
-      setBatchAllowedVlans('');
-      setBatchPortSec('no_change');
-    } catch (err: any) {
-      setError(err.message || 'Error applying batch changes');
-    } finally {
-      setIsBatchApplying(false);
+      return;
     }
+
+    const updates: PortConfigUpdates = {};
+    if (batchAdminStatus !== 'no_change') {
+      updates.admin_status = batchAdminStatus;
+      updates.status = batchAdminStatus === 'disabled' ? 'down' : 'up';
+    }
+    if (batchMode !== 'no_change') {
+      updates.mode = batchMode;
+    }
+    if (batchVlan.trim() !== '') {
+      const v = parseInt(batchVlan.trim(), 10);
+      if (!isNaN(v) && v >= 1 && v <= 4094) {
+        updates.vlan = v;
+      }
+    }
+    if (batchAllowedVlans.trim() !== '') {
+      updates.allowed_vlans = batchAllowedVlans.trim();
+    }
+    if (batchPortSec !== 'no_change') {
+      updates.port_security_enabled = batchPortSec === 'enabled';
+      if (batchPortSec === 'enabled') {
+        updates.port_security_mode = batchPortSecMode;
+        updates.port_security_max_mac = batchPortSecMaxMac;
+      }
+    }
+
+    setPortConfigConfirmModal({
+      targetPortIds: selectedPortIds,
+      updates,
+      isBatch: true,
+    });
   };
 
   const startEdit = (port: SwitchPort) => {
@@ -335,46 +329,118 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
     setIsEditing(true);
   };
 
-  // Called when user clicks "ذخیره در سوئیچ" -> opens summary modal first
-  const handleOpenSummary = () => {
-    setShowConfirmSummary(true);
+  // Called when user clicks "ذخیره در سوئیچ" -> opens Cisco confirmation modal first
+  const handleOpenSingleSaveConfirm = () => {
+    if (!device || !selectedPort) return;
+    const updates: PortConfigUpdates = {
+      admin_status: editAdminStatus,
+      status: editAdminStatus === 'disabled' ? 'down' : 'up',
+      mode: editMode,
+      vlan: editVlan,
+      allowed_vlans: editAllowedVlans,
+      connected_device: editConnected,
+      description: editDesc,
+      port_security_enabled: editPortSecEnabled,
+      port_security_max_mac: editPortSecMaxMac,
+      port_security_mode: editPortSecMode,
+      port_security_configured_mac: editPortSecConfiguredMac,
+      port_security_violation: editPortSecViolation,
+    };
+
+    setPortConfigConfirmModal({
+      targetPortIds: [selectedPort.port_id],
+      updates,
+      isBatch: false,
+    });
   };
 
-  // Called after confirmation in summary modal
-  const handleConfirmSave = async () => {
-    if (!device || !selectedPort) return;
-    try {
-      setIsSaving(true);
-      const res = await updateSwitchPort(device.id, selectedPort.port_id, {
-        admin_status: editAdminStatus,
-        status: editAdminStatus === 'disabled' ? 'down' : 'up',
-        mode: editMode,
-        vlan: editVlan,
-        allowed_vlans: editAllowedVlans,
-        connected_device: editConnected,
-        description: editDesc,
-        port_security_enabled: editPortSecEnabled,
-        port_security_max_mac: editPortSecMaxMac,
-        port_security_mode: editPortSecMode,
-        port_security_configured_mac: editPortSecConfiguredMac,
-        port_security_violation: editPortSecViolation,
-      });
+  // Called after confirmation in Cisco confirmation modal
+  const handleConfirmExecutePortConfig = async () => {
+    if (!device || !portConfigConfirmModal) return;
+    const { targetPortIds, updates, isBatch } = portConfigConfirmModal;
 
-      // Update local ports
-      setPorts((prev) =>
-        prev.map((p) => (p.port_id === selectedPort.port_id ? res.port : p))
-      );
-      setSelectedPort(res.port);
-      setIsEditing(false);
-      setShowConfirmSummary(false);
-      if (device) {
+    try {
+      setIsExecutingPortConfig(true);
+      setError(null);
+
+      if (isBatch) {
+        const batchPayload: Partial<SwitchPort> = {};
+        if (updates.admin_status && updates.admin_status !== 'no_change') {
+          batchPayload.admin_status = updates.admin_status;
+          batchPayload.status = updates.admin_status === 'disabled' ? 'down' : 'up';
+        }
+        if (updates.mode && updates.mode !== 'no_change') {
+          batchPayload.mode = updates.mode;
+        }
+        if (updates.vlan !== undefined && updates.vlan !== '') {
+          batchPayload.vlan = Number(updates.vlan);
+        }
+        if (updates.allowed_vlans) {
+          batchPayload.allowed_vlans = updates.allowed_vlans;
+        }
+        if (updates.port_security_enabled !== undefined && updates.port_security_enabled !== 'no_change') {
+          batchPayload.port_security_enabled = updates.port_security_enabled === true || updates.port_security_enabled === 'enabled';
+          if (batchPayload.port_security_enabled) {
+            batchPayload.port_security_mode = updates.port_security_mode;
+            batchPayload.port_security_max_mac = updates.port_security_max_mac;
+          }
+        }
+
+        const res = await batchUpdateSwitchPorts(device.id, targetPortIds, batchPayload);
+
+        // Update local ports
+        const updatedPortMap = new Map(res.ports.map((p) => [p.port_id, p]));
+        setPorts((prev) => prev.map((p) => updatedPortMap.get(p.port_id) || p));
+
+        if (selectedPort && updatedPortMap.has(selectedPort.port_id)) {
+          setSelectedPort(updatedPortMap.get(selectedPort.port_id)!);
+        }
+
+        device.has_unsaved_changes = true;
+        setBatchSuccessMessage(
+          isEn
+            ? `Successfully executed Cisco commands and applied configuration to ${res.updatedCount} ports!`
+            : `دستورات سیسکو با موفقیت روی ${res.updatedCount} پورت انتخابی اجرا و اعمال شدند!`
+        );
+
+        // Reset batch inputs
+        setBatchAdminStatus('no_change');
+        setBatchMode('no_change');
+        setBatchVlan('');
+        setBatchAllowedVlans('');
+        setBatchPortSec('no_change');
+      } else {
+        const portId = targetPortIds[0];
+        const res = await updateSwitchPort(device.id, portId, {
+          admin_status: updates.admin_status,
+          status: updates.status,
+          mode: updates.mode,
+          vlan: Number(updates.vlan) || 1,
+          allowed_vlans: updates.allowed_vlans,
+          connected_device: updates.connected_device,
+          description: updates.description,
+          port_security_enabled: updates.port_security_enabled === true || updates.port_security_enabled === 'enabled',
+          port_security_max_mac: updates.port_security_max_mac,
+          port_security_mode: updates.port_security_mode,
+          port_security_configured_mac: updates.port_security_configured_mac,
+          port_security_violation: updates.port_security_violation,
+        });
+
+        // Update local ports
+        setPorts((prev) =>
+          prev.map((p) => (p.port_id === portId ? res.port : p))
+        );
+        setSelectedPort(res.port);
+        setIsEditing(false);
         device.has_unsaved_changes = true;
       }
+
       if (onPortUpdated) onPortUpdated();
+      setPortConfigConfirmModal(null);
     } catch (err: any) {
-      alert('خطا در ذخیره پیکربندی پورت: ' + err.message);
+      alert((isEn ? 'Error executing Cisco port configuration: ' : 'خطا در اجرای دستورات سیسکو و تنظیم پورت: ') + (err.message || err));
     } finally {
-      setIsSaving(false);
+      setIsExecutingPortConfig(false);
     }
   };
 
@@ -390,161 +456,6 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
     } finally {
       setIsWritingMem(false);
     }
-  };
-
-  if (!isOpen || !device) return null;
-
-  // Build list of changed properties for the summary modal
-  const changedFields: { label: string; oldVal: string; newVal: string }[] = [];
-  if (selectedPort) {
-    if (selectedPort.admin_status !== editAdminStatus) {
-      changedFields.push({
-        label: isEn ? 'Admin Status' : 'وضعیت مدیریتی پورت (Admin Status)',
-        oldVal: selectedPort.admin_status === 'enabled' ? (isEn ? 'Enabled (No Shutdown)' : 'فعال (No Shutdown)') : (isEn ? 'Disabled (Shutdown)' : 'غیرفعال (Shutdown)'),
-        newVal: editAdminStatus === 'enabled' ? (isEn ? 'Enabled (No Shutdown)' : 'فعال (No Shutdown)') : (isEn ? 'Disabled (Shutdown)' : 'غیرفعال (Shutdown)'),
-      });
-    }
-    if (selectedPort.mode !== editMode) {
-      changedFields.push({
-        label: isEn ? 'Switchport Mode' : 'حالت پورت (Switchport Mode)',
-        oldVal: selectedPort.mode === 'trunk' ? (isEn ? 'Trunk' : 'Trunk (ترانک)') : (isEn ? 'Access' : 'Access (اکسس)'),
-        newVal: editMode === 'trunk' ? (isEn ? 'Trunk' : 'Trunk (ترانک)') : (isEn ? 'Access' : 'Access (اکسس)'),
-      });
-    }
-    if (selectedPort.vlan !== editVlan) {
-      changedFields.push({
-        label: isEn ? 'Access VLAN ID' : 'شماره ویلن (Access VLAN ID)',
-        oldVal: `VLAN ${selectedPort.vlan}`,
-        newVal: `VLAN ${editVlan}`,
-      });
-    }
-    if ((selectedPort.allowed_vlans || '') !== editAllowedVlans && editMode === 'trunk') {
-      changedFields.push({
-        label: isEn ? 'Allowed VLANs' : 'ویلن‌های مجاز عبور ترانک (Allowed VLANs)',
-        oldVal: selectedPort.allowed_vlans || (isEn ? 'All' : 'همه'),
-        newVal: editAllowedVlans || (isEn ? 'All' : 'همه'),
-      });
-    }
-    if ((selectedPort.connected_device || '') !== editConnected) {
-      changedFields.push({
-        label: isEn ? 'Connected Device/Host' : 'تجهیز یا هاست متصل',
-        oldVal: selectedPort.connected_device || (isEn ? 'None' : 'تجهیزی متصل نیست'),
-        newVal: editConnected || (isEn ? 'Empty' : 'خالی'),
-      });
-    }
-    if ((selectedPort.description || '') !== editDesc) {
-      changedFields.push({
-        label: isEn ? 'Port Description' : 'توضیحات پورت (Port Description)',
-        oldVal: selectedPort.description || (isEn ? 'None' : 'ندارد'),
-        newVal: editDesc || (isEn ? 'None' : 'ندارد'),
-      });
-    }
-
-    // Port Security Changes Diff
-    const oldSecEnabled = !!selectedPort.port_security_enabled;
-    if (oldSecEnabled !== editPortSecEnabled) {
-      changedFields.push({
-        label: isEn ? 'Port Security Status' : 'وضعیت Port Security',
-        oldVal: oldSecEnabled ? (isEn ? 'Enabled' : 'فعال (Enabled)') : (isEn ? 'Disabled' : 'غیرفعال (Disabled)'),
-        newVal: editPortSecEnabled ? (isEn ? 'Enabled' : 'فعال (Enabled)') : (isEn ? 'Disabled' : 'غیرفعال (Disabled)'),
-      });
-    }
-
-    if (editPortSecEnabled) {
-      const oldMax = selectedPort.port_security_max_mac || 1;
-      if (oldMax !== editPortSecMaxMac) {
-        changedFields.push({
-          label: isEn ? 'Maximum MACs' : 'حداکثر مک آدرس مجاز (Maximum MACs)',
-          oldVal: `${oldMax} ${isEn ? 'MAC(s)' : 'آدرس'}`,
-          newVal: `${editPortSecMaxMac} ${isEn ? 'MAC(s)' : 'آدرس'}`,
-        });
-      }
-
-      const oldMode = selectedPort.port_security_mode || 'sticky';
-      if (oldMode !== editPortSecMode) {
-        const modeLabels: Record<string, string> = {
-          sticky: isEn ? 'Sticky (Auto Learned)' : 'استیکی (Sticky - چسبنده خودکار)',
-          configured: isEn ? 'Configured (Manual Static)' : 'کانفیگور (Configured - دستی)',
-          dynamic: isEn ? 'Dynamic (CAM Memory)' : 'داینامیک (Dynamic - پویا)',
-        };
-        changedFields.push({
-          label: isEn ? 'MAC Learning Mode' : 'تعریف مود یادگیری مک (Learning Mode)',
-          oldVal: modeLabels[oldMode] || oldMode,
-          newVal: modeLabels[editPortSecMode] || editPortSecMode,
-        });
-      }
-
-      if (editPortSecMode === 'configured') {
-        const oldConfMac = selectedPort.port_security_configured_mac || '';
-        if (oldConfMac !== editPortSecConfiguredMac) {
-          changedFields.push({
-            label: isEn ? 'Configured Static MAC' : 'مک آدرس کانفیگ شده (Configured Static MAC)',
-            oldVal: oldConfMac || (isEn ? 'None' : 'ثبت نشده'),
-            newVal: editPortSecConfiguredMac || (isEn ? 'None' : 'ثبت نشده'),
-          });
-        }
-      }
-
-      const oldViolation = selectedPort.port_security_violation || 'shutdown';
-      if (oldViolation !== editPortSecViolation) {
-        const violLabels: Record<string, string> = {
-          shutdown: isEn ? 'Shutdown (Err-Disable)' : 'Shutdown (خاموشی اینترفیس و Err-Disable)',
-          restrict: isEn ? 'Restrict (Drop packet + Log/Trap)' : 'Restrict (مسدودسازی بسته و ارسال لاگ/Trap)',
-          protect: isEn ? 'Protect (Drop packet silent)' : 'Protect (انداختن فریم بدون تولید لاگ)',
-        };
-        changedFields.push({
-          label: isEn ? 'Violation Action' : 'سیاست برخورد با تخلف (Violation Action)',
-          oldVal: violLabels[oldViolation] || oldViolation,
-          newVal: violLabels[editPortSecViolation] || editPortSecViolation,
-        });
-      }
-    }
-  }
-
-  // Generate Cisco CLI commands preview
-  const generateCiscoCommands = () => {
-    if (!selectedPort) return '';
-    const lines = [
-      `${device.name}# configure terminal`,
-      `${device.name}(config)# interface ${selectedPort.port_id}`,
-    ];
-    if (editMode === 'trunk') {
-      lines.push(`${device.name}(config-if)# switchport mode trunk`);
-      if (editAllowedVlans) {
-        lines.push(`${device.name}(config-if)# switchport trunk allowed vlan ${editAllowedVlans}`);
-      }
-    } else {
-      lines.push(`${device.name}(config-if)# switchport mode access`);
-      lines.push(`${device.name}(config-if)# switchport access vlan ${editVlan}`);
-    }
-
-    // Cisco Port Security commands
-    if (editPortSecEnabled) {
-      if (editMode !== 'access') {
-        lines.push(`${device.name}(config-if)# switchport mode access`);
-      }
-      lines.push(`${device.name}(config-if)# switchport port-security`);
-      lines.push(`${device.name}(config-if)# switchport port-security maximum ${editPortSecMaxMac}`);
-      if (editPortSecMode === 'sticky') {
-        lines.push(`${device.name}(config-if)# switchport port-security mac-address sticky`);
-      } else if (editPortSecMode === 'configured' && editPortSecConfiguredMac) {
-        lines.push(`${device.name}(config-if)# switchport port-security mac-address ${editPortSecConfiguredMac}`);
-      }
-      lines.push(`${device.name}(config-if)# switchport port-security violation ${editPortSecViolation}`);
-    } else if (selectedPort.port_security_enabled && !editPortSecEnabled) {
-      lines.push(`${device.name}(config-if)# no switchport port-security`);
-    }
-
-    if (editAdminStatus === 'disabled') {
-      lines.push(`${device.name}(config-if)# shutdown`);
-    } else {
-      lines.push(`${device.name}(config-if)# no shutdown`);
-    }
-    if (editDesc) {
-      lines.push(`${device.name}(config-if)# description ${editDesc}`);
-    }
-    lines.push(`${device.name}(config-if)# exit`);
-    return lines.join('\n');
   };
 
   if (!isOpen || !device) return null;
@@ -855,7 +766,7 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
                 <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 flex items-end lg:col-span-2">
                   <button
                     type="button"
-                    onClick={handleApplyBatch}
+                    onClick={handleOpenBatchConfirm}
                     disabled={isBatchApplying}
                     className="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
                   >
@@ -931,7 +842,7 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
                       {isEn ? 'Cancel' : 'انصراف'}
                     </button>
                     <button
-                      onClick={handleOpenSummary}
+                      onClick={handleOpenSingleSaveConfirm}
                       disabled={isSaving}
                       className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-medium shadow-md transition disabled:opacity-50 cursor-pointer border border-white/10"
                     >
@@ -1568,119 +1479,17 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
           </div>
         </div>
 
-        {/* Confirmation Summary Modal (سامری تغییرات پورت و تایید نهایی) */}
-        {showConfirmSummary && selectedPort && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 modal-backdrop-blur overflow-y-auto" data-modal-backdrop="true" dir={isEn ? 'ltr' : 'rtl'}>
-            <div className="spatial-glass border border-white/20 rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden my-auto flex flex-col max-h-[92vh] sm:max-h-[88vh] text-slate-100">
-              {/* Header */}
-              <div className="px-5 py-4 bg-white/5 border-b border-white/10 text-white flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    <Save className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-white">
-                      {isEn ? 'Confirm & Apply Port Configuration Changes' : 'پیش‌نمایش و تایید نهایی تغییرات پورت'}
-                    </h3>
-                    <p className="text-xs text-slate-400 font-mono mt-0.5">
-                      {device.name} ({device.ip}) • {isEn ? 'Port' : 'پورت'} {selectedPort.port_id}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowConfirmSummary(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Body Content */}
-              <div className="p-5 space-y-4 flex-1 overflow-y-auto">
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  {isEn ? (
-                    <>The following changes will be applied to port <b className="font-mono text-white">{selectedPort.port_id}</b>. Please review and confirm before applying:</>
-                  ) : (
-                    <>تغییرات زیر روی پورت <b className="font-mono text-white">{selectedPort.port_id}</b> اعمال خواهند شد. لطفاً مقادیر جدید را قبل از ذخیره نهایی بررسی و تایید نمایید:</>
-                  )}
-                </p>
-
-                {/* Diff Comparison Table */}
-                <div className="border border-white/10 rounded-xl overflow-hidden text-xs bg-black/20">
-                  <table className={`w-full ${isEn ? 'text-left' : 'text-right'}`}>
-                    <thead className="bg-white/5 text-slate-300 border-b border-white/10 text-[11px] font-bold">
-                      <tr>
-                        <th className="p-2.5">{isEn ? 'Parameter' : 'پارامتر تنظیماتی'}</th>
-                        <th className="p-2.5">{isEn ? 'Previous Value' : 'مقدار قبلی'}</th>
-                        <th className="p-2.5 text-indigo-300">{isEn ? 'New Proposed Value' : 'مقدار جدید پیشنهادی'}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {changedFields.length === 0 ? (
-                        <tr>
-                          <td colSpan={3} className="p-4 text-center text-slate-400">
-                            {isEn ? 'No changes detected in port configuration.' : 'تغییری در پارامترهای پورت داده نشده است.'}
-                          </td>
-                        </tr>
-                      ) : (
-                        changedFields.map((field, idx) => (
-                          <tr key={idx} className="hover:bg-white/5">
-                            <td className="p-2.5 font-medium text-slate-200">{field.label}</td>
-                            <td className="p-2.5 text-slate-400 font-mono">{field.oldVal}</td>
-                            <td className="p-2.5 font-mono font-bold text-indigo-300 bg-indigo-500/10">
-                              {field.newVal}
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Cisco CLI Script Preview */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px] text-slate-300 font-medium">
-                    <span>{isEn ? 'Cisco IOS Commands (Running-Config):' : 'دستورات معادل در سیسکو IOS (Running-Config):'}</span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded vendor-badge-cisco font-bold">Cisco IOS-XE Script</span>
-                  </div>
-                  <pre className="p-3 rounded-xl bg-slate-950/90 border border-white/10 text-emerald-400 font-mono text-xs overflow-x-auto text-left leading-relaxed select-all" dir="ltr">
-                    {generateCiscoCommands()}
-                  </pre>
-                </div>
-
-                {/* Warning Alert about Running vs Startup */}
-                <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs flex items-start gap-2.5">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div className="leading-relaxed">
-                    <b>{isEn ? 'Important Cisco Notice:' : 'توجه مهم سیسکو:'}</b> {isEn ? (
-                      <>These changes will immediately apply to active Running-Config. The device will be flagged in the topology with <b>"Unsaved Changes"</b> until you execute <code className="bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold border border-amber-500/30">write memory</code> to persist into NVRAM.</>
-                    ) : (
-                      <>این تغییرات بلافاصله در حافظه جاری (Running-Config) سوئیچ اعمال می‌شود. پس از ذخیره، این تجهیز در پنل با وضعیت <b>«تغییرات رایت‌نشده»</b> مشخص خواهد شد تا مهندس شبکه دستور <code className="bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold border border-amber-500/30">write memory</code> را برای ذخیره دائم در NVRAM اجرا نماید.</>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer Actions */}
-              <div className="px-5 py-3.5 bg-black/20 border-t border-white/10 flex items-center justify-end gap-2.5 shrink-0">
-                <button
-                  onClick={() => setShowConfirmSummary(false)}
-                  disabled={isSaving}
-                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-xs font-medium transition cursor-pointer"
-                >
-                  {isEn ? 'Cancel & Modify' : 'انصراف و اصلاح'}
-                </button>
-                <button
-                  onClick={handleConfirmSave}
-                  disabled={isSaving}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-medium shadow-md transition disabled:opacity-50 cursor-pointer border border-white/10"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>{isSaving ? (isEn ? 'Applying to Switch...' : 'در حال اعمال در سوئیچ...') : (isEn ? 'Confirm & Apply' : 'تایید و اعمال تغییرات')}</span>
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* Cisco Port Config / Batch Apply Confirmation Modal */}
+        {portConfigConfirmModal && device && (
+          <CiscoPortConfigConfirmModal
+            isOpen={!!portConfigConfirmModal}
+            onClose={() => setPortConfigConfirmModal(null)}
+            onConfirm={handleConfirmExecutePortConfig}
+            device={device}
+            targetPortIds={portConfigConfirmModal.targetPortIds}
+            updates={portConfigConfirmModal.updates}
+            isLoading={isExecutingPortConfig}
+          />
         )}
 
         {/* Cisco Right-Click Port Actions Context Menu */}

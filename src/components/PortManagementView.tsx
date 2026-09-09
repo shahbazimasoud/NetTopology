@@ -4,6 +4,7 @@ import { Device, SwitchPort } from '../types';
 import { fetchDevicePorts, updateSwitchPort, batchUpdateSwitchPorts } from '../services/api';
 import { CiscoPortContextMenu } from './CiscoPortContextMenu';
 import { CiscoCommandConfirmModal } from './CiscoCommandConfirmModal';
+import { CiscoPortConfigConfirmModal, PortConfigUpdates } from './CiscoPortConfigConfirmModal';
 import { AssignVlanModal } from './AssignVlanModal';
 import { NetworkPortSvg } from './NetworkPortSvg';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -52,6 +53,15 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
   const [editConnected, setEditConnected] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Cisco Port Config / Batch Apply Confirmation Modal state
+  const [portConfigConfirmModal, setPortConfigConfirmModal] = useState<{
+    targetPortIds: string[];
+    updates: PortConfigUpdates;
+    isBatch: boolean;
+  } | null>(null);
+  const [isExecutingPortConfig, setIsExecutingPortConfig] = useState(false);
+
   const [filterMode, setFilterMode] = useState<'all' | 'up' | 'down' | 'trunk' | 'access'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -103,62 +113,152 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
     }
   };
 
-  const handleApplyBatch = async () => {
-    if (!currentDevice || selectedPortIds.length <= 1) return;
-    try {
-      setIsBatchApplying(true);
-      setBatchSuccessMessage(null);
+  const handleOpenBatchConfirm = () => {
+    if (!currentDevice || selectedPortIds.length === 0) return;
 
-      const updates: Partial<SwitchPort> = {};
-      if (batchAdminStatus !== 'no_change') {
-        updates.admin_status = batchAdminStatus;
-        updates.status = batchAdminStatus === 'disabled' ? 'down' : 'up';
-      }
-      if (batchMode !== 'no_change') {
-        updates.mode = batchMode;
-      }
-      if (batchVlan.trim() !== '') {
-        const v = parseInt(batchVlan.trim(), 10);
-        if (!isNaN(v) && v >= 1 && v <= 4094) {
-          updates.vlan = v;
-        }
-      }
-      if (batchAllowedVlans.trim() !== '') {
-        updates.allowed_vlans = batchAllowedVlans.trim();
-      }
-      if (batchPortSec !== 'no_change') {
-        updates.port_security_enabled = batchPortSec === 'enabled';
-        if (batchPortSec === 'enabled') {
-          updates.port_security_mode = batchPortSecMode;
-          updates.port_security_max_mac = batchPortSecMaxMac;
-        }
-      }
+    const hasAnyChange =
+      batchAdminStatus !== 'no_change' ||
+      batchMode !== 'no_change' ||
+      batchVlan.trim() !== '' ||
+      batchAllowedVlans.trim() !== '' ||
+      batchPortSec !== 'no_change';
 
-      const res = await batchUpdateSwitchPorts(currentDevice.id, selectedPortIds, updates);
-
-      const updatedPortMap = new Map(res.ports.map((p) => [p.port_id, p]));
-      setPorts((prev) => prev.map((p) => updatedPortMap.get(p.port_id) || p));
-
-      if (selectedPort && updatedPortMap.has(selectedPort.port_id)) {
-        setSelectedPort(updatedPortMap.get(selectedPort.port_id)!);
-      }
-
-      currentDevice.has_unsaved_changes = true;
-      setBatchSuccessMessage(
+    if (!hasAnyChange) {
+      alert(
         isEn
-          ? `Successfully applied batch configuration to ${res.updatedCount} ports!`
-          : `تنظیمات با موفقیت روی ${res.updatedCount} پورت اعمال شد!`
+          ? 'Please specify at least one configuration parameter to apply in batch.'
+          : 'لطفاً حداقل یکی از پارامترهای تنظیماتی را برای اعمال دسته‌ای مشخص نمایید.'
       );
+      return;
+    }
 
-      setBatchAdminStatus('no_change');
-      setBatchMode('no_change');
-      setBatchVlan('');
-      setBatchAllowedVlans('');
-      setBatchPortSec('no_change');
+    const updates: PortConfigUpdates = {};
+    if (batchAdminStatus !== 'no_change') {
+      updates.admin_status = batchAdminStatus;
+      updates.status = batchAdminStatus === 'disabled' ? 'down' : 'up';
+    }
+    if (batchMode !== 'no_change') {
+      updates.mode = batchMode;
+    }
+    if (batchVlan.trim() !== '') {
+      const v = parseInt(batchVlan.trim(), 10);
+      if (!isNaN(v) && v >= 1 && v <= 4094) {
+        updates.vlan = v;
+      }
+    }
+    if (batchAllowedVlans.trim() !== '') {
+      updates.allowed_vlans = batchAllowedVlans.trim();
+    }
+    if (batchPortSec !== 'no_change') {
+      updates.port_security_enabled = batchPortSec === 'enabled';
+      if (batchPortSec === 'enabled') {
+        updates.port_security_mode = batchPortSecMode;
+        updates.port_security_max_mac = batchPortSecMaxMac;
+      }
+    }
+
+    setPortConfigConfirmModal({
+      targetPortIds: selectedPortIds,
+      updates,
+      isBatch: true,
+    });
+  };
+
+  const handleOpenSingleSaveConfirm = () => {
+    if (!currentDevice || !selectedPort) return;
+    const updates: PortConfigUpdates = {
+      admin_status: editAdminStatus,
+      status: editAdminStatus === 'disabled' ? 'down' : 'up',
+      mode: editMode,
+      vlan: editVlan,
+      allowed_vlans: editAllowedVlans,
+      connected_device: editConnected,
+      description: editDesc,
+    };
+
+    setPortConfigConfirmModal({
+      targetPortIds: [selectedPort.port_id],
+      updates,
+      isBatch: false,
+    });
+  };
+
+  const handleConfirmExecutePortConfig = async () => {
+    if (!currentDevice || !portConfigConfirmModal) return;
+    const { targetPortIds, updates, isBatch } = portConfigConfirmModal;
+
+    try {
+      setIsExecutingPortConfig(true);
+
+      if (isBatch) {
+        const batchPayload: Partial<SwitchPort> = {};
+        if (updates.admin_status && updates.admin_status !== 'no_change') {
+          batchPayload.admin_status = updates.admin_status;
+          batchPayload.status = updates.admin_status === 'disabled' ? 'down' : 'up';
+        }
+        if (updates.mode && updates.mode !== 'no_change') {
+          batchPayload.mode = updates.mode;
+        }
+        if (updates.vlan !== undefined && updates.vlan !== '') {
+          batchPayload.vlan = Number(updates.vlan);
+        }
+        if (updates.allowed_vlans) {
+          batchPayload.allowed_vlans = updates.allowed_vlans;
+        }
+        if (updates.port_security_enabled !== undefined && updates.port_security_enabled !== 'no_change') {
+          batchPayload.port_security_enabled = updates.port_security_enabled === true || updates.port_security_enabled === 'enabled';
+          if (batchPayload.port_security_enabled) {
+            batchPayload.port_security_mode = updates.port_security_mode;
+            batchPayload.port_security_max_mac = updates.port_security_max_mac;
+          }
+        }
+
+        const res = await batchUpdateSwitchPorts(currentDevice.id, targetPortIds, batchPayload);
+
+        const updatedPortMap = new Map(res.ports.map((p) => [p.port_id, p]));
+        setPorts((prev) => prev.map((p) => updatedPortMap.get(p.port_id) || p));
+
+        if (selectedPort && updatedPortMap.has(selectedPort.port_id)) {
+          setSelectedPort(updatedPortMap.get(selectedPort.port_id)!);
+        }
+
+        currentDevice.has_unsaved_changes = true;
+        setBatchSuccessMessage(
+          isEn
+            ? `Successfully executed Cisco commands and applied configuration to ${res.updatedCount} ports!`
+            : `دستورات سیسکو با موفقیت روی ${res.updatedCount} پورت اعمال شد!`
+        );
+
+        setBatchAdminStatus('no_change');
+        setBatchMode('no_change');
+        setBatchVlan('');
+        setBatchAllowedVlans('');
+        setBatchPortSec('no_change');
+      } else {
+        const portId = targetPortIds[0];
+        const res = await updateSwitchPort(currentDevice.id, portId, {
+          admin_status: updates.admin_status,
+          status: updates.status,
+          mode: updates.mode,
+          vlan: Number(updates.vlan) || 1,
+          allowed_vlans: updates.allowed_vlans,
+          connected_device: updates.connected_device,
+          description: updates.description,
+        });
+
+        setPorts((prev) =>
+          prev.map((p) => (p.port_id === portId ? res.port : p))
+        );
+        setSelectedPort(res.port);
+        setIsEditing(false);
+        currentDevice.has_unsaved_changes = true;
+      }
+
+      setPortConfigConfirmModal(null);
     } catch (err: any) {
-      console.error(err);
+      alert(t('ports_save_error', { error: err.message || err }));
     } finally {
-      setIsBatchApplying(false);
+      setIsExecutingPortConfig(false);
     }
   };
 
@@ -276,32 +376,6 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
     setEditConnected(port.connected_device);
     setEditDesc(port.description || '');
     setIsEditing(true);
-  };
-
-  const handleSavePort = async () => {
-    if (!currentDevice || !selectedPort) return;
-    try {
-      setIsSaving(true);
-      const res = await updateSwitchPort(currentDevice.id, selectedPort.port_id, {
-        admin_status: editAdminStatus,
-        status: editAdminStatus === 'disabled' ? 'down' : 'up',
-        mode: editMode,
-        vlan: editVlan,
-        allowed_vlans: editAllowedVlans,
-        connected_device: editConnected,
-        description: editDesc,
-      });
-
-      setPorts((prev) =>
-        prev.map((p) => (p.port_id === selectedPort.port_id ? res.port : p))
-      );
-      setSelectedPort(res.port);
-      setIsEditing(false);
-    } catch (err: any) {
-      alert(t('ports_save_error', { error: err.message }));
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   const filteredPorts = ports.filter((p) => {
@@ -627,7 +701,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
             <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 flex items-end lg:col-span-2">
               <button
                 type="button"
-                onClick={handleApplyBatch}
+                onClick={handleOpenBatchConfirm}
                 disabled={isBatchApplying}
                 className="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
               >
@@ -705,7 +779,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                   {t('ports_btn_cancel')}
                 </button>
                 <button
-                  onClick={handleSavePort}
+                  onClick={handleOpenSingleSaveConfirm}
                   disabled={isSaving}
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-medium shadow-[0_0_15px_rgba(99,102,241,0.35)] transition disabled:opacity-50 border border-white/10 active:scale-95 cursor-pointer"
                 >
@@ -1099,6 +1173,19 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
           port={vlanAssignModalPort}
           device={currentDevice}
           isLoading={isAssigningVlan}
+        />
+      )}
+
+      {/* Cisco Port Config / Batch Apply Confirmation Modal */}
+      {portConfigConfirmModal && currentDevice && (
+        <CiscoPortConfigConfirmModal
+          isOpen={!!portConfigConfirmModal}
+          onClose={() => setPortConfigConfirmModal(null)}
+          onConfirm={handleConfirmExecutePortConfig}
+          device={currentDevice}
+          targetPortIds={portConfigConfirmModal.targetPortIds}
+          updates={portConfigConfirmModal.updates}
+          isLoading={isExecutingPortConfig}
         />
       )}
     </div>
