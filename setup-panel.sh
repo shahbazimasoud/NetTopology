@@ -30,7 +30,7 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-PANEL_VERSION="1.7.1"
+PANEL_VERSION="1.8.0"
 
 clear 2>/dev/null || true
 echo -e "${CYAN}${BOLD}"
@@ -43,7 +43,7 @@ cat << "EOF"
   ██║ ╚████║███████╗   ██║      ██║   ╚██████╔╝██║     ╚██████╔╝
   ╚═╝  ╚═══╝╚══════╝   ╚═╝      ╚═╝    ╚═════╝ ╚═╝      ╚═════╝ 
         CISCO NETWORK TOPOLOGY & PORT SECURITY MANAGEMENT PANEL
-        Version: 1.6.1 (Production Stable)
+        Version: 1.8.0 (Production Stable)
         Developer: Masoud Shahbazi (https://www.linkedin.com/in/masoudshahbazi/)
         Repository: https://github.com/shahbazimasoud/NetTopology
 ======================================================================

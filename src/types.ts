@@ -78,6 +78,35 @@ export interface TopologyLink {
   status: 'active' | 'down';
 }
 
+export interface CustomTopologyLink {
+  id: string;
+  sourceDeviceId: string;
+  targetDeviceId: string;
+  sourcePort: string;
+  targetPort: string;
+  sourceIp?: string;
+  targetIp?: string;
+  sourceMode: 'trunk' | 'access';
+  targetMode: 'trunk' | 'access';
+  sourceVlan?: number;
+  targetVlan?: number;
+  speed?: string;
+  cableType?: 'copper' | 'fiber' | 'serial' | 'direct';
+  notes?: string;
+  status: 'active' | 'down' | 'testing';
+}
+
+export interface CustomTopologyMap {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  devicePositions: Record<string, { x: number; y: number }>;
+  deviceIds: string[];
+  links: CustomTopologyLink[];
+}
+
 export interface TopologyNode extends Device {}
 
 export interface TopologyData {

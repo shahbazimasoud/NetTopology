@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.7.1-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.8.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۷.۱
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.7.1
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۸.۰
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.8.0
 
 ---
 
@@ -134,6 +134,20 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 - **سازگاری کامل رنگی صفحه مدیریت پورت‌ها (Port Management Theme Harmony):** بازطراحی و رفع کامل استایل‌های سفید استاتیک (`bg-white` و `border-slate-200`) در صفحه پورت‌ها و هماهنگ‌سازی پوسته سخت‌افزاری فیس‌پلیت، فرم ویرایش و جدول پورت‌ها با تمامی تم‌های نرم‌افزار (Obsidian, Emerald, Cobalt, Rose, Amber, Light).
 - **سازگاری تم در اسکنر لایه ۲ همسایگی CDP/LLDP:** استایل‌دهی مدرن شیشه‌ای `spatial-glass` برای کارت‌های آمار، راهنمای پروتکل و جدول همسایگان.
 
+### ۱۵. یکپارچه‌سازی کامل نمایش فیزیکی پورت‌های سوئیچ با فیس‌پلیت سخت‌افزاری (Switch Faceplate Harmonization)
+- **شبیه‌سازی کامل شاسی سخت‌افزاری:** نمایش پورت‌های فیزیکی سوئیچ و روتر در بخش «Ports, Trunk/Access & VLAN Monitoring» با استاندارد شاسی سخت‌افزاری سوئیچ (`switch-faceplate-chassis` و `switch-faceplate-grid`) دقیقاً مشابه با مودال بازرسی پورت (`PortInspectorModal`).
+- **سوکت‌های وکتور واقعی RJ-45 (`NetworkPortSvg`):** تعویض دکمه‌های ساده قبلی با کانکتورهای شبکه دارای پین‌های طلایی، ضامن سوکت، ال‌ای‌دی‌های وضعیت Up/Down، پالس برقراری پیوند شبکه و نشان‌های اختصاصی شماره ویلن و شماره پورت.
+- **کارت نظارتی پورت سکیوریتی لایه ۲ (Cisco Port Security Card):** تجهیز داشبورد ۵ گانه بازرس پورت انتخاب‌شده با کارت پایش وضعیت پورت سکیوریتی، مک‌آدرس‌های فعال و محدودیت‌های ترافیکی.
+
+### ۱۶. سیستم جامع نقشه‌های سفارشی توپولوژی، ابزار کابل‌کشی تعاملی و پیکربندی پورت‌ها و لینک‌ها (Custom Topology Maps & Cabling Engine)
+- **ایجاد و جابجایی بین چندین نقشه سفارشی:** امکان ساخت نقشه‌های مستقل، نام‌گذاری، تغییر نام، حذف و سوئیچ سریع میان نقشه‌های دلخواه ایجاد شده توسط ادمین و نقشه کشف‌شده خودکار شبکه.
+- **انتخاب و استقرار تجهیزات دلخواه:** امکان انتخاب سوئیچ‌ها و روترهای موجود در شبکه و قرار دادن آن‌ها روی بوم نقشه با امکان جابجایی و تعیین موقعیت مکانی (Drag & Drop).
+- **نوار ابزار تعاملی و ابزار کابل‌کشی (Cable Tool):** سوئیچ آسان بین حالت انتخاب/حرکت (Select) و حالت کابل‌کشی (Cable Tool) همراه با نوار پیام وضعیت دو مرحله‌ای هدایت‌کننده.
+- **مودال پیشرفته انتخاب پورت فیزیکی (Visual Port Selector Modal):** نمایش پاپ‌آپ انتخاب پورت با پیش‌نمایش گرافیکی فیس‌پلیت سوئیچ، فیلتر جستجوی پورت، و نمایش وضعیت پورت‌های آزاد و اشغال‌شده.
+- **پیکربندی کامل مشخصات کابل و لینک (Dual-End Link Configuration Modal):** امکان تنظیم IP مدیریتی هر دو سمت، نوع کابل (Copper RJ-45، Fiber Optic، Serial)، پهنای باند و سرعت، تعیین مد پورت (Trunk یا Access)، شماره ویلن اختصاصی و ثبت توضیحات ارتباطی.
+- **برچسب‌گذاری و ویرایش لینک‌ها روی نقشه:** نمایش زنده نام اینترفیس‌ها، شماره ویلن و IP هر سمت بر روی خطوط ارتباطی نقشه سفارشی همراه با امکان کلیک روی کابل جهت ویرایش تنظیمات یا قطع کابل.
+- **پایداری کامل داده‌ها:** ذخیره‌سازی پایدار و مجزای نقشه‌ها، چیدمان نودها و لینک‌ها در حافظه محلی سیستم (LocalStorage).
+
 ---
 
 ## ساختار معماری و تکنولوژی‌ها
@@ -210,6 +224,14 @@ npm start
 > ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
 
 ### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
+- **نسخه ۱.۸.۰ (v1.8.0 - سیستم جامع نقشه‌های سفارشی توپولوژی، ابزار کابل‌کشی تعاملی و پیکربندی پورت‌ها و لینک‌ها)**:
+  - **نقشه‌های سفارشی چندگانه (Custom Topology Maps):** امکان ایجاد نامحدود نقشه‌های سفارشی، تغییر نام، حذف و سوئیچ بین نقشه خودکار کشف‌شده و نقشه‌های کاربر با ذخیره‌سازی محلی.
+  - **افزودن و چیدمان تجهیزات دلخواه:** قابلیت افزودن سوئیچ‌ها و روترها از موجودی شبکه به روی بوم نقشه سفارشی با موقعیت‌یابی و جابجایی آزاد.
+  - **نوار ابزار تعاملی و ابزار کابل‌کشی (Cable Tool):** فعال‌سازی حالت اتصال کابل با فرآیند مرحله‌ای دوگانه و نوار راهنمای چسبیده.
+  - **مودال پیشرفته انتخاب پورت (Port Selector Modal):** انتخاب تعاملی پورت‌ها با پیش‌نمایش گرافیکی فیس‌پلیت سخت‌افزاری سوئیچ، تفکیک پورت‌های آزاد و جستجوی آنی اینترفیس‌ها.
+  - **مودال پیکربندی دوطرفه لینک (Link Config Modal):** تعیین IP هر دو سمت کابل، انتخاب نوع کابل (Copper, Fiber, Serial)، پهنای باند، حالت پورت (Trunk یا Access) و شماره ویلن اختصاصی.
+  - **نمایش و ویرایش لینک‌های سفارشی:** رسم خطوط با نشانگرهای پورت، ویلن و IP، به همراه قابلیت کلیک برای ویرایش مشخصات یا حذف پیوند کابل.
+
 - **نسخه ۱.۷.۱ (v1.7.1 - یکپارچه‌سازی کامل نمایش فیزیکی پورت‌های سوئیچ با Switch Faceplate در صفحه پایش پورت‌ها و ویلن)**:
   - **یکپارچه‌سازی کامل نمایش پورت‌ها (Switch Faceplate Harmonization):** پیاده‌سازی کامل استایل بصری شاسی سخت‌افزاری سوئیچ (`switch-faceplate-chassis` و `switch-faceplate-grid`) در صفحه «مدیریت و پایش پورت‌ها، ترانک/اکسس و ویلن» دقیقاً منطبق با مودال اختصاصی جزئیات پورت‌های دیوایس (`PortInspectorModal`).
   - **نمایش سوکت وکتور واقعی RJ-45 (`NetworkPortSvg`):** تعویض دکمه‌های ساده قبلی با کامپوننت وکتور واقعی RJ-45، پین‌های طلایی، ضامن سوکت، ال‌ای‌دی‌های وضعیت پیوند شبکه، پالس آنلاین و برچسب‌های تفکیک‌شده شماره پورت و شماره ویلن.
@@ -381,6 +403,19 @@ npm start
 - **Full Theme Adaptation for Port Management View:** Replaced static white backgrounds and borders with adaptive `spatial-glass` classes, ensuring 100% color harmony across Obsidian, Emerald, Cobalt, Rose, Amber, and Light themes for the switch faceplate, inspector, and ports data table.
 - **Full Theme Adaptation for CDP/LLDP Discovery Scanner:** All metric cards, scan logs, neighbor tables, and protocol guidelines dynamically adapt to whichever theme palette is selected.
 
+### 15. Switch Faceplate & Physical Port Harmonization in Port & VLAN Monitoring
+- **Hardware-Accurate Chassis Simulation:** Port visualization in "Ports, Trunk/Access & VLAN Monitoring" matches the exact switch hardware chassis (`switch-faceplate-chassis` and `switch-faceplate-grid`) established in the dedicated `PortInspectorModal`.
+- **Realistic RJ-45 Vector Jack (`NetworkPortSvg`):** Upgraded port representations to interactive vector RJ-45 modular jacks featuring gold contacts, latch tabs, LED status lights, link pulses, and color-coded VLAN/port labels.
+- **Cisco Layer 2 Port Security Monitor:** Embedded a dedicated Port Security status card within the 5-card inspector grid to monitor secure states, sticky/configured MAC entries, and maximum MAC limits in real time.
+
+### 16. Custom Topology Maps, Interactive Cabling Tool & Dual-End Port/Link Configuration Engine
+- **Multiple Custom User-Defined Maps:** Create, rename, delete, and switch between multiple custom topology maps alongside the auto-discovered network view, with persistent LocalStorage state.
+- **Inventory Device Placement:** Select any existing switches or routers from the network inventory and place them onto the custom canvas with free spatial positioning and drag-and-drop movement.
+- **Interactive Cabling Workflow (Cable Tool):** Toggle between Select/Move and Cabling modes with a step-by-step guidance banner (Step 1: Select source device -> Step 2: Select destination device).
+- **Hardware-Informed Port Selector Modal:** Visual port selection popup featuring hardware switch faceplate previews, search filtering, and occupied/free port detection to prevent accidental port collisions.
+- **Dual-End Link Configuration Modal:** Configure management IPs for both endpoints, cable types (Copper RJ-45, Fiber Optic, Serial), bandwidth/speeds, port operational modes (802.1Q Trunk vs Access), custom VLAN IDs, and link descriptions.
+- **Visual Link Endpoints & Interactive Modification:** Rendered SVG cables display source/target interface names, VLAN badges, and IP tags directly on the canvas, with click-to-edit capabilities to update link parameters or disconnect cables.
+
 ---
 
 ## System Architecture & Stack
@@ -456,6 +491,14 @@ Any AI assistant, coding agent, or human contributor working on this repository 
 3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
 
 ### Release Notes & Bug Fixes
+- **Version 1.8.0 (Custom Topology Maps, Interactive Cabling Tool, and Dual-End Port & Link Configuration Engine)**:
+  - **Custom User-Defined Topology Maps:** Create, rename, delete, and switch between multiple user-defined topology maps alongside the default auto-discovered network map, stored locally.
+  - **Inventory Device Placement:** Place switches and routers from network inventory onto custom map canvases with free coordinate positioning and drag-and-drop support.
+  - **Interactive Cabling Workflow (Cable Tool):** Multi-step cabling mode (Select Source -> Select Destination) with step-by-step guidance banner and cancellation controls.
+  - **Visual Port Selector Modal:** Hardware switch faceplate preview, instant search, occupied/free status indicators, and prevention of conflicting port connections.
+  - **Dual-End Link Configuration Modal:** Configurable endpoint IPs, cable media types (Copper RJ-45, Fiber, Serial), link bandwidth/speeds, port operational modes (802.1Q Trunk vs Access), and custom VLAN IDs.
+  - **Dynamic Link Telemetry & In-Canvas Editing:** Rendered SVG lines display live endpoint labels, VLAN badges, and IPs, with click-to-edit link parameters or cable disconnect support.
+
 - **Version 1.7.1 (Harmonize Switch Faceplate Visual & Port Matrix in Port & VLAN Monitoring View)**:
   - **Switch Faceplate Harmonization:** Redesigned the physical port display in the "Ports, Trunk/Access & VLAN Monitoring" section to mirror the exact hardware rack chassis (`switch-faceplate-chassis` & `switch-faceplate-grid`) from the device `PortInspectorModal`.
   - **True RJ-45 Vector Jack Integration (`NetworkPortSvg`):** Upgraded port rendering to the realistic SVG 8P8C connector with realistic socket housing, gold pins, link LEDs, and clean high-contrast VLAN tags.

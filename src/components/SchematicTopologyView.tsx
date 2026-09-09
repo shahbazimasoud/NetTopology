@@ -36,11 +36,25 @@ import {
   Edit2,
   Trash2,
   Box,
-  Boxes
+  Boxes,
+  Map,
+  MousePointer
 } from 'lucide-react';
-import { TopologyData, Device, TopologyLink, TopologyNode } from '../types';
+import {
+  TopologyData,
+  Device,
+  TopologyLink,
+  TopologyNode,
+  CustomTopologyMap,
+  CustomTopologyLink,
+  SwitchPort
+} from '../types';
 import { useLanguage } from '../i18n';
 import { updateDevice } from '../services/api';
+import { CustomMapPortSelectorModal } from './CustomMapPortSelectorModal';
+import { CustomMapLinkConfigModal } from './CustomMapLinkConfigModal';
+import { CustomMapAddDeviceModal } from './CustomMapAddDeviceModal';
+import { CustomMapManageModal } from './CustomMapManageModal';
 
 interface SchematicTopologyViewProps {
   topology: TopologyData | null;
@@ -134,6 +148,79 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const [showToolbarInFullMode, setShowToolbarInFullMode] = useState(false);
   const [isLegendOpen, setIsLegendOpen] = useState(false);
 
+  // Storage keys for custom topology maps persistence
+  const CUSTOM_MAPS_STORAGE_KEY = 'nettopology_custom_maps_v2';
+  const ACTIVE_MAP_STORAGE_KEY = 'nettopology_active_map_id_v2';
+
+  const [customMaps, setCustomMaps] = useState<CustomTopologyMap[]>(() => {
+    try {
+      const saved = localStorage.getItem(CUSTOM_MAPS_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  });
+
+  const [activeMapId, setActiveMapId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(ACTIVE_MAP_STORAGE_KEY);
+      if (saved) return saved;
+    } catch (e) {}
+    return 'default';
+  });
+
+  const currentCustomMap = useMemo(() => {
+    if (activeMapId === 'default') return null;
+    return customMaps.find((m) => m.id === activeMapId) || null;
+  }, [customMaps, activeMapId]);
+
+  const [activeTool, setActiveTool] = useState<'select' | 'cable'>('select');
+
+  // Interactive Cabling Workflow State
+  interface CableWorkflowState {
+    step: 'idle' | 'select_source_port' | 'select_target_device' | 'select_target_port' | 'configure_link';
+    sourceDevice: Device | null;
+    sourcePort: string | null;
+    sourceInitialPortData?: SwitchPort;
+    targetDevice: Device | null;
+    targetPort: string | null;
+    targetInitialPortData?: SwitchPort;
+    editingLink?: CustomTopologyLink | null;
+  }
+
+  const [cableWorkflow, setCableWorkflow] = useState<CableWorkflowState>({
+    step: 'idle',
+    sourceDevice: null,
+    sourcePort: null,
+    targetDevice: null,
+    targetPort: null,
+  });
+
+  // Modal Dialog Open States
+  const [isPortSelectorOpen, setIsPortSelectorOpen] = useState(false);
+  const [isLinkConfigOpen, setIsLinkConfigOpen] = useState(false);
+  const [isAddDeviceOpen, setIsAddDeviceOpen] = useState(false);
+  const [isManageMapOpen, setIsManageMapOpen] = useState(false);
+  const [manageMapMode, setManageMapMode] = useState<'create' | 'edit' | 'delete'>('create');
+
+  const saveCustomMaps = useCallback((maps: CustomTopologyMap[]) => {
+    setCustomMaps(maps);
+    try {
+      localStorage.setItem(CUSTOM_MAPS_STORAGE_KEY, JSON.stringify(maps));
+    } catch (e) {}
+  }, []);
+
+  const handleSelectMap = (mapId: string) => {
+    setActiveMapId(mapId);
+    try {
+      localStorage.setItem(ACTIVE_MAP_STORAGE_KEY, mapId);
+    } catch (e) {}
+    setActiveTool('select');
+    setCableWorkflow({ step: 'idle', sourceDevice: null, sourcePort: null, targetDevice: null, targetPort: null });
+  };
+
   // Local nodes state for instant optimistic updates and drag & drop in Physical view
   const [localNodes, setLocalNodes] = useState<TopologyNode[]>([]);
 
@@ -142,6 +229,242 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       setLocalNodes(topology.nodes);
     }
   }, [topology?.nodes]);
+
+  const allAvailableDevices: Device[] = useMemo(() => {
+    return topology?.nodes || localNodes || [];
+  }, [topology?.nodes, localNodes]);
+
+  const handleCreateCustomMap = (name: string, description?: string) => {
+    const newMap: CustomTopologyMap = {
+      id: `custom-map-${Date.now()}`,
+      name,
+      description,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      deviceIds: [],
+      devicePositions: {},
+      links: [],
+    };
+    const newMaps = [...customMaps, newMap];
+    saveCustomMaps(newMaps);
+    setActiveMapId(newMap.id);
+    setActiveTool('select');
+  };
+
+  const handleUpdateCustomMap = (id: string, name: string, description?: string) => {
+    const updatedMaps = customMaps.map((m) =>
+      m.id === id ? { ...m, name, description, updatedAt: new Date().toISOString() } : m
+    );
+    saveCustomMaps(updatedMaps);
+  };
+
+  const handleDeleteCustomMap = (id: string) => {
+    const updatedMaps = customMaps.filter((m) => m.id !== id);
+    saveCustomMaps(updatedMaps);
+    setActiveMapId('default');
+  };
+
+  const handleAddDeviceToCustomMap = (device: Device) => {
+    if (!currentCustomMap) return;
+    if (currentCustomMap.deviceIds.includes(device.id)) return;
+
+    const existingCount = currentCustomMap.deviceIds.length;
+    const col = existingCount % 3;
+    const row = Math.floor(existingCount / 3);
+    const newPos = {
+      x: 180 + col * 300,
+      y: 160 + row * 220,
+    };
+
+    const updatedMap: CustomTopologyMap = {
+      ...currentCustomMap,
+      deviceIds: [...currentCustomMap.deviceIds, device.id],
+      devicePositions: {
+        ...currentCustomMap.devicePositions,
+        [device.id]: newPos,
+      },
+      updatedAt: new Date().toISOString(),
+    };
+
+    const newMaps = customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m));
+    saveCustomMaps(newMaps);
+  };
+
+  const handleRemoveDeviceFromCustomMap = (deviceId: string) => {
+    if (!currentCustomMap) return;
+    const updatedDeviceIds = currentCustomMap.deviceIds.filter((id) => id !== deviceId);
+    const updatedLinks = (currentCustomMap.links || []).filter(
+      (l) => l.sourceDeviceId !== deviceId && l.targetDeviceId !== deviceId
+    );
+    const updatedPositions = { ...currentCustomMap.devicePositions };
+    delete updatedPositions[deviceId];
+
+    const updatedMap: CustomTopologyMap = {
+      ...currentCustomMap,
+      deviceIds: updatedDeviceIds,
+      links: updatedLinks,
+      devicePositions: updatedPositions,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const newMaps = customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m));
+    saveCustomMaps(newMaps);
+  };
+
+  const handleNodeClick = (nodeId: string) => {
+    const node = allAvailableDevices.find((d) => d.id === nodeId);
+    if (!node) return;
+
+    if (activeMapId !== 'default' && activeTool === 'cable') {
+      if (!cableWorkflow.sourceDevice) {
+        // Step 1: select source device
+        setCableWorkflow((prev) => ({
+          ...prev,
+          sourceDevice: node,
+          step: 'select_source_port',
+        }));
+        setIsPortSelectorOpen(true);
+      } else if (cableWorkflow.sourceDevice && cableWorkflow.sourcePort) {
+        // Step 2: select destination device
+        setCableWorkflow((prev) => ({
+          ...prev,
+          targetDevice: node,
+          step: 'select_target_port',
+        }));
+        setIsPortSelectorOpen(true);
+      }
+    } else {
+      setSelectedNodeId(nodeId);
+    }
+  };
+
+  const handleStartCableFromDevice = (e: React.MouseEvent, node: Device) => {
+    e.stopPropagation();
+    setActiveTool('cable');
+    setCableWorkflow({
+      step: 'select_source_port',
+      sourceDevice: node,
+      sourcePort: null,
+      targetDevice: null,
+      targetPort: null,
+    });
+    setIsPortSelectorOpen(true);
+  };
+
+  const handleSelectPort = (portName: string, portData?: SwitchPort) => {
+    if (cableWorkflow.step === 'select_source_port' && cableWorkflow.sourceDevice) {
+      setCableWorkflow((prev) => ({
+        ...prev,
+        sourcePort: portName,
+        sourceInitialPortData: portData,
+        step: 'select_target_device',
+      }));
+      setIsPortSelectorOpen(false);
+    } else if (cableWorkflow.step === 'select_target_port' && cableWorkflow.targetDevice) {
+      setCableWorkflow((prev) => ({
+        ...prev,
+        targetPort: portName,
+        targetInitialPortData: portData,
+        step: 'configure_link',
+      }));
+      setIsPortSelectorOpen(false);
+      setIsLinkConfigOpen(true);
+    }
+  };
+
+  const handleSaveCustomLink = (linkData: Omit<CustomTopologyLink, 'id'>) => {
+    if (!currentCustomMap) return;
+
+    if (cableWorkflow.editingLink) {
+      const updatedLinks = currentCustomMap.links.map((l) =>
+        l.id === cableWorkflow.editingLink!.id ? { ...linkData, id: l.id } : l
+      );
+      const updatedMap: CustomTopologyMap = {
+        ...currentCustomMap,
+        links: updatedLinks,
+        updatedAt: new Date().toISOString(),
+      };
+      const newMaps = customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m));
+      saveCustomMaps(newMaps);
+    } else {
+      const newLink: CustomTopologyLink = {
+        ...linkData,
+        id: `custom-link-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      };
+      const updatedMap: CustomTopologyMap = {
+        ...currentCustomMap,
+        links: [...(currentCustomMap.links || []), newLink],
+        updatedAt: new Date().toISOString(),
+      };
+      const newMaps = customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m));
+      saveCustomMaps(newMaps);
+    }
+
+    setIsLinkConfigOpen(false);
+    setCableWorkflow({
+      step: 'idle',
+      sourceDevice: null,
+      sourcePort: null,
+      targetDevice: null,
+      targetPort: null,
+      editingLink: null,
+    });
+  };
+
+  const handleDeleteCustomLink = () => {
+    if (!currentCustomMap || !cableWorkflow.editingLink) return;
+    const updatedLinks = currentCustomMap.links.filter((l) => l.id !== cableWorkflow.editingLink!.id);
+    const updatedMap: CustomTopologyMap = {
+      ...currentCustomMap,
+      links: updatedLinks,
+      updatedAt: new Date().toISOString(),
+    };
+    const newMaps = customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m));
+    saveCustomMaps(newMaps);
+    setIsLinkConfigOpen(false);
+    setCableWorkflow({
+      step: 'idle',
+      sourceDevice: null,
+      sourcePort: null,
+      targetDevice: null,
+      targetPort: null,
+      editingLink: null,
+    });
+  };
+
+  const handleEditExistingLink = (link: CustomTopologyLink) => {
+    const src = allAvailableDevices.find((d) => d.id === link.sourceDeviceId);
+    const tgt = allAvailableDevices.find((d) => d.id === link.targetDeviceId);
+    if (!src || !tgt) return;
+
+    setCableWorkflow({
+      step: 'configure_link',
+      sourceDevice: src,
+      sourcePort: link.sourcePort,
+      targetDevice: tgt,
+      targetPort: link.targetPort,
+      editingLink: link,
+    });
+    setIsLinkConfigOpen(true);
+  };
+
+  const handleClearAllCustomLinks = () => {
+    if (!currentCustomMap) return;
+    const isConfirmed = window.confirm(
+      isEn
+        ? `Clear all cable links in map "${currentCustomMap.name}"?`
+        : `آیا مایلید تمام کابل‌های نقشه «${currentCustomMap.name}» پاک شوند؟`
+    );
+    if (!isConfirmed) return;
+
+    const updatedMap: CustomTopologyMap = {
+      ...currentCustomMap,
+      links: [],
+      updatedAt: new Date().toISOString(),
+    };
+    const newMaps = customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m));
+    saveCustomMaps(newMaps);
+  };
 
   // Storage key for custom physical hierarchy persistence
   const HIERARCHY_STORAGE_KEY = 'nettopology_physical_hierarchy_v2';
@@ -780,8 +1103,35 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
   // Node position calculations for Schematic View (hierarchical default + custom overrides)
   const nodePositions = useMemo(() => {
-    if (!topology || !topology.nodes) return new Map<string, { x: number; y: number }>();
     const pos = new Map<string, { x: number; y: number }>();
+
+    if (activeMapId !== 'default' && currentCustomMap) {
+      // In Custom Map mode
+      const mapDeviceIds = currentCustomMap.deviceIds || [];
+
+      mapDeviceIds.forEach((id, index) => {
+        if (currentCustomMap.devicePositions && currentCustomMap.devicePositions[id]) {
+          pos.set(id, currentCustomMap.devicePositions[id]);
+        } else {
+          pos.set(id, {
+            x: 180 + (index % 4) * 280,
+            y: 180 + Math.floor(index / 4) * 220,
+          });
+        }
+      });
+
+      // Apply any temporary customPositions while dragging
+      Object.entries(customPositions).forEach(([id, customPos]) => {
+        const posObj = customPos as { x: number; y: number } | undefined;
+        if (posObj && typeof posObj.x === 'number' && typeof posObj.y === 'number') {
+          pos.set(id, posObj);
+        }
+      });
+
+      return pos;
+    }
+
+    if (!topology || !topology.nodes) return pos;
 
     // Hierarchical arrangement defaults:
     const routers = topology.nodes.filter((n) => n.type === 'router');
@@ -825,7 +1175,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     });
 
     return pos;
-  }, [topology, customPositions]);
+  }, [topology, customPositions, activeMapId, currentCustomMap]);
 
   // Background Pan Handler
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
@@ -910,14 +1260,28 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     const handleGlobalMouseUp = () => {
       if (draggingNodeId) {
         if (dragNodeOffset.current.moved) {
-          // Persist the updated positions on drop
-          setCustomPositions((latest) => {
-            saveNodePositions(latest);
-            return latest;
-          });
+          if (activeMapId !== 'default' && currentCustomMap) {
+            const latestPos = customPositions[draggingNodeId] || nodePositions.get(draggingNodeId) || { x: 100, y: 100 };
+            const updatedMap: CustomTopologyMap = {
+              ...currentCustomMap,
+              devicePositions: {
+                ...currentCustomMap.devicePositions,
+                [draggingNodeId]: latestPos,
+              },
+              updatedAt: new Date().toISOString(),
+            };
+            const newMaps = customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m));
+            saveCustomMaps(newMaps);
+          } else {
+            // Persist the updated positions on drop
+            setCustomPositions((latest) => {
+              saveNodePositions(latest);
+              return latest;
+            });
+          }
         } else {
           // It was a click without significant drag
-          setSelectedNodeId(draggingNodeId);
+          handleNodeClick(draggingNodeId);
         }
         setDraggingNodeId(null);
       }
@@ -985,22 +1349,27 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
   // Filter nodes for search and building
   const filteredNodes = useMemo(() => {
-    if (!topology) return [];
-    return topology.nodes.filter((n) => {
+    const allAvailable = topology?.nodes || localNodes || [];
+    const baseList =
+      activeMapId !== 'default' && currentCustomMap
+        ? allAvailable.filter((n) => currentCustomMap.deviceIds.includes(n.id))
+        : allAvailable;
+
+    return baseList.filter((n) => {
       if (filterBuilding !== 'all' && n.building !== filterBuilding) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         return (
           n.name.toLowerCase().includes(q) ||
           n.ip.toLowerCase().includes(q) ||
-          n.building.toLowerCase().includes(q) ||
-          n.floor.toLowerCase().includes(q) ||
-          n.unit.toLowerCase().includes(q)
+          (n.building && n.building.toLowerCase().includes(q)) ||
+          (n.floor && n.floor.toLowerCase().includes(q)) ||
+          (n.unit && n.unit.toLowerCase().includes(q))
         );
       }
       return true;
     });
-  }, [topology, filterBuilding, searchQuery]);
+  }, [topology, localNodes, activeMapId, currentCustomMap, filterBuilding, searchQuery]);
 
   // Grouped hierarchy for Physical View
   const physicalHierarchy = useMemo(() => {
@@ -1506,6 +1875,168 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
         </div>
       )}
 
+      {/* Custom Map Secondary Toolbar & Cabling Step Banner */}
+      {viewMode === 'schematic' && (!isFullMode || showToolbarInFullMode) && (
+        <div className="border-b border-white/10 bg-slate-900/90 backdrop-blur-xl z-20">
+          {/* Map Selector & Tool Bar */}
+          <div className="p-2 sm:px-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+            {/* Map Selector & Management */}
+            <div className="flex items-center flex-wrap gap-2">
+              <div className="flex items-center gap-1.5 text-slate-300 font-medium">
+                <Map className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{t('topology_map_selector_label')}</span>
+              </div>
+              <select
+                value={activeMapId}
+                onChange={(e) => handleSelectMap(e.target.value)}
+                className="px-2.5 py-1.5 rounded-xl bg-slate-800 border border-white/15 text-slate-100 text-xs font-medium focus:outline-none focus:border-indigo-400"
+              >
+                <option value="default">{t('topology_map_auto_discovered')}</option>
+                {customMaps.map((map) => (
+                  <option key={map.id} value={map.id}>
+                    {map.name} ({map.deviceIds?.length || 0} dev, {map.links?.length || 0} links)
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setManageMapMode('create');
+                  setIsManageMapOpen(true);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium shadow-xs transition active:scale-95"
+                title={t('topology_map_new_btn')}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{t('topology_map_new_btn')}</span>
+              </button>
+
+              {/* If custom map selected: Rename & Delete buttons */}
+              {activeMapId !== 'default' && currentCustomMap && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManageMapMode('edit');
+                      setIsManageMapOpen(true);
+                    }}
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 transition"
+                    title={t('topology_map_rename_btn')}
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManageMapMode('delete');
+                      setIsManageMapOpen(true);
+                    }}
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/60 text-slate-300 hover:text-rose-300 border border-white/10 transition"
+                    title={t('topology_map_delete_btn')}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Custom Map Tools: Select Tool, Cable Tool, Add Device, Clear Links */}
+            {activeMapId !== 'default' && currentCustomMap && (
+              <div className="flex items-center flex-wrap gap-2">
+                <div className="flex items-center bg-slate-800/90 rounded-xl p-1 border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTool('select');
+                      setCableWorkflow({ step: 'idle', sourceDevice: null, sourcePort: null, targetDevice: null, targetPort: null });
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition ${
+                      activeTool === 'select'
+                        ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-xs font-semibold'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <MousePointer className="w-3.5 h-3.5" />
+                    <span>{t('topology_tool_select')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTool('cable');
+                      setCableWorkflow({ step: 'idle', sourceDevice: null, sourcePort: null, targetDevice: null, targetPort: null });
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition ${
+                      activeTool === 'cable'
+                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs font-bold animate-pulse'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Cable className="w-3.5 h-3.5" />
+                    <span>{t('topology_tool_cable')}</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsAddDeviceOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-medium shadow-xs transition active:scale-95"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{t('topology_tool_add_device')}</span>
+                </button>
+
+                {(currentCustomMap.links?.length || 0) > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllCustomLinks}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950/60 border border-white/10 text-slate-300 hover:text-rose-300 transition text-[11px]"
+                    title={t('topology_tool_clear_links')}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>{t('topology_tool_clear_links')}</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Persistent Guided Cabling Banner */}
+          {activeTool === 'cable' && activeMapId !== 'default' && (
+            <div className="px-4 py-2 bg-gradient-to-r from-purple-900/90 to-indigo-900/90 border-t border-purple-500/30 flex items-center justify-between text-xs text-white shadow-inner">
+              <div className="flex items-center gap-2">
+                <div className="p-1 rounded bg-purple-500/30 animate-pulse">
+                  <Cable className="w-4 h-4 text-purple-300" />
+                </div>
+                <div className="flex items-center flex-wrap gap-1.5">
+                  <span className="font-bold">
+                    {cableWorkflow.step === 'select_target_device'
+                      ? t('topology_cable_step_target')
+                      : t('topology_cable_step_source')}
+                  </span>
+                  {cableWorkflow.sourceDevice && cableWorkflow.sourcePort && (
+                    <span className="font-mono text-[11px] bg-purple-950/90 px-2 py-0.5 rounded-md border border-purple-400/40 text-purple-200">
+                      {cableWorkflow.sourceDevice.name} : {cableWorkflow.sourcePort}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTool('select');
+                  setCableWorkflow({ step: 'idle', sourceDevice: null, sourcePort: null, targetDevice: null, targetPort: null });
+                }}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-[11px] transition"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>{t('topology_cable_cancel')}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Main Content Area */}
       <div className="flex-1 relative overflow-hidden flex">
         {/* VIEW 1: Interactive Schematic SVG Canvas */}
@@ -1594,98 +2125,269 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                 }}
               >
               {/* Draw Topology Connection Links */}
-              {topology?.links.map((link) => {
-                const sourcePos = nodePositions.get(link.source);
-                const targetPos = nodePositions.get(link.target);
-                if (!sourcePos || !targetPos) return null;
+              {activeMapId === 'default' ? (
+                topology?.links.map((link) => {
+                  const sourcePos = nodePositions.get(link.source);
+                  const targetPos = nodePositions.get(link.target);
+                  if (!sourcePos || !targetPos) return null;
 
-                const isTrunk = link.type === 'trunk';
-                const isDown = link.status === 'down';
-                const isSelected = selectedNodeId === link.source || selectedNodeId === link.target;
+                  const isTrunk = link.type === 'trunk';
+                  const isDown = link.status === 'down';
+                  const isSelected = selectedNodeId === link.source || selectedNodeId === link.target;
 
-                // Center coordinates of nodes (230x120 dimension)
-                const x1 = sourcePos.x + 115;
-                const y1 = sourcePos.y + 55;
-                const x2 = targetPos.x + 115;
-                const y2 = targetPos.y + 55;
+                  // Center coordinates of nodes (230x120 dimension)
+                  const x1 = sourcePos.x + 115;
+                  const y1 = sourcePos.y + 55;
+                  const x2 = targetPos.x + 115;
+                  const y2 = targetPos.y + 55;
 
-                // Midpoint for badges
-                const midX = (x1 + x2) / 2;
-                const midY = (y1 + y2) / 2;
+                  // Midpoint for badges
+                  const midX = (x1 + x2) / 2;
+                  const midY = (y1 + y2) / 2;
 
-                return (
-                  <g key={link.id} className="transition-all pointer-events-none">
-                    {/* Link Line */}
-                    <line
-                      x1={x1}
-                      y1={y1}
-                      x2={x2}
-                      y2={y2}
-                      stroke={
-                        isDown
-                          ? '#ef4444'
-                          : isTrunk
-                          ? isSelected
-                            ? '#6d28d9'
-                            : '#7c3aed'
-                          : isSelected
-                          ? '#1d4ed8'
-                          : '#2563eb'
-                      }
-                      strokeWidth={isTrunk ? 3 : 2}
-                      strokeDasharray={isDown ? '6 4' : 'none'}
-                      filter={isTrunk && !isDown ? 'url(#glow-trunk)' : 'url(#glow-access)'}
-                      opacity={isSelected ? 1 : 0.85}
-                    />
+                  return (
+                    <g key={link.id} className="transition-all pointer-events-none">
+                      {/* Link Line */}
+                      <line
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke={
+                          isDown
+                            ? '#ef4444'
+                            : isTrunk
+                            ? isSelected
+                              ? '#6d28d9'
+                              : '#7c3aed'
+                            : isSelected
+                            ? '#1d4ed8'
+                            : '#2563eb'
+                        }
+                        strokeWidth={isTrunk ? 3 : 2}
+                        strokeDasharray={isDown ? '6 4' : 'none'}
+                        filter={isTrunk && !isDown ? 'url(#glow-trunk)' : 'url(#glow-access)'}
+                        opacity={isSelected ? 1 : 0.85}
+                      />
 
-                    {/* Port and Protocol Badges on Links */}
-                    {showPortLabels && (
-                      <g transform={`translate(${midX}, ${midY})`} className="pointer-events-none">
+                      {/* Port and Protocol Badges on Links */}
+                      {showPortLabels && (
+                        <g transform={`translate(${midX}, ${midY})`} className="pointer-events-none">
+                          <rect
+                            x="-45"
+                            y="-10"
+                            width="90"
+                            height="20"
+                            rx="4"
+                            fill="#ffffff"
+                            stroke={isTrunk ? '#c4b5fd' : '#bfdbfe'}
+                            strokeWidth="1"
+                          />
+                          <text
+                            textAnchor="middle"
+                            dominantBaseline="central"
+                            fill="#334155"
+                            fontSize="9"
+                            fontFamily="monospace"
+                            fontWeight="bold"
+                          >
+                            {link.speed || (isTrunk ? '10G' : '1G')} • {link.protocol || (isTrunk ? 'CDP' : 'LLDP')}
+                          </text>
+                        </g>
+                      )}
+
+                      {/* Source Port Tag */}
+                      {showPortLabels && (
+                        <g transform={`translate(${x1 + (x2 - x1) * 0.24}, ${y1 + (y2 - y1) * 0.24})`} className="pointer-events-none">
+                          <rect x="-24" y="-8" width="48" height="16" rx="3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
+                          <text textAnchor="middle" dominantBaseline="central" fill="#4f46e5" fontSize="8" fontFamily="monospace" fontWeight="bold">
+                            {link.source_port}
+                          </text>
+                        </g>
+                      )}
+
+                      {/* Target Port Tag */}
+                      {showPortLabels && (
+                        <g transform={`translate(${x1 + (x2 - x1) * 0.76}, ${y1 + (y2 - y1) * 0.76})`} className="pointer-events-none">
+                          <rect x="-24" y="-8" width="48" height="16" rx="3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
+                          <text textAnchor="middle" dominantBaseline="central" fill="#4f46e5" fontSize="8" fontFamily="monospace" fontWeight="bold">
+                            {link.target_port}
+                          </text>
+                        </g>
+                      )}
+                    </g>
+                  );
+                })
+              ) : (
+                /* Custom Map Links Rendering */
+                currentCustomMap?.links?.map((link) => {
+                  const sourcePos = nodePositions.get(link.sourceDeviceId);
+                  const targetPos = nodePositions.get(link.targetDeviceId);
+                  if (!sourcePos || !targetPos) return null;
+
+                  const isTrunk = link.sourceMode === 'trunk' || link.targetMode === 'trunk';
+                  const isDown = link.status === 'down';
+                  const isFiber = link.cableType === 'fiber';
+                  const isSerial = link.cableType === 'serial';
+
+                  const x1 = sourcePos.x + 115;
+                  const y1 = sourcePos.y + 55;
+                  const x2 = targetPos.x + 115;
+                  const y2 = targetPos.y + 55;
+                  const midX = (x1 + x2) / 2;
+                  const midY = (y1 + y2) / 2;
+
+                  const strokeColor = isDown
+                    ? '#ef4444'
+                    : isFiber
+                    ? '#f59e0b'
+                    : isSerial
+                    ? '#06b6d4'
+                    : isTrunk
+                    ? '#9333ea'
+                    : '#2563eb';
+
+                  return (
+                    <g key={link.id} className="transition-all cursor-pointer group">
+                      {/* Invisible wider hit area for easy clicking */}
+                      <line
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke="transparent"
+                        strokeWidth={18}
+                        className="cursor-pointer"
+                        onClick={() => handleEditExistingLink(link)}
+                      />
+
+                      {/* Main Cable Line */}
+                      <line
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke={strokeColor}
+                        strokeWidth={isTrunk || isFiber ? 3.5 : 2.5}
+                        strokeDasharray={isDown ? '6 4' : 'none'}
+                        opacity={0.9}
+                        className="hover:stroke-cyan-300 transition-colors"
+                        onClick={() => handleEditExistingLink(link)}
+                      />
+
+                      {/* Midpoint Speed & Type Badge */}
+                      <g
+                        transform={`translate(${midX}, ${midY})`}
+                        onClick={() => handleEditExistingLink(link)}
+                        className="cursor-pointer select-none"
+                      >
                         <rect
-                          x="-45"
-                          y="-10"
-                          width="90"
-                          height="20"
-                          rx="4"
+                          x="-52"
+                          y="-11"
+                          width="104"
+                          height="22"
+                          rx="5"
                           fill="#ffffff"
-                          stroke={isTrunk ? '#c4b5fd' : '#bfdbfe'}
-                          strokeWidth="1"
+                          stroke={strokeColor}
+                          strokeWidth="1.5"
+                          className="shadow-md hover:fill-slate-100 transition"
                         />
                         <text
                           textAnchor="middle"
                           dominantBaseline="central"
-                          fill="#334155"
+                          fill="#0f172a"
                           fontSize="9"
                           fontFamily="monospace"
                           fontWeight="bold"
                         >
-                          {link.speed || (isTrunk ? '10G' : '1G')} • {link.protocol || (isTrunk ? 'CDP' : 'LLDP')}
+                          {link.speed || '1G'} • {link.cableType?.toUpperCase() || 'COPPER'}
                         </text>
                       </g>
-                    )}
 
-                    {/* Source Port Tag */}
-                    {showPortLabels && (
-                      <g transform={`translate(${x1 + (x2 - x1) * 0.24}, ${y1 + (y2 - y1) * 0.24})`} className="pointer-events-none">
-                        <rect x="-24" y="-8" width="48" height="16" rx="3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
-                        <text textAnchor="middle" dominantBaseline="central" fill="#4f46e5" fontSize="8" fontFamily="monospace" fontWeight="bold">
-                          {link.source_port}
-                        </text>
-                      </g>
-                    )}
+                      {/* Source Endpoint Badges (Port, Mode, VLAN, IP) */}
+                      {showPortLabels && (
+                        <g transform={`translate(${x1 + (x2 - x1) * 0.22}, ${y1 + (y2 - y1) * 0.22})`} className="select-none pointer-events-none">
+                          <rect
+                            x="-38"
+                            y={link.sourceIp ? "-20" : "-10"}
+                            width="76"
+                            height={link.sourceIp ? "38" : "20"}
+                            rx="4"
+                            fill="#ffffff"
+                            stroke="#cbd5e1"
+                            strokeWidth="1"
+                          />
+                          <text textAnchor="middle" y={link.sourceIp ? "-9" : "0"} dominantBaseline="central" fill="#4f46e5" fontSize="8.5" fontFamily="monospace" fontWeight="bold">
+                            {link.sourcePort}
+                          </text>
+                          <text textAnchor="middle" y={link.sourceIp ? "1" : "0"} dominantBaseline="central" fill={link.sourceMode === 'trunk' ? '#7e22ce' : '#2563eb'} fontSize="7" fontFamily="monospace">
+                            {link.sourceMode === 'trunk' ? `TRUNK (V${link.sourceVlan || 1})` : `VLAN ${link.sourceVlan || 1}`}
+                          </text>
+                          {link.sourceIp && (
+                            <text textAnchor="middle" y="10" dominantBaseline="central" fill="#047857" fontSize="7" fontFamily="monospace" fontWeight="bold">
+                              {link.sourceIp}
+                            </text>
+                          )}
+                        </g>
+                      )}
 
-                    {/* Target Port Tag */}
-                    {showPortLabels && (
-                      <g transform={`translate(${x1 + (x2 - x1) * 0.76}, ${y1 + (y2 - y1) * 0.76})`} className="pointer-events-none">
-                        <rect x="-24" y="-8" width="48" height="16" rx="3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
-                        <text textAnchor="middle" dominantBaseline="central" fill="#4f46e5" fontSize="8" fontFamily="monospace" fontWeight="bold">
-                          {link.target_port}
-                        </text>
-                      </g>
-                    )}
-                  </g>
-                );
-              })}
+                      {/* Target Endpoint Badges (Port, Mode, VLAN, IP) */}
+                      {showPortLabels && (
+                        <g transform={`translate(${x1 + (x2 - x1) * 0.78}, ${y1 + (y2 - y1) * 0.78})`} className="select-none pointer-events-none">
+                          <rect
+                            x="-38"
+                            y={link.targetIp ? "-20" : "-10"}
+                            width="76"
+                            height={link.targetIp ? "38" : "20"}
+                            rx="4"
+                            fill="#ffffff"
+                            stroke="#cbd5e1"
+                            strokeWidth="1"
+                          />
+                          <text textAnchor="middle" y={link.targetIp ? "-9" : "0"} dominantBaseline="central" fill="#0284c7" fontSize="8.5" fontFamily="monospace" fontWeight="bold">
+                            {link.targetPort}
+                          </text>
+                          <text textAnchor="middle" y={link.targetIp ? "1" : "0"} dominantBaseline="central" fill={link.targetMode === 'trunk' ? '#7e22ce' : '#2563eb'} fontSize="7" fontFamily="monospace">
+                            {link.targetMode === 'trunk' ? `TRUNK (V${link.targetVlan || 1})` : `VLAN ${link.targetVlan || 1}`}
+                          </text>
+                          {link.targetIp && (
+                            <text textAnchor="middle" y="10" dominantBaseline="central" fill="#047857" fontSize="7" fontFamily="monospace" fontWeight="bold">
+                              {link.targetIp}
+                            </text>
+                          )}
+                        </g>
+                      )}
+                    </g>
+                  );
+                })
+              )}
+
+              {/* Custom Map Empty State within Canvas */}
+              {activeMapId !== 'default' && filteredNodes.length === 0 && (
+                <foreignObject x={150} y={150} width={550} height={280}>
+                  <div className="p-8 rounded-2xl bg-slate-900/90 border border-white/10 shadow-2xl backdrop-blur-xl text-center space-y-4">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto">
+                      <Layers className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold text-white mb-1">
+                        {t('topology_custom_empty_title')}
+                      </h4>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                        {t('topology_custom_empty_desc')}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddDeviceOpen(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg transition active:scale-95"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>{t('topology_tool_add_device')}</span>
+                    </button>
+                  </div>
+                </foreignObject>
+              )}
 
               {/* Draw Nodes on Canvas */}
               {filteredNodes.map((node) => {
@@ -1693,6 +2395,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                 const isSelected = selectedNodeId === node.id;
                 const isBeingDragged = draggingNodeId === node.id;
                 const isOnline = node.is_online;
+                const isCablingSource = activeTool === 'cable' && cableWorkflow.sourceDevice?.id === node.id;
 
                 return (
                   <foreignObject
@@ -1709,6 +2412,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                       className={`w-[226px] p-3 rounded-xl border transition-shadow select-none text-right backdrop-blur-xl group relative ${
                         isBeingDragged
                           ? 'spatial-glass border-cyan-400 ring-2 ring-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.6)] cursor-grabbing z-40 scale-102'
+                          : isCablingSource
+                          ? 'spatial-glass border-purple-400 ring-2 ring-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.6)] animate-pulse z-40'
+                          : activeTool === 'cable'
+                          ? 'spatial-glass border-purple-500/40 hover:border-purple-400 hover:ring-2 hover:ring-purple-500/50 cursor-pointer shadow-lg'
                           : isSelected
                           ? 'spatial-glass border-cyan-400 ring-2 ring-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.35)] cursor-grab z-30'
                           : isOnline
@@ -1748,7 +2455,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                           <span className="font-bold text-xs text-white truncate font-mono">{node.name}</span>
                         </div>
 
-                        {/* Status Pulse */}
+                        {/* Status Pulse & Remove Button */}
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <span
                             className={`w-2 h-2 rounded-full ${
@@ -1766,6 +2473,20 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                           >
                             {isOnline ? `${node.latency_ms || 1.2}ms` : 'OFF'}
                           </span>
+
+                          {activeMapId !== 'default' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveDeviceFromCustomMap(node.id);
+                              }}
+                              className="text-slate-400 hover:text-rose-400 p-0.5 rounded transition ml-1"
+                              title={t('topology_device_remove_from_map')}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -1779,7 +2500,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                       <div className="flex items-center gap-1 text-[10px] text-slate-400 truncate">
                         <MapPin className="w-3 h-3 text-indigo-400 flex-shrink-0" />
                         <span className="truncate">
-                          {node.building.replace('(Central Bldg)', '').replace('(Engineering Bldg)', '')} • {node.floor}
+                          {node.building ? node.building.replace('(Central Bldg)', '').replace('(Engineering Bldg)', '') : ''} • {node.floor || ''}
                         </span>
                       </div>
 
@@ -1794,6 +2515,17 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                           )}
                         </div>
                         <div className="flex items-center gap-2">
+                          {activeMapId !== 'default' && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleStartCableFromDevice(e, node)}
+                              className="text-purple-400 hover:text-purple-300 font-medium flex items-center gap-0.5 hover:underline"
+                              title={t('topology_tool_cable')}
+                            >
+                              <Cable className="w-3 h-3 text-purple-400" />
+                              <span>{isEn ? 'Cable' : 'کابل'}</span>
+                            </button>
+                          )}
                           {onConnectTerminal && (node.type === 'switch' || node.type === 'router') && (
                             <button
                               onClick={(e) => {
@@ -3365,6 +4097,76 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modals for Custom Topology Maps */}
+      {isPortSelectorOpen && (
+        <CustomMapPortSelectorModal
+          isOpen={isPortSelectorOpen}
+          onClose={() => {
+            setIsPortSelectorOpen(false);
+            if (cableWorkflow.step === 'select_source_port') {
+              setCableWorkflow({ step: 'idle', sourceDevice: null, sourcePort: null, targetDevice: null, targetPort: null });
+            }
+          }}
+          device={
+            cableWorkflow.step === 'select_target_port'
+              ? cableWorkflow.targetDevice
+              : cableWorkflow.sourceDevice
+          }
+          side={cableWorkflow.step === 'select_target_port' ? 'target' : 'source'}
+          partnerDevice={cableWorkflow.step === 'select_target_port' ? cableWorkflow.sourceDevice : null}
+          partnerPort={cableWorkflow.step === 'select_target_port' ? cableWorkflow.sourcePort : null}
+          onSelectPort={handleSelectPort}
+        />
+      )}
+
+      {isLinkConfigOpen && cableWorkflow.sourceDevice && cableWorkflow.targetDevice && (
+        <CustomMapLinkConfigModal
+          isOpen={isLinkConfigOpen}
+          onClose={() => {
+            setIsLinkConfigOpen(false);
+            setCableWorkflow({
+              step: 'idle',
+              sourceDevice: null,
+              sourcePort: null,
+              targetDevice: null,
+              targetPort: null,
+              editingLink: null,
+            });
+          }}
+          sourceDevice={cableWorkflow.sourceDevice}
+          targetDevice={cableWorkflow.targetDevice}
+          sourcePort={cableWorkflow.sourcePort || 'GigabitEthernet0/1'}
+          targetPort={cableWorkflow.targetPort || 'GigabitEthernet0/1'}
+          sourceInitialData={cableWorkflow.sourceInitialPortData}
+          targetInitialData={cableWorkflow.targetInitialPortData}
+          existingLink={cableWorkflow.editingLink || undefined}
+          onSaveLink={handleSaveCustomLink}
+          onDeleteLink={cableWorkflow.editingLink ? handleDeleteCustomLink : undefined}
+        />
+      )}
+
+      {isAddDeviceOpen && currentCustomMap && (
+        <CustomMapAddDeviceModal
+          isOpen={isAddDeviceOpen}
+          onClose={() => setIsAddDeviceOpen(false)}
+          availableDevices={allAvailableDevices}
+          existingDeviceIds={currentCustomMap.deviceIds || []}
+          onAddDevice={handleAddDeviceToCustomMap}
+        />
+      )}
+
+      {isManageMapOpen && (
+        <CustomMapManageModal
+          isOpen={isManageMapOpen}
+          onClose={() => setIsManageMapOpen(false)}
+          mode={manageMapMode}
+          currentMap={manageMapMode !== 'create' ? currentCustomMap || undefined : undefined}
+          onCreateMap={handleCreateCustomMap}
+          onUpdateMap={handleUpdateCustomMap}
+          onDeleteMap={handleDeleteCustomMap}
+        />
       )}
       </div>
     </div>
