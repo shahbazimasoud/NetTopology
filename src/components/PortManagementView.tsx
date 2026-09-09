@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Server, Cable, Zap, Shield, ShieldCheck, Search, Filter, Edit3, Save, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Server, Cable, Zap, Shield, ShieldCheck, Search, Filter, Edit3, Save, CheckCircle2, AlertCircle, Layers } from 'lucide-react';
 import { Device, SwitchPort } from '../types';
-import { fetchDevicePorts, updateSwitchPort } from '../services/api';
+import { fetchDevicePorts, updateSwitchPort, batchUpdateSwitchPorts } from '../services/api';
 import { CiscoPortContextMenu } from './CiscoPortContextMenu';
 import { CiscoCommandConfirmModal } from './CiscoCommandConfirmModal';
 import { AssignVlanModal } from './AssignVlanModal';
@@ -21,6 +21,20 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
   const [ports, setPorts] = useState<SwitchPort[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPort, setSelectedPort] = useState<SwitchPort | null>(null);
+
+  // Multi-port selection and batch operations
+  const [selectedPortIds, setSelectedPortIds] = useState<string[]>([]);
+  const [isBatchApplying, setIsBatchApplying] = useState(false);
+  const [batchSuccessMessage, setBatchSuccessMessage] = useState<string | null>(null);
+
+  // Batch edit form values
+  const [batchAdminStatus, setBatchAdminStatus] = useState<'no_change' | 'enabled' | 'disabled'>('no_change');
+  const [batchMode, setBatchMode] = useState<'no_change' | 'access' | 'trunk'>('no_change');
+  const [batchVlan, setBatchVlan] = useState<string>(''); // empty means no change
+  const [batchAllowedVlans, setBatchAllowedVlans] = useState<string>('');
+  const [batchPortSec, setBatchPortSec] = useState<'no_change' | 'enabled' | 'disabled'>('no_change');
+  const [batchPortSecMode, setBatchPortSecMode] = useState<'sticky' | 'dynamic' | 'configured'>('sticky');
+  const [batchPortSecMaxMac, setBatchPortSecMaxMac] = useState<number>(1);
 
   // Right-click Cisco Context Menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -56,12 +70,95 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
       setPorts(res.ports);
       if (res.ports.length > 0) {
         setSelectedPort(res.ports[0]);
+        setSelectedPortIds([res.ports[0].port_id]);
       }
       setIsEditing(false);
     } catch (err: any) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePortClick = (e: React.MouseEvent, port: SwitchPort) => {
+    setBatchSuccessMessage(null);
+    if (e.ctrlKey || e.metaKey || e.shiftKey) {
+      setSelectedPortIds((prev) => {
+        const exists = prev.includes(port.port_id);
+        let updated: string[];
+        if (exists) {
+          updated = prev.filter((id) => id !== port.port_id);
+          if (updated.length === 0) updated = [port.port_id];
+        } else {
+          updated = [...prev, port.port_id];
+        }
+        return updated;
+      });
+      setSelectedPort(port);
+      setIsEditing(false);
+    } else {
+      setSelectedPort(port);
+      setSelectedPortIds([port.port_id]);
+      setIsEditing(false);
+    }
+  };
+
+  const handleApplyBatch = async () => {
+    if (!currentDevice || selectedPortIds.length <= 1) return;
+    try {
+      setIsBatchApplying(true);
+      setBatchSuccessMessage(null);
+
+      const updates: Partial<SwitchPort> = {};
+      if (batchAdminStatus !== 'no_change') {
+        updates.admin_status = batchAdminStatus;
+        updates.status = batchAdminStatus === 'disabled' ? 'down' : 'up';
+      }
+      if (batchMode !== 'no_change') {
+        updates.mode = batchMode;
+      }
+      if (batchVlan.trim() !== '') {
+        const v = parseInt(batchVlan.trim(), 10);
+        if (!isNaN(v) && v >= 1 && v <= 4094) {
+          updates.vlan = v;
+        }
+      }
+      if (batchAllowedVlans.trim() !== '') {
+        updates.allowed_vlans = batchAllowedVlans.trim();
+      }
+      if (batchPortSec !== 'no_change') {
+        updates.port_security_enabled = batchPortSec === 'enabled';
+        if (batchPortSec === 'enabled') {
+          updates.port_security_mode = batchPortSecMode;
+          updates.port_security_max_mac = batchPortSecMaxMac;
+        }
+      }
+
+      const res = await batchUpdateSwitchPorts(currentDevice.id, selectedPortIds, updates);
+
+      const updatedPortMap = new Map(res.ports.map((p) => [p.port_id, p]));
+      setPorts((prev) => prev.map((p) => updatedPortMap.get(p.port_id) || p));
+
+      if (selectedPort && updatedPortMap.has(selectedPort.port_id)) {
+        setSelectedPort(updatedPortMap.get(selectedPort.port_id)!);
+      }
+
+      currentDevice.has_unsaved_changes = true;
+      setBatchSuccessMessage(
+        isEn
+          ? `Successfully applied batch configuration to ${res.updatedCount} ports!`
+          : `تنظیمات با موفقیت روی ${res.updatedCount} پورت اعمال شد!`
+      );
+
+      setBatchAdminStatus('no_change');
+      setBatchMode('no_change');
+      setBatchVlan('');
+      setBatchAllowedVlans('');
+      setBatchPortSec('no_change');
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setIsBatchApplying(false);
     }
   };
 
@@ -323,8 +420,8 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                 : `طرح فیزیکی پورت‌های روی بدنه سوئیچ: ${currentDevice?.model || 'سوئیچ'} (${ports.length} پورت)`}
             </span>
           </div>
-          {/* Legend */}
-          <div className="flex items-center gap-3 text-[11px] text-slate-400">
+          {/* Legend & Multi-select Hint */}
+          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
               <span>{isEn ? 'Up' : 'فعال (Up)'}</span>
@@ -340,6 +437,9 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2 rounded bg-purple-500"></span>
               <span>{isEn ? 'Trunk' : 'ترانک (Trunk)'}</span>
+            </div>
+            <div className="text-[10px] text-cyan-300 font-mono bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-500/30">
+              {isEn ? '💡 Hold Ctrl + Click for multi-port select' : '💡 برای انتخاب چندتایی کلید Ctrl را نگه داشته و کلیک کنید'}
             </div>
           </div>
         </div>
@@ -361,11 +461,8 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                   <NetworkPortSvg
                     key={port.port_id}
                     port={port}
-                    isSelected={selectedPort?.port_id === port.port_id}
-                    onClick={() => {
-                      setSelectedPort(port);
-                      setIsEditing(false);
-                    }}
+                    isSelected={selectedPortIds.includes(port.port_id)}
+                    onClick={(e) => handlePortClick(e, port)}
                     onContextMenu={(e) => {
                       e.preventDefault();
                       setContextMenu({
@@ -381,6 +478,176 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
           </div>
         )}
       </div>
+
+      {/* Multi-Port Batch Operations Card */}
+      {selectedPortIds.length > 1 && (
+        <div className="port-sub-card bg-indigo-950/60 border-2 border-indigo-500/60 rounded-xl p-4 shadow-xl space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-indigo-500/30">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-indigo-500/30 text-indigo-200 border border-indigo-500/50 shadow-sm">
+                <Layers className="w-5 h-5 text-indigo-300" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-white font-mono">
+                    {isEn
+                      ? `Batch Configuration (${selectedPortIds.length} Ports Selected)`
+                      : `پیکربندی گروهی پورت‌ها (${selectedPortIds.length} پورت انتخاب شده)`}
+                  </h4>
+                  <span className="text-[10px] px-2 py-0.5 rounded font-bold font-mono bg-indigo-600 text-white shadow-xs">
+                    MULTI-PORT ACTIVE
+                  </span>
+                </div>
+                <p className="text-[11px] text-indigo-200/90 font-mono mt-0.5 max-w-2xl truncate">
+                  {isEn ? 'Selected Ports' : 'پورت‌های انتخاب شده'}: {selectedPortIds.join(', ')}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedPortIds(ports.map((p) => p.port_id))}
+                className="px-2.5 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-400/30 text-xs font-medium transition cursor-pointer"
+              >
+                {isEn ? 'Select All Ports' : 'انتخاب همه پورت‌ها'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedPortIds(selectedPort ? [selectedPort.port_id] : [])}
+                className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-300 border border-white/10 text-xs transition cursor-pointer"
+              >
+                {isEn ? 'Deselect (Single Mode)' : 'لغو انتخاب گروهی'}
+              </button>
+            </div>
+          </div>
+
+          {batchSuccessMessage && (
+            <div className="p-3 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs flex items-center gap-2 font-medium">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{batchSuccessMessage}</span>
+            </div>
+          )}
+
+          {/* Batch Settings Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            {/* Admin Status */}
+            <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <label className="text-slate-300 font-semibold block text-[11px]">
+                {isEn ? 'Admin Status:' : 'وضعیت مدیریتی:'}
+              </label>
+              <select
+                value={batchAdminStatus}
+                onChange={(e: any) => setBatchAdminStatus(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/20 text-white text-xs font-mono focus:border-indigo-400"
+              >
+                <option value="no_change" className="bg-slate-900 text-slate-300">{isEn ? '-- No Change --' : '-- بدون تغییر --'}</option>
+                <option value="enabled" className="bg-slate-900 text-emerald-400">{isEn ? 'Enable (no shutdown)' : 'فعال (no shutdown)'}</option>
+                <option value="disabled" className="bg-slate-900 text-rose-400">{isEn ? 'Disable (shutdown)' : 'غیرفعال (shutdown)'}</option>
+              </select>
+            </div>
+
+            {/* Mode */}
+            <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <label className="text-slate-300 font-semibold block text-[11px]">
+                {isEn ? 'Switchport Mode:' : 'مود سوئیچ‌پورت:'}
+              </label>
+              <select
+                value={batchMode}
+                onChange={(e: any) => setBatchMode(e.target.value)}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/20 text-white text-xs font-mono focus:border-indigo-400"
+              >
+                <option value="no_change" className="bg-slate-900 text-slate-300">{isEn ? '-- No Change --' : '-- بدون تغییر --'}</option>
+                <option value="access" className="bg-slate-900 text-indigo-300">{isEn ? 'Access' : 'Access (اکسس)'}</option>
+                <option value="trunk" className="bg-slate-900 text-purple-300">{isEn ? 'Trunk' : 'Trunk (ترانک)'}</option>
+              </select>
+            </div>
+
+            {/* VLAN */}
+            <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <label className="text-slate-300 font-semibold block text-[11px]">
+                {isEn ? 'Assign VLAN (1-4094):' : 'تخصیص ویلن (VLAN):'}
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={4094}
+                value={batchVlan}
+                onChange={(e) => setBatchVlan(e.target.value)}
+                placeholder={isEn ? 'Empty = No Change' : 'خالی = بدون تغییر'}
+                className="w-full px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/20 text-white text-xs font-mono focus:border-indigo-400 placeholder:text-slate-500"
+              />
+            </div>
+
+            {/* Allowed VLANs (Trunk) */}
+            <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <label className="text-slate-300 font-semibold block text-[11px]">
+                {isEn ? 'Allowed VLANs (Trunk):' : 'ویلن‌های مجاز (ترانک):'}
+              </label>
+              <input
+                type="text"
+                value={batchAllowedVlans}
+                onChange={(e) => setBatchAllowedVlans(e.target.value)}
+                placeholder="1-4094 or 10,20"
+                className="w-full px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/20 text-white text-xs font-mono focus:border-indigo-400 placeholder:text-slate-500"
+                dir="ltr"
+              />
+            </div>
+
+            {/* Port Security */}
+            <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5 lg:col-span-2">
+              <label className="text-slate-300 font-semibold block text-[11px]">
+                {isEn ? 'Port Security:' : 'امنیت پورت (Port Security):'}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={batchPortSec}
+                  onChange={(e: any) => setBatchPortSec(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/20 text-white text-xs font-mono focus:border-indigo-400"
+                >
+                  <option value="no_change" className="bg-slate-900 text-slate-300">{isEn ? '-- No Change --' : '-- بدون تغییر --'}</option>
+                  <option value="enabled" className="bg-slate-900 text-emerald-400">{isEn ? 'Enable Security' : 'فعال‌سازی امنیت پورت'}</option>
+                  <option value="disabled" className="bg-slate-900 text-rose-400">{isEn ? 'Disable Security' : 'غیرفعال‌سازی امنیت'}</option>
+                </select>
+                {batchPortSec === 'enabled' && (
+                  <select
+                    value={batchPortSecMode}
+                    onChange={(e: any) => setBatchPortSecMode(e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/20 text-white text-xs font-mono focus:border-indigo-400"
+                  >
+                    <option value="sticky" className="bg-slate-900 text-white">Sticky (MAC خودکار)</option>
+                    <option value="dynamic" className="bg-slate-900 text-white">Dynamic</option>
+                    <option value="configured" className="bg-slate-900 text-white">Configured</option>
+                  </select>
+                )}
+              </div>
+            </div>
+
+            {/* Batch Action Submit Button */}
+            <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 flex items-end lg:col-span-2">
+              <button
+                type="button"
+                onClick={handleApplyBatch}
+                disabled={isBatchApplying}
+                className="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isBatchApplying ? (
+                  <span>{isEn ? 'Applying Batch...' : 'در حال اعمال تنظیمات روی پورت‌ها...'}</span>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>
+                      {isEn
+                        ? `Apply Batch to ${selectedPortIds.length} Ports`
+                        : `اعمال تنظیمات روی ${selectedPortIds.length} پورت انتخابی`}
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Selected Port Detailed Card */}
       {selectedPort && (
@@ -682,6 +949,21 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
           <table className={`w-full ${isRtl ? 'text-right' : 'text-left'} text-xs`}>
             <thead>
               <tr className="bg-white/5 text-slate-300 border-b border-white/10 text-[11px] font-bold uppercase tracking-wider">
+                <th className="p-3.5 w-10 text-center">
+                  <input
+                    type="checkbox"
+                    checked={filteredPorts.length > 0 && filteredPorts.every((p) => selectedPortIds.includes(p.port_id))}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedPortIds(filteredPorts.map((p) => p.port_id));
+                      } else {
+                        setSelectedPortIds(selectedPort ? [selectedPort.port_id] : []);
+                      }
+                    }}
+                    className="rounded text-indigo-600 bg-white/10 border-white/20 cursor-pointer"
+                    title={isEn ? 'Select / Deselect all filtered ports' : 'انتخاب یا لغو انتخاب تمام پورت‌های فیلتر شده'}
+                  />
+                </th>
                 <th className="p-3.5">{t('ports_col_id')}</th>
                 <th className="p-3.5">{t('ports_col_status')}</th>
                 <th className="p-3.5">{t('ports_col_mode')}</th>
@@ -693,20 +975,32 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10 font-mono">
-              {filteredPorts.map((port) => (
-                <tr
-                  key={port.port_id}
-                  onClick={() => {
-                    setSelectedPort(port);
-                    setIsEditing(false);
-                  }}
-                  className={`cursor-pointer transition ${
-                    selectedPort?.port_id === port.port_id
-                      ? 'bg-indigo-600/20 text-white border-l-2 border-indigo-400'
-                      : 'hover:bg-white/5 text-slate-200'
-                  }`}
-                >
-                  <td className="p-3.5 font-bold text-white">{port.port_id}</td>
+              {filteredPorts.map((port) => {
+                const isSelected = selectedPortIds.includes(port.port_id);
+                return (
+                  <tr
+                    key={port.port_id}
+                    onClick={(e) => handlePortClick(e, port)}
+                    className={`cursor-pointer transition ${
+                      isSelected
+                        ? 'bg-indigo-600/20 text-white border-l-2 border-indigo-400'
+                        : 'hover:bg-white/5 text-slate-200'
+                    }`}
+                  >
+                    <td className="p-3.5 w-10 text-center" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {
+                          handlePortClick(
+                            { ctrlKey: true, metaKey: false, shiftKey: false } as any,
+                            port
+                          );
+                        }}
+                        className="rounded text-indigo-600 bg-white/10 border-white/20 cursor-pointer"
+                      />
+                    </td>
+                    <td className="p-3.5 font-bold text-white">{port.port_id}</td>
                   <td className="p-3.5">
                     <span
                       className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${
@@ -759,7 +1053,8 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                     </button>
                   </td>
                 </tr>
-              ))}
+              );
+            })}
             </tbody>
           </table>
         </div>

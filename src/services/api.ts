@@ -78,6 +78,45 @@ export async function updateSwitchPort(
   return res.json();
 }
 
+export async function batchUpdateSwitchPorts(
+  deviceId: string,
+  portIds: string[],
+  updates: Partial<SwitchPort>
+): Promise<{ success: boolean; updatedCount: number; message: string; ports: SwitchPort[] }> {
+  const res = await fetch(`${API_BASE}/devices/${deviceId}/ports/batch`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ port_ids: portIds, updates }),
+  });
+  if (!res.ok) throw new Error('Failed to batch update ports');
+  return res.json();
+}
+
+export async function testDeviceConnection(data: {
+  ip: string;
+  ssh_port?: number;
+  ssh_username?: string;
+  ssh_password?: string;
+  enable_password?: string;
+}): Promise<{
+  success: boolean;
+  message: string;
+  latency_ms?: number;
+  banner?: string;
+  protocol?: string;
+}> {
+  const res = await fetch(`${API_BASE}/devices/test-connection`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Connection failed' }));
+    throw new Error(err.error || 'Connection failed');
+  }
+  return res.json();
+}
+
 export async function writeMemory(deviceId: string): Promise<{ success: boolean; device: Device; message: string }> {
   const res = await fetch(`${API_BASE}/devices/${deviceId}/write-memory`, {
     method: 'POST',

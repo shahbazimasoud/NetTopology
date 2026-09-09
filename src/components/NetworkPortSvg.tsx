@@ -4,7 +4,7 @@ import { SwitchPort } from '../types';
 interface NetworkPortSvgProps {
   port: SwitchPort;
   isSelected?: boolean;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
 
@@ -32,7 +32,7 @@ export const NetworkPortSvg: React.FC<NetworkPortSvgProps> = ({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => onClick?.(e)}
       onContextMenu={(e) => {
         if (onContextMenu) {
           e.preventDefault();

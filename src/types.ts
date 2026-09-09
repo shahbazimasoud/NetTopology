@@ -24,6 +24,11 @@ export interface Device {
   total_ports: number;
   has_unsaved_changes?: boolean;
   last_modified_time?: string;
+  ssh_port?: number;
+  ssh_username?: string;
+  ssh_password?: string;
+  enable_password?: string;
+  ssh_status?: 'connected' | 'authenticated' | 'disconnected' | 'failed';
 }
 
 export interface SwitchPort {

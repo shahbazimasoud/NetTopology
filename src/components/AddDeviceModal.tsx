@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Network, Server, Wifi, Router as RouterIcon, ShieldCheck, MapPin, FileCode2 } from 'lucide-react';
+import { X, Network, Server, Wifi, Router as RouterIcon, ShieldCheck, MapPin, FileCode2, Terminal, Key, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { Device, DeviceType, ConfigTemplate } from '../types';
-import { fetchTemplates } from '../services/api';
+import { fetchTemplates, testDeviceConnection } from '../services/api';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface AddDeviceModalProps {
@@ -31,6 +31,13 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
   const [cdpEnabled, setCdpEnabled] = useState(true);
   const [lldpEnabled, setLldpEnabled] = useState(true);
   const [snmpCommunity, setSnmpCommunity] = useState('public');
+  const [sshPort, setSshPort] = useState(22);
+  const [sshUsername, setSshUsername] = useState('admin');
+  const [sshPassword, setSshPassword] = useState('cisco123');
+  const [enablePassword, setEnablePassword] = useState('cisco');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isTestingSsh, setIsTestingSsh] = useState(false);
+  const [sshTestResult, setSshTestResult] = useState<{ success: boolean; message: string; latency_ms?: number } | null>(null);
   const [templates, setTemplates] = useState<ConfigTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,6 +53,37 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const handleTestConnection = async () => {
+    if (!ip.trim() || !/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(ip.trim())) {
+      setError(isEn ? 'Please enter a valid IP address first to test connection' : 'لطفاً ابتدا آدرس IP معتبر وارد کنید تا اتصال تست شود');
+      return;
+    }
+    try {
+      setIsTestingSsh(true);
+      setSshTestResult(null);
+      setError(null);
+      const res = await testDeviceConnection({
+        ip: ip.trim(),
+        ssh_port: Number(sshPort) || 22,
+        ssh_username: sshUsername.trim(),
+        ssh_password: sshPassword,
+        enable_password: enablePassword,
+      });
+      setSshTestResult({
+        success: true,
+        message: res.message || (isEn ? 'SSH Connection successful!' : 'اتصال SSH برقرار و احراز هویت شد!'),
+        latency_ms: res.latency_ms,
+      });
+    } catch (err: any) {
+      setSshTestResult({
+        success: false,
+        message: err.message || (isEn ? 'Connection failed' : 'اتصال SSH ناموفق بود'),
+      });
+    } finally {
+      setIsTestingSsh(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +113,11 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
         cdp_enabled: cdpEnabled,
         lldp_enabled: lldpEnabled,
         snmp_community: snmpCommunity.trim(),
+        ssh_port: Number(sshPort) || 22,
+        ssh_username: sshUsername.trim() || 'admin',
+        ssh_password: sshPassword,
+        enable_password: enablePassword,
+        ssh_status: sshTestResult?.success ? 'authenticated' : 'configured',
       });
       onClose();
 
@@ -269,6 +312,123 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
                   <option value={24}>24 Ports</option>
                   <option value={48}>48 Ports</option>
                 </select>
+              </div>
+            </div>
+
+            {/* SSH Credentials & Connection Verification */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-indigo-700 text-xs font-bold">
+                  <Terminal className="w-4 h-4 text-indigo-600" />
+                  <span>{isEn ? 'SSH Credentials & Terminal Access:' : 'مشخصات دسترسی SSH و خط فرمان (CLI):'}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleTestConnection}
+                  disabled={isTestingSsh}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold transition shadow-xs disabled:opacity-50 cursor-pointer"
+                >
+                  {isTestingSsh ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>{isEn ? 'Testing...' : 'در حال تست...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Terminal className="w-3 h-3" />
+                      <span>{isEn ? 'Test Connection' : 'تست اتصال SSH'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* SSH Test Status Result Banner */}
+              {sshTestResult && (
+                <div
+                  className={`p-2.5 rounded-lg flex items-start gap-2 text-xs font-sans ${
+                    sshTestResult.success
+                      ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                      : 'bg-rose-50 border border-rose-200 text-rose-800'
+                  }`}
+                >
+                  {sshTestResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <div className="font-semibold">{sshTestResult.message}</div>
+                    {sshTestResult.latency_ms !== undefined && (
+                      <div className="text-[11px] opacity-80 mt-0.5 font-mono">
+                        {isEn ? 'Latency' : 'پینگ / تاخیر'}: {sshTestResult.latency_ms}ms
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                    {isEn ? 'SSH Port:' : 'پورت SSH:'}
+                  </label>
+                  <input
+                    type="number"
+                    value={sshPort}
+                    onChange={(e) => setSshPort(Number(e.target.value))}
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 text-xs focus:outline-none focus:border-indigo-500 font-mono text-left"
+                    dir="ltr"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                    {isEn ? 'SSH Username:' : 'نام کاربری SSH:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={sshUsername}
+                    onChange={(e) => setSshUsername(e.target.value)}
+                    placeholder="admin"
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 text-xs focus:outline-none focus:border-indigo-500 font-mono text-left"
+                    dir="ltr"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-700 mb-1 flex items-center justify-between">
+                    <span>{isEn ? 'SSH Password:' : 'رمز عبور SSH:'}</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                    </button>
+                  </label>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={sshPassword}
+                    onChange={(e) => setSshPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 text-xs focus:outline-none focus:border-indigo-500 font-mono text-left"
+                    dir="ltr"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                    {isEn ? 'Enable Secret:' : 'رمز Enable (اختیاری):'}
+                  </label>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={enablePassword}
+                    onChange={(e) => setEnablePassword(e.target.value)}
+                    placeholder="cisco"
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 text-xs focus:outline-none focus:border-indigo-500 font-mono text-left"
+                    dir="ltr"
+                  />
+                </div>
               </div>
             </div>
 

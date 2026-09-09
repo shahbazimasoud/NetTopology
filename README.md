@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.8.2-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.9.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۸.۲
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.8.2
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۹.۰
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.9.0
 
 ---
 
@@ -148,6 +148,16 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 - **برچسب‌گذاری و ویرایش لینک‌ها روی نقشه:** نمایش زنده نام اینترفیس‌ها، شماره ویلن و IP هر سمت بر روی خطوط ارتباطی نقشه سفارشی همراه با امکان کلیک روی کابل جهت ویرایش تنظیمات یا قطع کابل.
 - **پایداری کامل داده‌ها:** ذخیره‌سازی پایدار و مجزای نقشه‌ها، چیدمان نودها و لینک‌ها در حافظه محلی سیستم (LocalStorage).
 
+### ۱۷. تست زنده اتصال SSH و اعتبارسنجی مشخصات اتصال تجهیزات (Live SSH Connection Testing & Device Credentials)
+- **تنظیمات احراز هویت در فرم افزودن تجهیز:** امکان تعریف پورت SSH (پیش‌فرض ۲۲)، نام کاربری، کلمه عبور، و کلمه عبور ارتقای دسترسی (Enable Secret) برای مدیریت مستقیم دیوایس.
+- **تست بلادرنگ اتصال (Test Connection):** سنجش زنده ارتباط SSH با سوئیچ یا روتر سیسکو با اندازه‌گیری دقیق پینگ و تاخیر (Latency بر حسب میلی‌ثانیه).
+- **نمایش بازخورد تعاملی وضعیت:** ارائه پیام‌های وضعیت تفکیک‌شده (موفقیت‌آمیز، خطای احراز هویت، تایم‌اوت، یا عدم دسترسی به شبکه) همراه با انیمیشن لودینگ و تگ‌های رنگی.
+
+### ۱۸. انتخاب چندتایی پورت‌ها و پیکربندی دسته‌ای سوئیچ‌پورت‌ها (Multi-Port Batch Switchport Configuration)
+- **انتخاب چندگانه پورت‌های فیزیکی:** امکان انتخاب همزمان چندین پورت سوئیچ با نگه‌داشتن کلیدهای `Ctrl`، `Cmd` یا `Shift` بر روی فیس‌پلیت وکتور سخت‌افزاری یا با استفاده از چک‌باکس‌های اختصاصی جدول پورت‌ها.
+- **پنل پیکربندی گروهی (Batch Configuration Panel):** اعمال یکجای تغییرات برای تمام پورت‌های انتخاب‌شده شامل وضعیت ادمین (`no shutdown` / `shutdown`)، تغییر حالت عملیاتی سوئیچ‌پورت (`Trunk` یا `Access`)، تخصیص شماره Access VLAN، تعیین Allowed VLANs ترانک و اعمال دسته‌ای سیاست‌های Cisco Port Security.
+- **یکپارچگی در دو نمای اصلی:** پشتیبانی کامل از عملیات دسته‌ای در هر دو پنجره بازرس پورت دیوایس (`PortInspectorModal`) و صفحه مستقل مانیتورینگ پورت‌ها (`PortManagementView`).
+
 ---
 
 ## ساختار معماری و تکنولوژی‌ها
@@ -224,6 +234,13 @@ npm start
 > ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
 
 ### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
+- **نسخه ۱.۹.۰ (v1.9.0 - تست زنده اتصال SSH تجهیزات، فیلدهای احراز هویت در فرم افزودن تجهیز و ویرایش و اعمال دسته‌ای پورت‌های سوئیچ)**:
+  - **اطلاعات اتصال و احراز هویت SSH:** افزودن فیلدهای شماره پورت SSH، نام کاربری، کلمه عبور و Enable Secret سیسکو به فرم ثبت تجهیز جدید (`AddDeviceModal`).
+  - **تست زنده اتصال SSH (`Test Connection`):** قابلیت اعتبارسنجی بلادرنگ اتصال با تجهیز شبکه همراه با اندازه‌گیری و نمایش تاخیر (Latency) و پیام‌های وضعیت تعاملی.
+  - **انتخاب چندتایی پورت‌های سوئیچ (Multi-Port Selection):** امکان انتخاب همزمان چندین اینترفیس با نگه‌داشتن کلید Ctrl / Cmd / Shift روی فیس‌پلیت سخت‌افزاری یا چک‌باکس‌های جدول پورت‌ها.
+  - **پیکربندی گروهی پورت‌ها (Batch Switchport Configuration):** اعمال دسته‌ای تنظیمات شامل روشن/خاموش کردن، مود Trunk و Access، ویلن اکسس، Allowed VLANs و فعال‌سازی همزمان Cisco Port Security.
+  - **رفع مشکلات ظاهری دراپ‌داون پروفایل و تم لایت:** بسته‌شدن هوشمند منوی پروفایل با کلیک در هر نقطه خارج از منو، و اصلاح رنگ نوشته دکمه‌های غیرفعال در سوئیچر ابزار کابل نقشه سفارشی در تم روشن.
+
 - **نسخه ۱.۸.۲ (v1.8.2 - رفع خطای فراخوانی تابع ذخیره در مودال پیکربندی لینک)**:
   - **رفع خطای ران‌تایم `TypeError: onSave is not a function`:** حل مشکل ذخیره‌سازی اتصالات کابل در نقشه سفارشی با برقراری سازگاری کامل دوطرفه میان پروپ‌های `onSave` و `onSaveLink` و همچنین `onDelete` و `onDeleteLink` همراه با گارد دفاعی جهت اطمینان از عملکرد بدون وقفه ثبت کابل‌ها و لینک‌ها.
 
@@ -422,6 +439,16 @@ npm start
 - **Dual-End Link Configuration Modal:** Configure management IPs for both endpoints, cable types (Copper RJ-45, Fiber Optic, Serial), bandwidth/speeds, port operational modes (802.1Q Trunk vs Access), custom VLAN IDs, and link descriptions.
 - **Visual Link Endpoints & Interactive Modification:** Rendered SVG cables display source/target interface names, VLAN badges, and IP tags directly on the canvas, with click-to-edit capabilities to update link parameters or disconnect cables.
 
+### 17. Live SSH Device Connection Testing & Inventory Credentials
+- **Authentication Parameters in Add Device Dialog:** Added fields for SSH Port (default 22), Username, Password, and Cisco Enable Secret to securely register inventory management credentials.
+- **Real-Time Connection Testing (`Test Connection`):** One-click connectivity verification communicating with the Cisco switch or router, calculating real-time round-trip latency (in milliseconds).
+- **Interactive Status Feedback:** Context-aware status badges displaying success, authentication failures, connection timeouts, or unreachable host errors with animated loading indicators.
+
+### 18. Multi-Port Batch Selection & Bulk Switchport Configuration
+- **Hardware-Accurate Multi-Port Selection:** Select multiple interfaces simultaneously by holding `Ctrl`, `Cmd`, or `Shift` while clicking ports on the vector switch faceplate, or by using table selection checkboxes.
+- **Dedicated Batch Configuration Panel:** Bulk update administrative status (`no shutdown` / `shutdown`), switchport operational modes (`Trunk` vs `Access`), access VLAN assignment, allowed trunk VLAN lists, and Cisco Port Security policies across all selected ports in one click.
+- **Unified Across Views:** Seamlessly integrated into both the device inspector modal (`PortInspectorModal`) and the dedicated port management page (`PortManagementView`).
+
 ---
 
 ## System Architecture & Stack
@@ -497,6 +524,13 @@ Any AI assistant, coding agent, or human contributor working on this repository 
 3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
 
 ### Release Notes & Bug Fixes
+- **Version 1.9.0 (Live SSH Device Connection Testing, Inventory Credentials, Multi-Port Batch Switchport Configuration & UI Fixes)**:
+  - **SSH Connection Parameters in Add Device Modal:** Added SSH port, username, password, and Cisco enable secret fields to the device creation workflow.
+  - **Live SSH Connection Testing (`Test Connection`):** Real-time connectivity probe measuring latency and verifying access credentials with immediate status feedback.
+  - **Multi-Port Batch Selection:** Hold Ctrl / Cmd / Shift to select multiple switch ports on the vector faceplate or select via table checkboxes.
+  - **Bulk Switchport Configuration:** Simultaneous batch updates for administrative state (`no shutdown` / `shutdown`), switchport mode (`Trunk` vs `Access`), VLAN ID, trunk allowed VLANs, and Layer 2 Cisco Port Security.
+  - **UI & Theme Enhancements:** Fixed profile dropdown to close on outside clicks across any document region; harmonized light-theme inactive button text in the custom topology cabling switcher.
+
 - **Version 1.8.2 (Fix onSave Function Handler in Link Configuration Modal)**:
   - **Runtime Exception Fix (`TypeError: onSave is not a function`):** Fixed callback invocation when creating and updating custom topology links by introducing backward-compatible support for both `onSave` / `onSaveLink` and `onDelete` / `onDeleteLink` with defensive type guards, ensuring seamless connection creation.
 

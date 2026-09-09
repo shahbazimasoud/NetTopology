@@ -69,6 +69,64 @@ interface SchematicTopologyViewProps {
   onToggleFullMode?: () => void;
 }
 
+// Helper to separate and curve overlapping parallel cables between devices
+function getLinkCurve(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  indexInGroup: number,
+  totalInGroup: number
+) {
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.sqrt(dx * dx + dy * dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+
+  if (totalInGroup <= 1) {
+    return {
+      pathD: `M ${x1} ${y1} L ${x2} ${y2}`,
+      midX: mx,
+      midY: my,
+      srcTagX: x1 + (x2 - x1) * 0.22,
+      srcTagY: y1 + (y2 - y1) * 0.22,
+      tgtTagX: x1 + (x2 - x1) * 0.78,
+      tgtTagY: y1 + (y2 - y1) * 0.78,
+    };
+  }
+
+  // Spacing between multiple parallel cables connecting the same pair of devices
+  const spacing = 36;
+  const offset = (indexInGroup - (totalInGroup - 1) / 2) * spacing;
+  const cx = mx + nx * offset * 1.6;
+  const cy = my + ny * offset * 1.6;
+
+  // Bezier evaluation: B(t) = (1-t)^2 P0 + 2(1-t)t P1 + t^2 P2
+  const evalBezier = (t: number) => {
+    const inv = 1 - t;
+    const px = inv * inv * x1 + 2 * inv * t * cx + t * t * x2;
+    const py = inv * inv * y1 + 2 * inv * t * cy + t * t * y2;
+    return { x: px, y: py };
+  };
+
+  const mid = evalBezier(0.5);
+  const srcTag = evalBezier(0.22);
+  const tgtTag = evalBezier(0.78);
+
+  return {
+    pathD: `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`,
+    midX: mid.x,
+    midY: mid.y,
+    srcTagX: srcTag.x,
+    srcTagY: srcTag.y,
+    tgtTagX: tgtTag.x,
+    tgtTagY: tgtTag.y,
+  };
+}
+
 export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   topology,
   loading,
@@ -233,6 +291,33 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const allAvailableDevices: Device[] = useMemo(() => {
     return topology?.nodes || localNodes || [];
   }, [topology?.nodes, localNodes]);
+
+  // Group links by pair of connected devices to separate overlapping cables
+  const defaultLinkGroups = useMemo(() => {
+    const map = new Map<string, typeof topology.links>();
+    if (!topology?.links) return map;
+    for (const link of topology.links) {
+      const pairKey = [link.source, link.target].sort().join('___');
+      if (!map.has(pairKey)) {
+        map.set(pairKey, []);
+      }
+      map.get(pairKey)!.push(link);
+    }
+    return map;
+  }, [topology?.links]);
+
+  const customLinkGroups = useMemo(() => {
+    const map = new Map<string, CustomTopologyLink[]>();
+    if (!currentCustomMap?.links) return map;
+    for (const link of currentCustomMap.links) {
+      const pairKey = [link.sourceDeviceId, link.targetDeviceId].sort().join('___');
+      if (!map.has(pairKey)) {
+        map.set(pairKey, []);
+      }
+      map.get(pairKey)!.push(link);
+    }
+    return map;
+  }, [currentCustomMap?.links]);
 
   const handleCreateCustomMap = (name: string, description?: string) => {
     const newMap: CustomTopologyMap = {
@@ -1736,25 +1821,25 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             <div className="flex items-center bg-slate-900/60 rounded-xl p-1 border border-white/10">
               <button
                 onClick={() => setViewMode('schematic')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
                   viewMode === 'schematic'
                     ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md font-semibold'
-                    : 'text-slate-400 hover:text-white'
+                    : 'text-white hover:text-white hover:bg-white/10'
                 }`}
               >
-                <Layers className="w-3.5 h-3.5" />
-                <span>{t('topology_tab_schematic')}</span>
+                <Layers className="w-3.5 h-3.5 text-white" />
+                <span className="text-white">{t('topology_tab_schematic')}</span>
               </button>
               <button
                 onClick={() => setViewMode('physical')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
                   viewMode === 'physical'
                     ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-md font-semibold'
-                    : 'text-slate-400 hover:text-white'
+                    : 'text-white hover:text-white hover:bg-white/10'
                 }`}
               >
-                <Building2 className="w-3.5 h-3.5" />
-                <span>{t('topology_tab_physical')}</span>
+                <Building2 className="w-3.5 h-3.5 text-white" />
+                <span className="text-white">{t('topology_tab_physical')}</span>
               </button>
             </div>
 
@@ -1944,21 +2029,21 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             {/* Custom Map Tools: Select Tool, Cable Tool, Add Device, Clear Links */}
             {activeMapId !== 'default' && currentCustomMap && (
               <div className="flex items-center flex-wrap gap-2">
-                <div className="flex items-center bg-slate-800/90 rounded-xl p-1 border border-white/10">
+                <div className="flex items-center bg-slate-800/90 rounded-xl p-1 border border-white/15 shadow-inner">
                   <button
                     type="button"
                     onClick={() => {
                       setActiveTool('select');
                       setCableWorkflow({ step: 'idle', sourceDevice: null, sourcePort: null, targetDevice: null, targetPort: null });
                     }}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition ${
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
                       activeTool === 'select'
                         ? 'bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-xs font-semibold'
-                        : 'text-slate-400 hover:text-white'
+                        : 'text-white hover:text-white hover:bg-white/15'
                     }`}
                   >
-                    <MousePointer className="w-3.5 h-3.5" />
-                    <span>{t('topology_tool_select')}</span>
+                    <MousePointer className="w-3.5 h-3.5 text-white" />
+                    <span className="text-white font-medium">{t('topology_tool_select')}</span>
                   </button>
                   <button
                     type="button"
@@ -1966,14 +2051,14 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                       setActiveTool('cable');
                       setCableWorkflow({ step: 'idle', sourceDevice: null, sourcePort: null, targetDevice: null, targetPort: null });
                     }}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition ${
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
                       activeTool === 'cable'
                         ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs font-bold animate-pulse'
-                        : 'text-slate-400 hover:text-white'
+                        : 'text-white hover:text-white hover:bg-white/15'
                     }`}
                   >
-                    <Cable className="w-3.5 h-3.5" />
-                    <span>{t('topology_tool_cable')}</span>
+                    <Cable className="w-3.5 h-3.5 text-white" />
+                    <span className="text-white font-medium">{t('topology_tool_cable')}</span>
                   </button>
                 </div>
 
@@ -2086,10 +2171,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowToolbarInFullMode((prev) => !prev)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/85 hover:bg-slate-800 border border-white/20 hover:border-white/30 text-xs text-slate-300 hover:text-white shadow-xl backdrop-blur-xl transition active:scale-95"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/25 hover:border-white/40 text-xs text-white font-medium shadow-xl backdrop-blur-xl transition active:scale-95 cursor-pointer"
                     title={showToolbarInFullMode ? t('topology_hide_toolbar') : t('topology_show_toolbar')}
                   >
-                    <span>{showToolbarInFullMode ? t('topology_hide_toolbar') : t('topology_show_toolbar')}</span>
+                    <span className="text-white font-medium">{showToolbarInFullMode ? t('topology_hide_toolbar') : t('topology_show_toolbar')}</span>
                   </button>
 
                   <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono backdrop-blur-md">
@@ -2141,18 +2226,19 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   const x2 = targetPos.x + 115;
                   const y2 = targetPos.y + 55;
 
-                  // Midpoint for badges
-                  const midX = (x1 + x2) / 2;
-                  const midY = (y1 + y2) / 2;
+                  const pairKey = [link.source, link.target].sort().join('___');
+                  const group = defaultLinkGroups.get(pairKey) || [link];
+                  const indexInGroup = group.findIndex((l: any) => l.id === link.id);
+                  const totalInGroup = group.length;
+
+                  const curve = getLinkCurve(x1, y1, x2, y2, indexInGroup >= 0 ? indexInGroup : 0, totalInGroup);
 
                   return (
                     <g key={link.id} className="transition-all pointer-events-none">
                       {/* Link Line */}
-                      <line
-                        x1={x1}
-                        y1={y1}
-                        x2={x2}
-                        y2={y2}
+                      <path
+                        d={curve.pathD}
+                        fill="none"
                         stroke={
                           isDown
                             ? '#ef4444'
@@ -2172,7 +2258,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
                       {/* Port and Protocol Badges on Links */}
                       {showPortLabels && (
-                        <g transform={`translate(${midX}, ${midY})`} className="pointer-events-none">
+                        <g transform={`translate(${curve.midX}, ${curve.midY})`} className="pointer-events-none">
                           <rect
                             x="-45"
                             y="-10"
@@ -2198,7 +2284,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
                       {/* Source Port Tag */}
                       {showPortLabels && (
-                        <g transform={`translate(${x1 + (x2 - x1) * 0.24}, ${y1 + (y2 - y1) * 0.24})`} className="pointer-events-none">
+                        <g transform={`translate(${curve.srcTagX}, ${curve.srcTagY})`} className="pointer-events-none">
                           <rect x="-24" y="-8" width="48" height="16" rx="3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
                           <text textAnchor="middle" dominantBaseline="central" fill="#4f46e5" fontSize="8" fontFamily="monospace" fontWeight="bold">
                             {link.source_port}
@@ -2208,7 +2294,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
                       {/* Target Port Tag */}
                       {showPortLabels && (
-                        <g transform={`translate(${x1 + (x2 - x1) * 0.76}, ${y1 + (y2 - y1) * 0.76})`} className="pointer-events-none">
+                        <g transform={`translate(${curve.tgtTagX}, ${curve.tgtTagY})`} className="pointer-events-none">
                           <rect x="-24" y="-8" width="48" height="16" rx="3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
                           <text textAnchor="middle" dominantBaseline="central" fill="#4f46e5" fontSize="8" fontFamily="monospace" fontWeight="bold">
                             {link.target_port}
@@ -2234,8 +2320,13 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   const y1 = sourcePos.y + 55;
                   const x2 = targetPos.x + 115;
                   const y2 = targetPos.y + 55;
-                  const midX = (x1 + x2) / 2;
-                  const midY = (y1 + y2) / 2;
+
+                  const pairKey = [link.sourceDeviceId, link.targetDeviceId].sort().join('___');
+                  const group = customLinkGroups.get(pairKey) || [link];
+                  const indexInGroup = group.findIndex((l) => l.id === link.id);
+                  const totalInGroup = group.length;
+
+                  const curve = getLinkCurve(x1, y1, x2, y2, indexInGroup >= 0 ? indexInGroup : 0, totalInGroup);
 
                   const strokeColor = isDown
                     ? '#ef4444'
@@ -2250,23 +2341,19 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   return (
                     <g key={link.id} className="transition-all cursor-pointer group">
                       {/* Invisible wider hit area for easy clicking */}
-                      <line
-                        x1={x1}
-                        y1={y1}
-                        x2={x2}
-                        y2={y2}
+                      <path
+                        d={curve.pathD}
+                        fill="none"
                         stroke="transparent"
-                        strokeWidth={18}
+                        strokeWidth={22}
                         className="cursor-pointer"
                         onClick={() => handleEditExistingLink(link)}
                       />
 
                       {/* Main Cable Line */}
-                      <line
-                        x1={x1}
-                        y1={y1}
-                        x2={x2}
-                        y2={y2}
+                      <path
+                        d={curve.pathD}
+                        fill="none"
                         stroke={strokeColor}
                         strokeWidth={isTrunk || isFiber ? 3.5 : 2.5}
                         strokeDasharray={isDown ? '6 4' : 'none'}
@@ -2277,7 +2364,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
                       {/* Midpoint Speed & Type Badge */}
                       <g
-                        transform={`translate(${midX}, ${midY})`}
+                        transform={`translate(${curve.midX}, ${curve.midY})`}
                         onClick={() => handleEditExistingLink(link)}
                         className="cursor-pointer select-none"
                       >
@@ -2306,7 +2393,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
                       {/* Source Endpoint Badges (Port, Mode, VLAN, IP) */}
                       {showPortLabels && (
-                        <g transform={`translate(${x1 + (x2 - x1) * 0.22}, ${y1 + (y2 - y1) * 0.22})`} className="select-none pointer-events-none">
+                        <g transform={`translate(${curve.srcTagX}, ${curve.srcTagY})`} className="select-none pointer-events-none">
                           <rect
                             x="-38"
                             y={link.sourceIp ? "-20" : "-10"}
@@ -2333,7 +2420,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
                       {/* Target Endpoint Badges (Port, Mode, VLAN, IP) */}
                       {showPortLabels && (
-                        <g transform={`translate(${x1 + (x2 - x1) * 0.78}, ${y1 + (y2 - y1) * 0.78})`} className="select-none pointer-events-none">
+                        <g transform={`translate(${curve.tgtTagX}, ${curve.tgtTagY})`} className="select-none pointer-events-none">
                           <rect
                             x="-38"
                             y={link.targetIp ? "-20" : "-10"}
