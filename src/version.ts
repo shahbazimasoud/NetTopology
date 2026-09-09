@@ -10,10 +10,31 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.9.0';
+export const APP_VERSION = '1.10.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
   {
+    version: '1.10.0',
+    releaseDate: '2026-09-09',
+    type: 'minor',
+    title: 'پشتیبانی از تست و اتصال به سوئیچ‌های محلی لینوکس، عیب‌یابی زنده ICMP و بررسی باز بودن پورت‌های SSH/Telnet/Web',
+    title_en: 'Linux Local Network Switch Connectivity, Live ICMP Diagnostics & SSH/Telnet/Web Port Probing',
+    changes: [
+      'افزودن موتور عیب‌یابی و پایش ارتباط بلادرنگ تجهیزات شبکه (Real-world ICMP & TCP Socket Diagnostics) در سرور لینوکس',
+      'طراحی مودال اختصاصی عیب‌یابی و تست اتصال (TestConnectionModal) با نمایش وضعیت زنده پینگ، تاخیر، پورت ۲۲ (SSH)، پورت ۲۳ (Telnet) و وب (HTTP/HTTPS) و بنر سرویس',
+      'امکان تست زنده آی‌پی و تاخیر قبل از ثبت تجهیز در مودال تعریف دستگاه (AddDeviceModal) جهت اعتبارسنجی اتصال سوئیچ در شبکه محلی',
+      'اتصال دستور ping در کنسول ترمینال سیسکو (Cisco Terminal Modal) به پینگ لایو سیستم لینوکس با فرمت استاندارد IOS',
+      'افزودن گزینه تست عیب‌یابی به منوی ۳ نقطه تجهیزات در لیست موجودی شبکه'
+    ],
+    changes_en: [
+      'Real-world Linux host diagnostic engine with live ICMP echo ping and TCP socket reachability probing for local network switches',
+      'Dedicated Diagnostic Test Modal (TestConnectionModal) displaying real-time latency, ICMP status, SSH (22), Telnet (23), and Web (80/443) reachability plus banner inspection',
+      'Instant inline IP test and reachability indicator in Add Device modal prior to saving new switches to inventory',
+      'Integrated live ICMP ping into Cisco Terminal CLI modal with genuine round-trip telemetry matching Cisco IOS output format',
+      'Added diagnostic test action to 3-dots dropdown menu across device inventory table'
+    ]
+  },
+{
     version: '1.9.0',
     releaseDate: '2026-09-09',
     type: 'minor',

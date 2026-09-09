@@ -31,6 +31,22 @@ export interface Device {
   ssh_status?: 'connected' | 'authenticated' | 'disconnected' | 'failed';
 }
 
+export interface DeviceConnectionTestResult {
+  ip: string;
+  is_online: boolean;
+  icmp_ping: boolean;
+  latency_ms: number | null;
+  ports: {
+    ssh_22: boolean;
+    telnet_23: boolean;
+    http_80: boolean;
+    https_443: boolean;
+  };
+  banner?: string;
+  diagnostics: string[];
+  device?: Device;
+}
+
 export interface SwitchPort {
   port_id: string;
   name: string;

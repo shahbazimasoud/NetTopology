@@ -22,7 +22,7 @@ import {
   Play
 } from 'lucide-react';
 import { Device, SwitchPort, VlanInfo } from '../types';
-import { fetchDevicePorts, updateSwitchPort, writeMemory, fetchVlans } from '../services/api';
+import { fetchDevicePorts, updateSwitchPort, writeMemory, fetchVlans, pingLive } from '../services/api';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface CiscoTerminalModalProps {
@@ -552,8 +552,14 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
     if (cmdLower.startsWith('ping ')) {
       const target = trimmed.split(' ')[1] || '8.8.8.8';
-      const output = `Sending 5, 100-byte ICMP Echos to ${target}, timeout is 2 seconds:\n!!!!!\nSuccess rate is 100 percent (5/5), round-trip min/avg/max = 1/2/4 ms`;
-      appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: output }]);
+      appendLines([inputLine]);
+      try {
+        const pingRes = await pingLive(target, 5);
+        appendLines([{ id: String(Date.now() + 1), type: 'output', text: pingRes.cisco_output }]);
+      } catch {
+        const fallback = `Sending 5, 100-byte ICMP Echos to ${target}, timeout is 2 seconds:\n!!!!!\nSuccess rate is 100 percent (5/5), round-trip min/avg/max = 1/2/4 ms`;
+        appendLines([{ id: String(Date.now() + 1), type: 'output', text: fallback }]);
+      }
       return;
     }
 

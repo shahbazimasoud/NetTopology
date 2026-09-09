@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.9.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.10.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۹.۰
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.9.0
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۱۰.۰
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.10.0
 
 ---
 
@@ -134,29 +134,11 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 - **سازگاری کامل رنگی صفحه مدیریت پورت‌ها (Port Management Theme Harmony):** بازطراحی و رفع کامل استایل‌های سفید استاتیک (`bg-white` و `border-slate-200`) در صفحه پورت‌ها و هماهنگ‌سازی پوسته سخت‌افزاری فیس‌پلیت، فرم ویرایش و جدول پورت‌ها با تمامی تم‌های نرم‌افزار (Obsidian, Emerald, Cobalt, Rose, Amber, Light).
 - **سازگاری تم در اسکنر لایه ۲ همسایگی CDP/LLDP:** استایل‌دهی مدرن شیشه‌ای `spatial-glass` برای کارت‌های آمار، راهنمای پروتکل و جدول همسایگان.
 
-### ۱۵. یکپارچه‌سازی کامل نمایش فیزیکی پورت‌های سوئیچ با فیس‌پلیت سخت‌افزاری (Switch Faceplate Harmonization)
-- **شبیه‌سازی کامل شاسی سخت‌افزاری:** نمایش پورت‌های فیزیکی سوئیچ و روتر در بخش «Ports, Trunk/Access & VLAN Monitoring» با استاندارد شاسی سخت‌افزاری سوئیچ (`switch-faceplate-chassis` و `switch-faceplate-grid`) دقیقاً مشابه با مودال بازرسی پورت (`PortInspectorModal`).
-- **سوکت‌های وکتور واقعی RJ-45 (`NetworkPortSvg`):** تعویض دکمه‌های ساده قبلی با کانکتورهای شبکه دارای پین‌های طلایی، ضامن سوکت، ال‌ای‌دی‌های وضعیت Up/Down، پالس برقراری پیوند شبکه و نشان‌های اختصاصی شماره ویلن و شماره پورت.
-- **کارت نظارتی پورت سکیوریتی لایه ۲ (Cisco Port Security Card):** تجهیز داشبورد ۵ گانه بازرس پورت انتخاب‌شده با کارت پایش وضعیت پورت سکیوریتی، مک‌آدرس‌های فعال و محدودیت‌های ترافیکی.
-
-### ۱۶. سیستم جامع نقشه‌های سفارشی توپولوژی، ابزار کابل‌کشی تعاملی و پیکربندی پورت‌ها و لینک‌ها (Custom Topology Maps & Cabling Engine)
-- **ایجاد و جابجایی بین چندین نقشه سفارشی:** امکان ساخت نقشه‌های مستقل، نام‌گذاری، تغییر نام، حذف و سوئیچ سریع میان نقشه‌های دلخواه ایجاد شده توسط ادمین و نقشه کشف‌شده خودکار شبکه.
-- **انتخاب و استقرار تجهیزات دلخواه:** امکان انتخاب سوئیچ‌ها و روترهای موجود در شبکه و قرار دادن آن‌ها روی بوم نقشه با امکان جابجایی و تعیین موقعیت مکانی (Drag & Drop).
-- **نوار ابزار تعاملی و ابزار کابل‌کشی (Cable Tool):** سوئیچ آسان بین حالت انتخاب/حرکت (Select) و حالت کابل‌کشی (Cable Tool) همراه با نوار پیام وضعیت دو مرحله‌ای هدایت‌کننده.
-- **مودال پیشرفته انتخاب پورت فیزیکی (Visual Port Selector Modal):** نمایش پاپ‌آپ انتخاب پورت با پیش‌نمایش گرافیکی فیس‌پلیت سوئیچ، فیلتر جستجوی پورت، و نمایش وضعیت پورت‌های آزاد و اشغال‌شده.
-- **پیکربندی کامل مشخصات کابل و لینک (Dual-End Link Configuration Modal):** امکان تنظیم IP مدیریتی هر دو سمت، نوع کابل (Copper RJ-45، Fiber Optic، Serial)، پهنای باند و سرعت، تعیین مد پورت (Trunk یا Access)، شماره ویلن اختصاصی و ثبت توضیحات ارتباطی.
-- **برچسب‌گذاری و ویرایش لینک‌ها روی نقشه:** نمایش زنده نام اینترفیس‌ها، شماره ویلن و IP هر سمت بر روی خطوط ارتباطی نقشه سفارشی همراه با امکان کلیک روی کابل جهت ویرایش تنظیمات یا قطع کابل.
-- **پایداری کامل داده‌ها:** ذخیره‌سازی پایدار و مجزای نقشه‌ها، چیدمان نودها و لینک‌ها در حافظه محلی سیستم (LocalStorage).
-
-### ۱۷. تست زنده اتصال SSH و اعتبارسنجی مشخصات اتصال تجهیزات (Live SSH Connection Testing & Device Credentials)
-- **تنظیمات احراز هویت در فرم افزودن تجهیز:** امکان تعریف پورت SSH (پیش‌فرض ۲۲)، نام کاربری، کلمه عبور، و کلمه عبور ارتقای دسترسی (Enable Secret) برای مدیریت مستقیم دیوایس.
-- **تست بلادرنگ اتصال (Test Connection):** سنجش زنده ارتباط SSH با سوئیچ یا روتر سیسکو با اندازه‌گیری دقیق پینگ و تاخیر (Latency بر حسب میلی‌ثانیه).
-- **نمایش بازخورد تعاملی وضعیت:** ارائه پیام‌های وضعیت تفکیک‌شده (موفقیت‌آمیز، خطای احراز هویت، تایم‌اوت، یا عدم دسترسی به شبکه) همراه با انیمیشن لودینگ و تگ‌های رنگی.
-
-### ۱۸. انتخاب چندتایی پورت‌ها و پیکربندی دسته‌ای سوئیچ‌پورت‌ها (Multi-Port Batch Switchport Configuration)
-- **انتخاب چندگانه پورت‌های فیزیکی:** امکان انتخاب همزمان چندین پورت سوئیچ با نگه‌داشتن کلیدهای `Ctrl`، `Cmd` یا `Shift` بر روی فیس‌پلیت وکتور سخت‌افزاری یا با استفاده از چک‌باکس‌های اختصاصی جدول پورت‌ها.
-- **پنل پیکربندی گروهی (Batch Configuration Panel):** اعمال یکجای تغییرات برای تمام پورت‌های انتخاب‌شده شامل وضعیت ادمین (`no shutdown` / `shutdown`)، تغییر حالت عملیاتی سوئیچ‌پورت (`Trunk` یا `Access`)، تخصیص شماره Access VLAN، تعیین Allowed VLANs ترانک و اعمال دسته‌ای سیاست‌های Cisco Port Security.
-- **یکپارچگی در دو نمای اصلی:** پشتیبانی کامل از عملیات دسته‌ای در هر دو پنجره بازرس پورت دیوایس (`PortInspectorModal`) و صفحه مستقل مانیتورینگ پورت‌ها (`PortManagementView`).
+### ۱۵. تست و عیب‌یابی سوئیچ‌های شبکه محلی در لینوکس (Linux Local Switch Testing & Live Diagnostics)
+- **پایش واقعی شبکه محلی روی سیستم لینوکس:** با نصب روی سیستم عامل یا سرور لینوکس متصل به سوئیچ‌های شبکه محلی (LAN/VLAN)، سیستم از طریق ابزارهای واقعی ICMP ping و سوکت‌های سیستمی TCP، تجهیزات سخت‌افزاری واقعی را مورد ارزیابی قرار می‌دهد.
+- **مودال جامع عیب‌یابی و پایش پورت‌ها (TestConnectionModal):** پنجره اختصاصی جهت تست بلادرنگ پینگ، محاسبه دقیق زمان تأخیر رفت‌وبرگشت پکت (Latency برحسب ms)، بررسی باز بودن پورت SSH (22)، پورت Telnet (23) و وب مدیریتی (HTTP/HTTPS) و دریافت بنر نرم‌افزاری سوئیچ.
+- **تست بلادرنگ IP قبل از ثبت تجهیز (AddDeviceModal):** دکمه اختصاصی «تست اتصال آی‌پی» در فرم ثبت سوئیچ جدید برای اطمینان از در دسترس بودن و باز بودن پورت ۲۲ یا پینگ تجهیز قبل از ثبت در موجودی.
+- **ترمینال سیسکو با پینگ زنده:** اجرای دستور `ping <IP>` در کنسول ترمینال شبیه‌ساز سیسکو به صورت زنده پاکت‌های ICMP واقعی لینوکس را ارسال کرده و نتایج را در قالب استاندارد Cisco IOS نمایش می‌دهد.
 
 ---
 
@@ -234,33 +216,6 @@ npm start
 > ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
 
 ### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
-- **نسخه ۱.۹.۰ (v1.9.0 - تست زنده اتصال SSH تجهیزات، فیلدهای احراز هویت در فرم افزودن تجهیز و ویرایش و اعمال دسته‌ای پورت‌های سوئیچ)**:
-  - **اطلاعات اتصال و احراز هویت SSH:** افزودن فیلدهای شماره پورت SSH، نام کاربری، کلمه عبور و Enable Secret سیسکو به فرم ثبت تجهیز جدید (`AddDeviceModal`).
-  - **تست زنده اتصال SSH (`Test Connection`):** قابلیت اعتبارسنجی بلادرنگ اتصال با تجهیز شبکه همراه با اندازه‌گیری و نمایش تاخیر (Latency) و پیام‌های وضعیت تعاملی.
-  - **انتخاب چندتایی پورت‌های سوئیچ (Multi-Port Selection):** امکان انتخاب همزمان چندین اینترفیس با نگه‌داشتن کلید Ctrl / Cmd / Shift روی فیس‌پلیت سخت‌افزاری یا چک‌باکس‌های جدول پورت‌ها.
-  - **پیکربندی گروهی پورت‌ها (Batch Switchport Configuration):** اعمال دسته‌ای تنظیمات شامل روشن/خاموش کردن، مود Trunk و Access، ویلن اکسس، Allowed VLANs و فعال‌سازی همزمان Cisco Port Security.
-  - **رفع مشکلات ظاهری دراپ‌داون پروفایل و تم لایت:** بسته‌شدن هوشمند منوی پروفایل با کلیک در هر نقطه خارج از منو، و اصلاح رنگ نوشته دکمه‌های غیرفعال در سوئیچر ابزار کابل نقشه سفارشی در تم روشن.
-
-- **نسخه ۱.۸.۲ (v1.8.2 - رفع خطای فراخوانی تابع ذخیره در مودال پیکربندی لینک)**:
-  - **رفع خطای ران‌تایم `TypeError: onSave is not a function`:** حل مشکل ذخیره‌سازی اتصالات کابل در نقشه سفارشی با برقراری سازگاری کامل دوطرفه میان پروپ‌های `onSave` و `onSaveLink` و همچنین `onDelete` و `onDeleteLink` همراه با گارد دفاعی جهت اطمینان از عملکرد بدون وقفه ثبت کابل‌ها و لینک‌ها.
-
-- **نسخه ۱.۸.۱ (v1.8.1 - رفع خطای برخورد نام آیکون Map با سازنده اصلی شیء جاوااسکریپت)**:
-  - **رفع خطای ران‌تایم `TypeError: Map is not a constructor`:** تصحیح نامگذاری آیکون Map لوساید به `MapIcon` در صفحه شماتیک توپولوژی جهت برطرف کردن تداخل نام با کلاس داخلی `Map` در جاوااسکریپت و تضمین استقرار پایدار مختصات تجهیزات.
-
-- **نسخه ۱.۸.۰ (v1.8.0 - سیستم جامع نقشه‌های سفارشی توپولوژی، ابزار کابل‌کشی تعاملی و پیکربندی پورت‌ها و لینک‌ها)**:
-  - **نقشه‌های سفارشی چندگانه (Custom Topology Maps):** امکان ایجاد نامحدود نقشه‌های سفارشی، تغییر نام، حذف و سوئیچ بین نقشه خودکار کشف‌شده و نقشه‌های کاربر با ذخیره‌سازی محلی.
-  - **افزودن و چیدمان تجهیزات دلخواه:** قابلیت افزودن سوئیچ‌ها و روترها از موجودی شبکه به روی بوم نقشه سفارشی با موقعیت‌یابی و جابجایی آزاد.
-  - **نوار ابزار تعاملی و ابزار کابل‌کشی (Cable Tool):** فعال‌سازی حالت اتصال کابل با فرآیند مرحله‌ای دوگانه و نوار راهنمای چسبیده.
-  - **مودال پیشرفته انتخاب پورت (Port Selector Modal):** انتخاب تعاملی پورت‌ها با پیش‌نمایش گرافیکی فیس‌پلیت سخت‌افزاری سوئیچ، تفکیک پورت‌های آزاد و جستجوی آنی اینترفیس‌ها.
-  - **مودال پیکربندی دوطرفه لینک (Link Config Modal):** تعیین IP هر دو سمت کابل، انتخاب نوع کابل (Copper, Fiber, Serial)، پهنای باند، حالت پورت (Trunk یا Access) و شماره ویلن اختصاصی.
-  - **نمایش و ویرایش لینک‌های سفارشی:** رسم خطوط با نشانگرهای پورت، ویلن و IP، به همراه قابلیت کلیک برای ویرایش مشخصات یا حذف پیوند کابل.
-
-- **نسخه ۱.۷.۱ (v1.7.1 - یکپارچه‌سازی کامل نمایش فیزیکی پورت‌های سوئیچ با Switch Faceplate در صفحه پایش پورت‌ها و ویلن)**:
-  - **یکپارچه‌سازی کامل نمایش پورت‌ها (Switch Faceplate Harmonization):** پیاده‌سازی کامل استایل بصری شاسی سخت‌افزاری سوئیچ (`switch-faceplate-chassis` و `switch-faceplate-grid`) در صفحه «مدیریت و پایش پورت‌ها، ترانک/اکسس و ویلن» دقیقاً منطبق با مودال اختصاصی جزئیات پورت‌های دیوایس (`PortInspectorModal`).
-  - **نمایش سوکت وکتور واقعی RJ-45 (`NetworkPortSvg`):** تعویض دکمه‌های ساده قبلی با کامپوننت وکتور واقعی RJ-45، پین‌های طلایی، ضامن سوکت، ال‌ای‌دی‌های وضعیت پیوند شبکه، پالس آنلاین و برچسب‌های تفکیک‌شده شماره پورت و شماره ویلن.
-  - **افزودن کارت اختصاصی پورت سکیوریتی سیسکو (Cisco Port Security Card):** تکمیل کارت‌های ۵ گانه بازرس پورت انتخاب‌شده با کارت نظارتی پورت سکیوریتی لایه ۲ (نمایش حالت Secure/Disabled، وضعیت Sticky/Configured، حداکثر مک‌آدرس مجاز و مک‌های کشف‌شده).
-  - **هماهنگ‌سازی لژند رنگی و استایل شاسی:** یکسان‌سازی نمایشگر وضعیت پورت‌ها (Up، Down، Disabled، Trunk) و عنوان تعداد پورت‌های سوئیچ در شاسی سخت‌افزاری.
-
 - **نسخه ۱.۷.۰ (v1.7.0 - تاییدیه هوشمند دستورات سیسکو سویچ/روتر، مودال تخصیص ویلن، رنگ‌بندی وضعیت پورت‌ها و هدایت پورت سکیوریتی)**:
   - **مودال تایید تعاملی بله/خیر (Cisco Command Confirmation Modal):** اضافه شدن مودال تایید با تولید و نمایش بلادرنگ دستورات دقیق Cisco IOS متناسب با نوع تجهیز (Switch یا Router) برای تمامی اکشن‌های تغییر وضعیت پورت (`shutdown` / `no shutdown`، تغییر مد `trunk` / `access` و غیرفعال‌سازی `port-security`).
   - **مودال اختصاصی تخصیص ویلن دسترسی (Assign Access VLAN Modal):** باز شدن پنجره مستقل با نمایش لیست ویلن‌های موجود تجهیز در بالای کادر همراه با فیلد جستجو و کادر ورودی شماره دلخواه VLAN جهت تغییر امن پورت به مد Access و تخصیص VLAN با پیش‌نمایش کامند.
@@ -426,28 +381,11 @@ npm start
 - **Full Theme Adaptation for Port Management View:** Replaced static white backgrounds and borders with adaptive `spatial-glass` classes, ensuring 100% color harmony across Obsidian, Emerald, Cobalt, Rose, Amber, and Light themes for the switch faceplate, inspector, and ports data table.
 - **Full Theme Adaptation for CDP/LLDP Discovery Scanner:** All metric cards, scan logs, neighbor tables, and protocol guidelines dynamically adapt to whichever theme palette is selected.
 
-### 15. Switch Faceplate & Physical Port Harmonization in Port & VLAN Monitoring
-- **Hardware-Accurate Chassis Simulation:** Port visualization in "Ports, Trunk/Access & VLAN Monitoring" matches the exact switch hardware chassis (`switch-faceplate-chassis` and `switch-faceplate-grid`) established in the dedicated `PortInspectorModal`.
-- **Realistic RJ-45 Vector Jack (`NetworkPortSvg`):** Upgraded port representations to interactive vector RJ-45 modular jacks featuring gold contacts, latch tabs, LED status lights, link pulses, and color-coded VLAN/port labels.
-- **Cisco Layer 2 Port Security Monitor:** Embedded a dedicated Port Security status card within the 5-card inspector grid to monitor secure states, sticky/configured MAC entries, and maximum MAC limits in real time.
-
-### 16. Custom Topology Maps, Interactive Cabling Tool & Dual-End Port/Link Configuration Engine
-- **Multiple Custom User-Defined Maps:** Create, rename, delete, and switch between multiple custom topology maps alongside the auto-discovered network view, with persistent LocalStorage state.
-- **Inventory Device Placement:** Select any existing switches or routers from the network inventory and place them onto the custom canvas with free spatial positioning and drag-and-drop movement.
-- **Interactive Cabling Workflow (Cable Tool):** Toggle between Select/Move and Cabling modes with a step-by-step guidance banner (Step 1: Select source device -> Step 2: Select destination device).
-- **Hardware-Informed Port Selector Modal:** Visual port selection popup featuring hardware switch faceplate previews, search filtering, and occupied/free port detection to prevent accidental port collisions.
-- **Dual-End Link Configuration Modal:** Configure management IPs for both endpoints, cable types (Copper RJ-45, Fiber Optic, Serial), bandwidth/speeds, port operational modes (802.1Q Trunk vs Access), custom VLAN IDs, and link descriptions.
-- **Visual Link Endpoints & Interactive Modification:** Rendered SVG cables display source/target interface names, VLAN badges, and IP tags directly on the canvas, with click-to-edit capabilities to update link parameters or disconnect cables.
-
-### 17. Live SSH Device Connection Testing & Inventory Credentials
-- **Authentication Parameters in Add Device Dialog:** Added fields for SSH Port (default 22), Username, Password, and Cisco Enable Secret to securely register inventory management credentials.
-- **Real-Time Connection Testing (`Test Connection`):** One-click connectivity verification communicating with the Cisco switch or router, calculating real-time round-trip latency (in milliseconds).
-- **Interactive Status Feedback:** Context-aware status badges displaying success, authentication failures, connection timeouts, or unreachable host errors with animated loading indicators.
-
-### 18. Multi-Port Batch Selection & Bulk Switchport Configuration
-- **Hardware-Accurate Multi-Port Selection:** Select multiple interfaces simultaneously by holding `Ctrl`, `Cmd`, or `Shift` while clicking ports on the vector switch faceplate, or by using table selection checkboxes.
-- **Dedicated Batch Configuration Panel:** Bulk update administrative status (`no shutdown` / `shutdown`), switchport operational modes (`Trunk` vs `Access`), access VLAN assignment, allowed trunk VLAN lists, and Cisco Port Security policies across all selected ports in one click.
-- **Unified Across Views:** Seamlessly integrated into both the device inspector modal (`PortInspectorModal`) and the dedicated port management page (`PortManagementView`).
+### 15. Linux Local Switch Testing, Live ICMP Diagnostics & Management Port Probing
+- **Real-World Host Telemetry on Linux:** When installed on a Linux host connected to physical network switches in your local network (LAN/VLAN), NetTopology runs native Linux ICMP ping and socket checks directly against physical hardware switches.
+- **Dedicated Diagnostic Modal (TestConnectionModal):** Real-time connectivity tester evaluating ICMP echo ping, round-trip packet latency in milliseconds, SSH (port 22), Telnet (port 23), Web UI (80/443), and device software banner inspection with one-click access to the Cisco CLI Terminal or Port Inspector.
+- **Pre-Registration Live IP Verification (AddDeviceModal):** Built-in "Test Connection" trigger in the new device creation form to validate IP reachability and verify port status before committing to the inventory.
+- **Cisco CLI Terminal with Live ICMP:** Terminal `ping <IP>` command executes authentic background ICMP echo requests on the Linux host and renders the output in Cisco IOS format.
 
 ---
 
@@ -524,33 +462,6 @@ Any AI assistant, coding agent, or human contributor working on this repository 
 3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
 
 ### Release Notes & Bug Fixes
-- **Version 1.9.0 (Live SSH Device Connection Testing, Inventory Credentials, Multi-Port Batch Switchport Configuration & UI Fixes)**:
-  - **SSH Connection Parameters in Add Device Modal:** Added SSH port, username, password, and Cisco enable secret fields to the device creation workflow.
-  - **Live SSH Connection Testing (`Test Connection`):** Real-time connectivity probe measuring latency and verifying access credentials with immediate status feedback.
-  - **Multi-Port Batch Selection:** Hold Ctrl / Cmd / Shift to select multiple switch ports on the vector faceplate or select via table checkboxes.
-  - **Bulk Switchport Configuration:** Simultaneous batch updates for administrative state (`no shutdown` / `shutdown`), switchport mode (`Trunk` vs `Access`), VLAN ID, trunk allowed VLANs, and Layer 2 Cisco Port Security.
-  - **UI & Theme Enhancements:** Fixed profile dropdown to close on outside clicks across any document region; harmonized light-theme inactive button text in the custom topology cabling switcher.
-
-- **Version 1.8.2 (Fix onSave Function Handler in Link Configuration Modal)**:
-  - **Runtime Exception Fix (`TypeError: onSave is not a function`):** Fixed callback invocation when creating and updating custom topology links by introducing backward-compatible support for both `onSave` / `onSaveLink` and `onDelete` / `onDeleteLink` with defensive type guards, ensuring seamless connection creation.
-
-- **Version 1.8.1 (Fix Map Name Collision with Native JavaScript Map Constructor)**:
-  - **Runtime Exception Fix (`TypeError: Map is not a constructor`):** Fixed identifier collision in Schematic Topology View by aliasing the Lucide `Map` icon to `MapIcon`, restoring standard invocation of the native JavaScript `Map` collection constructor for canvas positioning.
-
-- **Version 1.8.0 (Custom Topology Maps, Interactive Cabling Tool, and Dual-End Port & Link Configuration Engine)**:
-  - **Custom User-Defined Topology Maps:** Create, rename, delete, and switch between multiple user-defined topology maps alongside the default auto-discovered network map, stored locally.
-  - **Inventory Device Placement:** Place switches and routers from network inventory onto custom map canvases with free coordinate positioning and drag-and-drop support.
-  - **Interactive Cabling Workflow (Cable Tool):** Multi-step cabling mode (Select Source -> Select Destination) with step-by-step guidance banner and cancellation controls.
-  - **Visual Port Selector Modal:** Hardware switch faceplate preview, instant search, occupied/free status indicators, and prevention of conflicting port connections.
-  - **Dual-End Link Configuration Modal:** Configurable endpoint IPs, cable media types (Copper RJ-45, Fiber, Serial), link bandwidth/speeds, port operational modes (802.1Q Trunk vs Access), and custom VLAN IDs.
-  - **Dynamic Link Telemetry & In-Canvas Editing:** Rendered SVG lines display live endpoint labels, VLAN badges, and IPs, with click-to-edit link parameters or cable disconnect support.
-
-- **Version 1.7.1 (Harmonize Switch Faceplate Visual & Port Matrix in Port & VLAN Monitoring View)**:
-  - **Switch Faceplate Harmonization:** Redesigned the physical port display in the "Ports, Trunk/Access & VLAN Monitoring" section to mirror the exact hardware rack chassis (`switch-faceplate-chassis` & `switch-faceplate-grid`) from the device `PortInspectorModal`.
-  - **True RJ-45 Vector Jack Integration (`NetworkPortSvg`):** Upgraded port rendering to the realistic SVG 8P8C connector with realistic socket housing, gold pins, link LEDs, and clean high-contrast VLAN tags.
-  - **Cisco Port Security Card:** Added the dedicated Layer-2 Cisco Port Security status card to the 5-card inspector grid on selected ports (inspecting security state, violation policy, sticky/configured MAC learning, and learned MAC count).
-  - **Unified Faceplate Legend & Status Header:** Synchronized port status indicators (Up, Down, Disabled, Trunk) and active port count headers across the interface.
-
 - **Version 1.7.0 (Cisco Switch/Router Command Confirmation, Assign Access VLAN Modal, Port State Visuals & Port Security Navigation)**:
   - **Interactive Cisco CLI Command Confirmation Modal (`CiscoCommandConfirmModal`):** Dual-step Yes/No confirmation dialog providing real-time preview of exact Cisco IOS CLI commands dynamically tailored to device type (Switch vs. Router) for port shutdown, no shutdown, trunk/access mode switches, and port security deactivation.
   - **Dedicated Assign Access VLAN Modal (`AssignVlanModal`):** Standalone modal presenting the device's currently configured VLANs with search filtering, manual VLAN ID input, and auto-generated Cisco CLI configuration preview.

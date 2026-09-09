@@ -7,7 +7,8 @@ import {
   ConfigTemplate,
   TemplateApplyResult,
   DeviceConfigExtractRequest,
-  DeviceConfigExtractResult
+  DeviceConfigExtractResult,
+  DeviceConnectionTestResult
 } from '../types';
 
 const API_BASE = '/api';
@@ -89,31 +90,6 @@ export async function batchUpdateSwitchPorts(
     body: JSON.stringify({ port_ids: portIds, updates }),
   });
   if (!res.ok) throw new Error('Failed to batch update ports');
-  return res.json();
-}
-
-export async function testDeviceConnection(data: {
-  ip: string;
-  ssh_port?: number;
-  ssh_username?: string;
-  ssh_password?: string;
-  enable_password?: string;
-}): Promise<{
-  success: boolean;
-  message: string;
-  latency_ms?: number;
-  banner?: string;
-  protocol?: string;
-}> {
-  const res = await fetch(`${API_BASE}/devices/test-connection`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Connection failed' }));
-    throw new Error(err.error || 'Connection failed');
-  }
   return res.json();
 }
 
@@ -263,5 +239,42 @@ export async function extractConfigFromDevice(
     const errData = await res.json().catch(() => ({}));
     throw new Error(errData.error || 'خطا در اتصال به تجهیز و استخراج کانفیگ');
   }
+  return res.json();
+}
+
+export async function testDeviceConnection(deviceId: string): Promise<DeviceConnectionTestResult> {
+  const res = await fetch(`${API_BASE}/devices/${deviceId}/test-connection`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) throw new Error('Failed to test device connectivity');
+  return res.json();
+}
+
+export async function testRawIpConnection(ip: string): Promise<DeviceConnectionTestResult> {
+  const res = await fetch(`${API_BASE}/devices/test-connection`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ip }),
+  });
+  if (!res.ok) throw new Error('Failed to test IP connectivity');
+  return res.json();
+}
+
+export async function pingLive(
+  target: string,
+  count = 5
+): Promise<{
+  target: string;
+  success: boolean;
+  latency_ms: number | null;
+  packet_loss: number;
+  raw_output: string;
+  cisco_output: string;
+}> {
+  const res = await fetch(
+    `${API_BASE}/ping/live?target=${encodeURIComponent(target)}&count=${count}`
+  );
+  if (!res.ok) throw new Error('Failed to ping target');
   return res.json();
 }

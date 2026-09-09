@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Device, DeviceType } from '../types';
 import { useLanguage } from '../i18n';
+import { TestConnectionModal } from './TestConnectionModal';
 
 interface DeviceListViewProps {
   devices: Device[];
@@ -56,6 +57,8 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
   const [pingingId, setPingingId] = useState<string | null>(null);
   const [writingId, setWritingId] = useState<string | null>(null);
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
+  const [testConnDevice, setTestConnDevice] = useState<Device | null>(null);
+  const [isTestConnOpen, setIsTestConnOpen] = useState(false);
 
   const buildings = Array.from(new Set(devices.map((d) => d.building).filter(Boolean)));
   const unsavedCount = devices.filter((d) => d.has_unsaved_changes).length;
@@ -514,6 +517,22 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                                     </button>
                                   )}
 
+                                  {/* Diagnostics & Connection Test */}
+                                  <button
+                                    onClick={() => {
+                                      setOpenActionMenuId(null);
+                                      setTestConnDevice(dev);
+                                      setIsTestConnOpen(true);
+                                    }}
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-indigo-300 hover:bg-indigo-500/15 transition ${isRtl ? 'text-right' : 'text-left'} group/item cursor-pointer`}
+                                  >
+                                    <Activity className="w-4 h-4 text-indigo-400 group-hover/item:scale-110 transition shrink-0" />
+                                    <div className="flex flex-col">
+                                      <span>{isEn ? 'Diagnostic Test (Ping & Ports)' : 'تست عیب‌یابی و پورت‌ها'}</span>
+                                      <span className="text-[10px] text-indigo-400/80 font-mono">ICMP Ping, SSH 22, Telnet 23</span>
+                                    </div>
+                                  </button>
+
                                   {/* Quick Ping */}
                                   <button
                                     onClick={() => {
@@ -594,6 +613,19 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Test Connection Modal */}
+      <TestConnectionModal
+        device={testConnDevice}
+        isOpen={isTestConnOpen}
+        onClose={() => {
+          setIsTestConnOpen(false);
+          setTestConnDevice(null);
+        }}
+        onOpenTerminal={onConnectTerminal}
+        onInspectPorts={onInspectPorts}
+        onDeviceUpdated={onRefreshAll}
+      />
     </div>
   );
 };
