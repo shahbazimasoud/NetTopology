@@ -1473,57 +1473,111 @@
   animation: gentleShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
-/* Cisco Terminal Login & Banner Styling */
-.cisco-terminal-login-banner {
-  color: #94a3b8 !important;
-  font-weight: 600;
-}
-
-.theme-light .cisco-terminal-login-banner {
+/* Cisco Terminal Login & Banner Styling - Dark gray (#334155 / #475569) */
+.cisco-terminal-login-banner,
+.cisco-terminal-screen .cisco-terminal-login-banner,
+.theme-light .cisco-terminal-login-banner,
+.theme-light .cisco-terminal-screen .cisco-terminal-login-banner {
   color: #334155 !important;
   font-weight: 700 !important;
 }
 
+.theme-dark .cisco-terminal-login-banner,
+.theme-dark .cisco-terminal-screen .cisco-terminal-login-banner {
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+}
+
 /* Layer 2 Security Badge - black and bold text globally as requested */
 .layer2-security-badge,
-[data-badge="layer2-security"] {
-  color: #000000 !important;
-  font-weight: 800 !important;
-  background-color: #e0e7ff !important;
-  border: 1px solid #818cf8 !important;
-}
-
+[data-badge="layer2-security"],
 .theme-dark .layer2-security-badge,
-.theme-dark [data-badge="layer2-security"] {
-  color: #000000 !important;
-  font-weight: 800 !important;
-  background-color: #c7d2fe !important;
-  border: 1px solid #a5b4fc !important;
-}
-
+.theme-dark [data-badge="layer2-security"],
 .theme-light .layer2-security-badge,
 .theme-light [data-badge="layer2-security"] {
   color: #000000 !important;
   font-weight: 800 !important;
-  background-color: #e0e7ff !important;
-  border: 1px solid #6366f1 !important;
+  background-color: #c7d2fe !important;
+  border: 1px solid #818cf8 !important;
+}
+
+.layer2-security-badge *,
+[data-badge="layer2-security"] *,
+.theme-dark .layer2-security-badge *,
+.theme-dark [data-badge="layer2-security"] *,
+.theme-light .layer2-security-badge *,
+.theme-light [data-badge="layer2-security"] * {
+  color: #000000 !important;
+  font-weight: 800 !important;
 }
 
 /* Port Mode Badges (Trunk / Access) - White and bold text in both themes */
 .port-mode-badge-trunk,
-[data-badge="port-mode-trunk"] {
+[data-badge="port-mode-trunk"],
+.theme-dark .port-mode-badge-trunk,
+.theme-dark [data-badge="port-mode-trunk"],
+.theme-light .port-mode-badge-trunk,
+.theme-light [data-badge="port-mode-trunk"] {
   background-color: #7c3aed !important;
   border: 1px solid #6d28d9 !important;
   color: #ffffff !important;
   font-weight: 700 !important;
 }
 
+.port-mode-badge-trunk *,
+[data-badge="port-mode-trunk"] *,
+.theme-light .port-mode-badge-trunk *,
+.theme-light [data-badge="port-mode-trunk"] * {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
 .port-mode-badge-access,
-[data-badge="port-mode-access"] {
+[data-badge="port-mode-access"],
+.theme-dark .port-mode-badge-access,
+.theme-dark [data-badge="port-mode-access"],
+.theme-light .port-mode-badge-access,
+.theme-light [data-badge="port-mode-access"] {
   background-color: #4f46e5 !important;
   border: 1px solid #4338ca !important;
   color: #ffffff !important;
   font-weight: 700 !important;
 }
+
+.port-mode-badge-access *,
+[data-badge="port-mode-access"] *,
+.theme-light .port-mode-badge-access *,
+.theme-light [data-badge="port-mode-access"] * {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* Switch Faceplate port tags & purple badges - ALWAYS bold white text */
+.switch-faceplate-chassis .bg-purple-600,
+.switch-faceplate-chassis .bg-purple-500,
+.switch-faceplate-chassis [data-badge="vlan-tag"],
+.theme-light .switch-faceplate-chassis .bg-purple-600,
+.theme-light .switch-faceplate-chassis .bg-purple-500,
+.theme-light .switch-faceplate-chassis [data-badge="vlan-tag"],
+.theme-dark .switch-faceplate-chassis .bg-purple-600,
+.theme-dark .switch-faceplate-chassis .bg-purple-500,
+.theme-dark .switch-faceplate-chassis [data-badge="vlan-tag"] {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.switch-faceplate-chassis .bg-purple-600 *,
+.switch-faceplate-chassis .bg-purple-500 *,
+.theme-light .switch-faceplate-chassis .bg-purple-600 *,
+.theme-light .switch-faceplate-chassis .bg-purple-500 * {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* Cisco Port Context Menu High Contrast */
+.cisco-port-context-menu {
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+
 
 

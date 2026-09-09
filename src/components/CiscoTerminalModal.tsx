@@ -888,7 +888,10 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
               {isInterfaceDropdownOpen && (
                 <div
                   ref={interfaceDropdownRef}
-                  className={`absolute ${isEn ? 'right-0 left-auto' : 'left-0 right-auto'} mt-2 w-[min(480px,calc(100vw-2.5rem))] max-h-[380px] overflow-y-auto bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 z-50 text-xs custom-scrollbar`}
+                  className={`absolute top-full mt-2 w-[min(440px,calc(100vw-2.5rem))] max-h-[min(360px,50vh)] overflow-y-auto overflow-x-hidden bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 z-50 text-xs custom-scrollbar ${
+                    isEn ? 'right-0' : 'left-0'
+                  }`}
+                  style={{ maxWidth: 'calc(100vw - 2rem)' }}
                   dir={isEn ? 'ltr' : 'rtl'}
                 >
                   <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-2">
@@ -911,15 +914,15 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                           key={p.port_id}
                           className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-indigo-500/50 transition gap-2"
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
                             <span
                               className={`w-2 h-2 rounded-full shrink-0 ${
                                 isUp ? 'bg-emerald-400 shadow-sm shadow-emerald-500' : 'bg-rose-500'
                               }`}
                             ></span>
-                            <div>
+                            <div className="truncate">
                               <div className="font-mono font-bold text-white text-xs">{p.port_id}</div>
-                              <div className="text-[10px] text-slate-400">
+                              <div className="text-[10px] text-slate-400 truncate">
                                 {p.connected_device !== 'Disconnected'
                                   ? p.connected_device
                                   : (isEn ? 'Empty / Disconnected' : 'خالی / بدون اتصال')}
@@ -927,7 +930,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 text-[10px] font-mono">
+                          <div className="flex items-center gap-1.5 text-[10px] font-mono shrink-0">
                             <span
                               data-badge={p.mode === 'trunk' ? 'port-mode-trunk' : 'port-mode-access'}
                               className={`px-2 py-0.5 rounded font-bold font-mono text-white shadow-xs ${
@@ -935,6 +938,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                                   ? 'port-mode-badge-trunk bg-purple-600 border border-purple-500'
                                   : 'port-mode-badge-access bg-indigo-600 border border-indigo-500'
                               }`}
+                              style={{ color: '#ffffff', fontWeight: 700 }}
                             >
                               {p.mode.toUpperCase()}
                             </span>
@@ -943,7 +947,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={() => {
                                 setIsInterfaceDropdownOpen(false);
@@ -1020,6 +1024,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                 const isLoginBanner =
                   line.id === 'sys-3' ||
                   line.id === 'sys-4' ||
+                  line.id === 'sys-ssh-banner' ||
                   line.text.includes('User Access Verification') ||
                   line.text.includes('Username:') ||
                   line.text.includes('Password:') ||
@@ -1030,7 +1035,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                     key={line.id}
                     className={`${
                       isLoginBanner
-                        ? 'cisco-terminal-login-banner text-slate-300 font-semibold'
+                        ? 'cisco-terminal-login-banner text-slate-700 dark:text-slate-400 font-semibold'
                         : 'text-slate-200'
                     } whitespace-pre-wrap font-mono`}
                   >

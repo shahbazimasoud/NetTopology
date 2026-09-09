@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.10.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.11.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۱۰.۰
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.10.0
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۱۱.۰
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.11.0
 
 ---
 
@@ -241,6 +241,21 @@ npm start
 > ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
 
 ### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
+- **نسخه ۱.۱۱.۰ (v1.11.0 - رفع سرریز دراپ‌داون اینترفیس‌ها در ترمینال، متن سفید پررنگ تگ‌های Trunk/Access، بنر تیره لاگین، منوی راست‌کلیک پورت‌ها و نشان استاندارد Layer 2 Security)**:
+  - **رفع خروج دراپ‌داون اینترفیس‌ها از کادر ترمینال:** اصلاح محاسبه موقعیت و محدودسازی حداکثر ارتفاع و اسکرول داخلی دراپ‌داون لیست اینترفیس‌ها در مودال ترمینال سیسکو به طوری که هرگز از کادر یا لبه صفحه خارج نشود.
+  - **کنتراست بالای تگ‌های Trunk و Access در تم روشن:** تغییر استایل برچسب‌های ترانک و اکسس در لیست اینترفیس‌ها به متن کاملاً سفید و پررنگ (Bold) بر روی پس‌زمینه بنفش و نیلی تیره.
+  - **اصلاح رنگ بنر لاگین ترمینال در تم روشن:** تغییر رنگ پیام‌های User Access Verification، نام کاربری و رمز عبور و کادر ستاره‌ها در تم روشن به رنگ خاکستری تیره استاندارد و خوانا (`#334155`).
+  - **اصلاح متون و برچسب‌های بنفش در Switch Faceplate:** سفید و بولد کردن متون تگ‌های بنفش و ویلن زیر سوکت‌های شبکه در فیس‌پلیت سخت‌افزاری.
+  - **منوی راست‌کلیک مستقل پورت‌ها با گزینه‌های Shutdown و No Shutdown:** امکان راست‌کلیک روی هر پورت فیس‌پلیت سخت‌افزاری با گزینه‌های مجزا و مشخص خاموش کردن پورت (`shutdown`) و روشن کردن پورت (`no shutdown`) همراه با کپی سریع دستورات CLI.
+  - **استانداردسازی نشان Layer 2 Security:** اعمال رنگ مشکی پررنگ (Bold Black) با پس‌زمینه باکنتراست برای برچسب لایه ۲ در تمامی بخش‌ها و مودال‌ها.
+
+- **نسخه ۱.۱۰.۰ (v1.10.0 - اتصال زنده و واقعی SSH به تجهیزات شبکه در ترمینال CLI، نمایش پویا و زنده پورت‌ها، حذف بصری کابل‌های نقشه با تاییدیه و خوانایی برچسب‌های لینک)**:
+  - **پیاده‌سازی ارتباط زنده و واقعی SSH (Native SSH Client):** اتصال مستقیم به سوئیچ‌ها و روترهای شبکه واقعی از طریق پروتکل SSH2 در بک‌اند نود و اجرای مستقیم دستورات روی تجهیزات سخت‌افزاری.
+  - **نمایش بلادرنگ وضعیت نشست SSH:** نمایش تاخیر میلی‌ثانیه‌ای (Latency)، سایفر ارتباطی و لاگین زنده در سربرگ ترمینال سیسکو.
+  - **موتور پویا و زنده نمایش اطلاعات پورت‌ها و اینترفیس‌ها:** به‌روزرسانی خروجی دستورات `show ip interface brief`، `show mac address-table`، `show port-security` و `show interfaces status` بر اساس وضعیت حقیقی دستگاه.
+  - **حذف بصری و مستقیم کابل‌ها و اتصالات:** امکان حذف کابل‌ها در نقشه شماتیک توپولوژی با دکمه ضربدر شناور هنگام هاور موس همراه با مودال تایید حذف امن.
+  - **بهینه‌سازی برچسب‌های اطلاعاتی کابل‌ها:** افزایش فاصله و وضوح نشان‌ها (پورت، ویلن و IP) جهت جلوگیری از همپوشانی و خوانایی حداکثری.
+
 - **نسخه ۱.۹.۰ (v1.9.0 - تست زنده اتصال SSH تجهیزات، فیلدهای احراز هویت در فرم افزودن تجهیز و ویرایش و اعمال دسته‌ای پورت‌های سوئیچ)**:
   - **اطلاعات اتصال و احراز هویت SSH:** افزودن فیلدهای شماره پورت SSH، نام کاربری، کلمه عبور و Enable Secret سیسکو به فرم ثبت تجهیز جدید (`AddDeviceModal`).
   - **تست زنده اتصال SSH (`Test Connection`):** قابلیت اعتبارسنجی بلادرنگ اتصال با تجهیز شبکه همراه با اندازه‌گیری و نمایش تاخیر (Latency) و پیام‌های وضعیت تعاملی.
@@ -538,6 +553,21 @@ Any AI assistant, coding agent, or human contributor working on this repository 
 3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
 
 ### Release Notes & Bug Fixes
+- **Version 1.11.0 (Resolved Terminal Interface Dropdown Viewport Overflow, Bold White Trunk/Access Badges, Dark Gray Login Banner, Switch Faceplate Right-Click Context Menu & Standardized Layer 2 Security Badge)**:
+  - **Resolved Terminal Interface Dropdown Overflow:** Clamped interface dropdown coordinates and bounded max height with responsive scrolling inside the Cisco Terminal modal, preventing any overflow beyond modal boundaries or screen edges.
+  - **High-Contrast Trunk & Access Badges:** Ensured Trunk and Access badges display crisp, bold white typography on vibrant purple and indigo backgrounds across both light and dark modes.
+  - **Dark Gray Login Banner in Light Terminal:** Transformed User Access Verification, username/password labels, and asterisk dividing lines into readable dark slate gray (`#334155`) in light mode.
+  - **Switch Faceplate Purple Tags & VLAN Badges:** Standardized all purple badges and VLAN tags below physical RJ-45 sockets with bold white text.
+  - **Right-Click Context Menu on Physical Ports:** Right-click any switch port on the hardware faceplate for direct shutdown (`shutdown`), enable (`no shutdown`), Trunk/Access toggles, Port Security activation, and CLI commands copy.
+  - **Standardized Layer 2 Security Badge:** Unified the Layer 2 Security badge with ultra-crisp bold black typography and distinct high-contrast background across the entire interface.
+
+- **Version 1.10.0 (Native Hardware SSH Connectivity, Real-Time Interface Engine, Visual Cable Deletion & Overlap-Free Badges)**:
+  - **Native Hardware SSH Connectivity:** Direct SSH2 client connectivity from the Node backend to live physical network switches and routers with live CLI command execution.
+  - **Real-Time SSH Session Indicators:** Millisecond latency measurements, negotiated ciphers, and live connection status badges in the terminal header.
+  - **Dynamic Real-Time Interface State Engine:** Dynamic command outputs for `show ip interface brief`, `show mac address-table`, `show port-security`, and `show interfaces status` mirroring actual device state.
+  - **Interactive Visual Cable Deletion:** One-click cable deletion directly on topology links with hover-activated delete actions and confirmation dialogs.
+  - **Optimized Cable Badge Spacing:** Enhanced label spacing to eliminate visual badge overlapping on complex topology topologies.
+
 - **Version 1.9.0 (Live SSH Device Connection Testing, Inventory Credentials, Multi-Port Batch Switchport Configuration & UI Fixes)**:
   - **SSH Connection Parameters in Add Device Modal:** Added SSH port, username, password, and Cisco enable secret fields to the device creation workflow.
   - **Live SSH Connection Testing (`Test Connection`):** Real-time connectivity probe measuring latency and verifying access credentials with immediate status feedback.

@@ -61,7 +61,10 @@ export const NetworkPortSvg: React.FC<NetworkPortSvgProps> = ({
           }}
         />
         {isTrunk ? (
-          <span className="text-[7px] font-mono font-bold bg-purple-600 text-white px-1 rounded-xs leading-tight">
+          <span
+            className="text-[7px] font-mono font-bold bg-purple-600 text-white px-1 rounded-xs leading-tight"
+            style={{ color: '#ffffff', fontWeight: 700 }}
+          >
             TRK
           </span>
         ) : (
@@ -151,6 +154,7 @@ export const NetworkPortSvg: React.FC<NetworkPortSvgProps> = ({
               ? 'bg-slate-800 text-cyan-300 border border-cyan-500/40'
               : 'bg-indigo-900/90 text-amber-300 border border-amber-500/40'
           }`}
+          style={isTrunk ? { color: '#ffffff', fontWeight: 700 } : undefined}
           title={`VLAN ${port.vlan}`}
         >
           v{port.vlan}

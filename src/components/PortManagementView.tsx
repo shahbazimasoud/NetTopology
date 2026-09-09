@@ -758,7 +758,12 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                 }`}
               >
                 <div className="flex items-center justify-between text-[11px] mb-0.5">
-                  <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{isEn ? 'Port Security:' : 'پورت سکیوریتی:'}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{isEn ? 'Port Security:' : 'پورت سکیوریتی:'}</span>
+                    <span className="layer2-security-badge text-[9px] font-mono px-1.5 py-0.2 rounded font-bold" data-badge="layer2-security">
+                      Layer 2 Security
+                    </span>
+                  </div>
                   {selectedPort.port_security_enabled ? (
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                   ) : (

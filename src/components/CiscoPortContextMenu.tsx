@@ -47,8 +47,8 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
   const isPortSec = !!port.port_security_enabled;
 
   // Smart screen boundary positioning
-  const menuWidth = 270;
-  const menuHeight = 360;
+  const menuWidth = 280;
+  const menuHeight = 440;
   const safeX = Math.min(Math.max(10, x), window.innerWidth - menuWidth - 16);
   const safeY = Math.min(Math.max(10, y), window.innerHeight - menuHeight - 16);
 
@@ -79,8 +79,11 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
   };
 
   const getShutdownCli = () => {
-    const cmd = isUp ? 'shutdown' : 'no shutdown';
-    return `configure terminal\ninterface ${port.port_id}\n ${cmd}\nexit`;
+    return `configure terminal\ninterface ${port.port_id}\n shutdown\nexit`;
+  };
+
+  const getNoShutdownCli = () => {
+    return `configure terminal\ninterface ${port.port_id}\n no shutdown\nexit`;
   };
 
   const getModeCli = () => {
@@ -97,7 +100,7 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
     <div
       ref={menuRef}
       style={{ top: `${safeY}px`, left: `${safeX}px` }}
-      className="fixed z-[9999] w-[270px] bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl overflow-hidden font-sans text-xs select-none backdrop-blur-md"
+      className="cisco-port-context-menu fixed z-[9999] w-[280px] bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl overflow-hidden font-sans text-xs select-none backdrop-blur-md"
       dir={isEn ? 'ltr' : 'rtl'}
       onClick={(e) => e.stopPropagation()}
     >
@@ -131,27 +134,28 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
 
       {/* Cisco Quick Actions Menu */}
       <div className="p-1.5 space-y-1">
-        {/* Action 1: Shutdown / No Shutdown */}
+        {/* Action 1A: Shutdown Port */}
         <div className="group flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/90 transition cursor-pointer">
           <button
             type="button"
             onClick={() => {
-              onExecuteAction(isUp ? 'shutdown' : 'no_shutdown');
+              onExecuteAction('shutdown');
               onClose();
             }}
             className="flex items-center gap-2.5 flex-1 text-left rtl:text-right"
           >
-            {isUp ? (
-              <PowerOff className="w-4 h-4 text-rose-400 shrink-0" />
-            ) : (
-              <Power className="w-4 h-4 text-emerald-400 shrink-0" />
-            )}
+            <PowerOff className="w-4 h-4 text-rose-400 shrink-0" />
             <div>
-              <div className="font-bold text-white text-xs">
-                {isUp ? (isEn ? 'Shutdown Port' : 'خاموش کردن پورت (shutdown)') : (isEn ? 'No Shutdown (Enable)' : 'روشن کردن پورت (no shutdown)')}
+              <div className="font-bold text-white text-xs flex items-center gap-1.5">
+                <span>{isEn ? 'Shutdown Port' : 'خاموش کردن پورت (shutdown)'}</span>
+                {!isUp && (
+                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                    {isEn ? 'Down' : 'خاموش'}
+                  </span>
+                )}
               </div>
               <div className="text-[10px] font-mono text-slate-400">
-                {isUp ? 'Cisco IOS: shutdown' : 'Cisco IOS: no shutdown'}
+                Cisco IOS: shutdown
               </div>
             </div>
           </button>
@@ -162,6 +166,45 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
             title={isEn ? 'Copy Cisco CLI Command' : 'کپی دستورات سیسکو'}
           >
             {copiedCmd === getShutdownCli() ? (
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+            ) : (
+              <Copy className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </div>
+
+        {/* Action 1B: No Shutdown Port */}
+        <div className="group flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/90 transition cursor-pointer">
+          <button
+            type="button"
+            onClick={() => {
+              onExecuteAction('no_shutdown');
+              onClose();
+            }}
+            className="flex items-center gap-2.5 flex-1 text-left rtl:text-right"
+          >
+            <Power className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div>
+              <div className="font-bold text-white text-xs flex items-center gap-1.5">
+                <span>{isEn ? 'No Shutdown (Enable)' : 'روشن کردن پورت (no shutdown)'}</span>
+                {isUp && (
+                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    {isEn ? 'Active' : 'روشن'}
+                  </span>
+                )}
+              </div>
+              <div className="text-[10px] font-mono text-slate-400">
+                Cisco IOS: no shutdown
+              </div>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => copyCliCommand(getNoShutdownCli(), e)}
+            className="p-1 rounded text-slate-400 hover:text-cyan-300 hover:bg-slate-700 transition"
+            title={isEn ? 'Copy Cisco CLI Command' : 'کپی دستورات سیسکو'}
+          >
+            {copiedCmd === getNoShutdownCli() ? (
               <Check className="w-3.5 h-3.5 text-emerald-400" />
             ) : (
               <Copy className="w-3.5 h-3.5" />

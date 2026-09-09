@@ -10,9 +10,32 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.10.0';
+export const APP_VERSION = '1.11.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.11.0',
+    releaseDate: '2026-09-09',
+    type: 'minor',
+    title: 'رفع سرریز دراپ‌داون اینترفیس‌ها در ترمینال، متن سفید پررنگ تگ‌های Trunk/Access، بنر تیره لاگین، منوی راست‌کلیک پورت‌ها (Shutdown/No Shutdown) و نشان استاندارد Layer 2 Security',
+    title_en: 'Resolved Terminal Interface Dropdown Viewport Overflow, Bold White Trunk/Access Badges, Dark Gray Login Banner, Switch Faceplate Right-Click Context Menu (Shutdown/No Shutdown) & Standardized Layer 2 Security Badge',
+    changes: [
+      'اصلاح و بهینه‌سازی کادر کشویی اینترفیس‌ها در مودال ترمینال سیسکو و جلوگیری کامل از خروج آن از صفحه و کادر با جانمایی هوشمند',
+      'اصلاح رنگ و کنتراست تگ‌های Trunk و Access در لیست اینترفیس‌ها به صورت متن کاملاً سفید و پررنگ (Bold) در تم روشن',
+      'تغییر رنگ خطوط پیام احراز هویت لاگین (User Access Verification، نام کاربری، رمز عبور و خطوط ستاره) در تم روشن به رنگ خاکستری تیره استاندارد و خوانا',
+      'اصلاح و سفید و بولد کردن متون و برچسب‌های بنفش در بخش Switch Faceplate زیر پورت‌های سخت‌افزاری',
+      'تجهیز Switch Faceplate به منوی راست‌کلیک مستقیم با گزینه‌های مجزای Shutdown (خاموش/دیزیبل) و No Shutdown (روشن) و کپی دستورات CLI',
+      'استانداردسازی کادر Layer 2 Security با متن مشکی و فونت پررنگ (Bold Black) در تمام بخش‌ها با کلاس سراسری'
+    ],
+    changes_en: [
+      'Resolved Cisco terminal modal interface dropdown overflowing outside viewport with responsive auto-clamping and boundary protection',
+      'Fixed contrast on Trunk and Access port mode badges with crisp bold white typography on vivid backgrounds in light theme',
+      'Darkened Cisco login verification text (User Access Verification, credentials, and asterisks) to readable dark gray in light mode',
+      'Formatted purple badges and VLAN tags under Switch Faceplate ports with high-contrast bold white text',
+      'Equipped Switch Faceplate ports with dedicated right-click context menu offering direct Shutdown and No Shutdown operations with CLI command copy',
+      'Standardized Layer 2 Security badges globally with ultra-crisp bold black text styling'
+    ]
+  },
   {
     version: '1.10.0',
     releaseDate: '2026-09-09',
