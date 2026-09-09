@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Plus,
   Server,
@@ -55,7 +56,69 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
   const [buildingFilter, setBuildingFilter] = useState<string>('all');
   const [pingingId, setPingingId] = useState<string | null>(null);
   const [writingId, setWritingId] = useState<string | null>(null);
-  const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<{
+    id: string;
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+    device: Device;
+  } | null>(null);
+
+  // Close 3-dots action menu on outside scroll or window resize
+  useEffect(() => {
+    if (!menuAnchor) return;
+    const handleClose = () => setMenuAnchor(null);
+    window.addEventListener('scroll', handleClose, true);
+    window.addEventListener('resize', handleClose);
+    return () => {
+      window.removeEventListener('scroll', handleClose, true);
+      window.removeEventListener('resize', handleClose);
+    };
+  }, [menuAnchor]);
+
+  const handleToggleActionMenu = (e: React.MouseEvent<HTMLButtonElement>, dev: Device) => {
+    e.stopPropagation();
+    if (menuAnchor?.id === dev.id) {
+      setMenuAnchor(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const menuEstimatedHeight = 330;
+    const menuWidth = 256;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUpwards = spaceBelow < menuEstimatedHeight && rect.top > menuEstimatedHeight;
+
+    const pos: {
+      id: string;
+      top?: number;
+      bottom?: number;
+      left?: number;
+      right?: number;
+      device: Device;
+    } = {
+      id: dev.id,
+      device: dev,
+    };
+
+    if (openUpwards) {
+      pos.bottom = window.innerHeight - rect.top + 6;
+    } else {
+      pos.top = rect.bottom + 6;
+    }
+
+    if (isRtl) {
+      // In RTL, align left side of dropdown with left side of button, bounded
+      const left = Math.max(12, Math.min(rect.left, window.innerWidth - menuWidth - 12));
+      pos.left = left;
+    } else {
+      // In LTR, align right side of dropdown with right side of button, bounded
+      const right = Math.max(12, Math.min(window.innerWidth - rect.right, window.innerWidth - menuWidth - 12));
+      pos.right = right;
+    }
+
+    setMenuAnchor(pos);
+  };
 
   const buildings = Array.from(new Set(devices.map((d) => d.building).filter(Boolean)));
   const unsavedCount = devices.filter((d) => d.has_unsaved_changes).length;
@@ -446,15 +509,12 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                       </td>
 
                       {/* Actions with 3-Dots Menu */}
-                      <td className="p-3.5 text-center relative">
+                      <td className="p-3.5 text-center">
                         <div className="flex items-center justify-center">
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenActionMenuId(openActionMenuId === dev.id ? null : dev.id);
-                            }}
+                            onClick={(e) => handleToggleActionMenu(e, dev)}
                             className={`p-1.5 sm:p-2 rounded-xl border transition active:scale-95 shadow-xs cursor-pointer ${
-                              openActionMenuId === dev.id
+                              menuAnchor?.id === dev.id
                                 ? 'bg-indigo-600 text-white border-indigo-400 shadow-[0_0_12px_rgba(99,102,241,0.4)]'
                                 : 'bg-white/5 hover:bg-white/15 text-slate-300 border-white/10 hover:text-white'
                             }`}
@@ -462,133 +522,6 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                           >
                             <MoreVertical className="w-4 h-4" />
                           </button>
-
-                          {/* Dropdown Menu */}
-                          {openActionMenuId === dev.id && (
-                            <>
-                              {/* Backdrop */}
-                              <div
-                                className="fixed inset-0 z-40"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setOpenActionMenuId(null);
-                                }}
-                              />
-
-                              <div
-                                className={`absolute ${isRtl ? 'left-2 text-right' : 'right-2 text-left'} top-full mt-1.5 w-64 z-50 rounded-2xl shadow-2xl p-1.5 border border-white/15 backdrop-blur-2xl bg-slate-950/95 font-sans device-action-dropdown animate-fadeIn`}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between text-[11px] font-mono">
-                                  <span className="font-bold text-white truncate max-w-[120px]">{dev.name}</span>
-                                  <span className="text-indigo-400 font-semibold">{dev.ip}</span>
-                                </div>
-
-                                <div className="py-1 space-y-0.5">
-                                  {/* Cisco CLI Connect */}
-                                  {(dev.type === 'switch' || dev.type === 'router') && onConnectTerminal && (
-                                    <button
-                                      onClick={() => {
-                                        setOpenActionMenuId(null);
-                                        onConnectTerminal(dev);
-                                      }}
-                                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-emerald-300 hover:bg-emerald-500/15 hover:text-emerald-200 transition ${isRtl ? 'text-right' : 'text-left'} group/item cursor-pointer`}
-                                    >
-                                      <Terminal className="w-4 h-4 text-emerald-400 group-hover/item:scale-110 transition shrink-0" />
-                                      <div className="flex flex-col">
-                                        <span>{isEn ? 'SSH Console Direct' : 'کانکت به ترمینال سیسکو'}</span>
-                                        <span className="text-[10px] text-emerald-500/80 font-mono">CLI Terminal</span>
-                                      </div>
-                                    </button>
-                                  )}
-
-                                  {/* Apply Template */}
-                                  {onApplyTemplate && (
-                                    <button
-                                      onClick={() => {
-                                        setOpenActionMenuId(null);
-                                        onApplyTemplate(dev);
-                                      }}
-                                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-cyan-300 hover:bg-cyan-500/15 hover:text-cyan-200 transition ${isRtl ? 'text-right' : 'text-left'} group/item cursor-pointer`}
-                                    >
-                                      <FileCode2 className="w-4 h-4 text-cyan-400 group-hover/item:scale-110 transition shrink-0" />
-                                      <div className="flex flex-col">
-                                        <span>{isEn ? 'Apply Config Template' : 'اعمال تمپلیت کانفیگ'}</span>
-                                        <span className="text-[10px] text-cyan-400/70">{isEn ? 'Variables & Deploy' : 'تکمیل متغیرها و اجرا'}</span>
-                                      </div>
-                                    </button>
-                                  )}
-
-                                  {/* Quick Ping */}
-                                  <button
-                                    onClick={() => {
-                                      setOpenActionMenuId(null);
-                                      handlePing(dev.id);
-                                    }}
-                                    disabled={isPinging}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:bg-white/10 transition ${isRtl ? 'text-right' : 'text-left'} cursor-pointer`}
-                                  >
-                                    <RefreshCw className={`w-4 h-4 text-indigo-400 shrink-0 ${isPinging ? 'animate-spin' : ''}`} />
-                                    <div className="flex flex-col">
-                                      <span>{isEn ? 'Ping & Keepalive Telemetry' : 'تست پینگ و تاخیر لحظه‌ای'}</span>
-                                      <span className="text-[10px] text-slate-400 font-mono">ICMP Keepalive Check</span>
-                                    </div>
-                                  </button>
-
-                                  {/* Ports Inspector */}
-                                  <button
-                                    onClick={() => {
-                                      setOpenActionMenuId(null);
-                                      onInspectPorts(dev);
-                                    }}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:bg-white/10 transition ${isRtl ? 'text-right' : 'text-left'} cursor-pointer`}
-                                  >
-                                    <Cable className="w-4 h-4 text-indigo-400 shrink-0" />
-                                    <div className="flex flex-col">
-                                      <span>{isEn ? 'Inspect Interfaces & VLANs' : 'مشاهده وضعیت پورت‌ها و VLAN'}</span>
-                                      <span className="text-[10px] text-slate-400 font-mono">{dev.total_ports || 24} Interfaces</span>
-                                    </div>
-                                  </button>
-
-                                  {/* Write Memory */}
-                                  {dev.has_unsaved_changes && onWriteMemory && (
-                                    <button
-                                      onClick={() => {
-                                        setOpenActionMenuId(null);
-                                        handleWriteMem(dev.id);
-                                      }}
-                                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-300 hover:bg-amber-500/15 transition ${isRtl ? 'text-right' : 'text-left'} cursor-pointer`}
-                                    >
-                                      <Save className="w-4 h-4 text-amber-400 shrink-0" />
-                                      <div className="flex flex-col">
-                                        <span>{isEn ? 'Save to NVRAM (Write Memory)' : 'ذخیره در NVRAM (Write Memory)'}</span>
-                                        <span className="text-[10px] text-amber-400/80 font-mono">Running &gt; Startup Config</span>
-                                      </div>
-                                    </button>
-                                  )}
-
-                                  <div className="my-1 border-t border-white/10" />
-
-                                  {/* Delete Device */}
-                                  <button
-                                    onClick={() => {
-                                      setOpenActionMenuId(null);
-                                      const confirmMsg = isEn
-                                        ? `Are you sure you want to remove device "${dev.name}" from the inventory?`
-                                        : `آیا از حذف تجهیز «${dev.name}» از لیست اطمینان دارید؟`;
-                                      if (window.confirm(confirmMsg)) {
-                                        onDeleteDevice(dev.id);
-                                      }
-                                    }}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition ${isRtl ? 'text-right' : 'text-left'} cursor-pointer`}
-                                  >
-                                    <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
-                                    <span>{isEn ? 'Delete Device from System' : 'حذف تجهیز از سیستم'}</span>
-                                  </button>
-                                </div>
-                              </div>
-                            </>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -599,6 +532,162 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Floating 3-Dots Action Dropdown Menu (Portal) */}
+      {menuAnchor &&
+        createPortal(
+          <>
+            {/* Transparent backdrop */}
+            <div
+              className="fixed inset-0 z-50 bg-black/5"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuAnchor(null);
+              }}
+            />
+
+            <div
+              style={{
+                position: 'fixed',
+                top: menuAnchor.top !== undefined ? `${menuAnchor.top}px` : undefined,
+                bottom: menuAnchor.bottom !== undefined ? `${menuAnchor.bottom}px` : undefined,
+                left: menuAnchor.left !== undefined ? `${menuAnchor.left}px` : undefined,
+                right: menuAnchor.right !== undefined ? `${menuAnchor.right}px` : undefined,
+              }}
+              className={`w-64 z-50 rounded-2xl shadow-2xl p-1.5 border border-white/15 backdrop-blur-2xl bg-slate-950/95 font-sans device-action-dropdown animate-fadeIn ${
+                isRtl ? 'text-right' : 'text-left'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between text-[11px] font-mono">
+                <span className="font-bold text-white truncate max-w-[120px]">{menuAnchor.device.name}</span>
+                <span className="text-indigo-400 font-semibold">{menuAnchor.device.ip}</span>
+              </div>
+
+              <div className="py-1 space-y-0.5">
+                {/* Cisco CLI Connect */}
+                {(menuAnchor.device.type === 'switch' || menuAnchor.device.type === 'router') && onConnectTerminal && (
+                  <button
+                    onClick={() => {
+                      const dev = menuAnchor.device;
+                      setMenuAnchor(null);
+                      onConnectTerminal(dev);
+                    }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-emerald-300 hover:bg-emerald-500/15 hover:text-emerald-200 transition ${
+                      isRtl ? 'text-right' : 'text-left'
+                    } group/item cursor-pointer`}
+                  >
+                    <Terminal className="w-4 h-4 text-emerald-400 group-hover/item:scale-110 transition shrink-0" />
+                    <div className="flex flex-col">
+                      <span>{isEn ? 'SSH Console Direct' : 'کانکت به ترمینال سیسکو'}</span>
+                      <span className="text-[10px] text-emerald-500/80 font-mono">CLI Terminal</span>
+                    </div>
+                  </button>
+                )}
+
+                {/* Apply Template */}
+                {onApplyTemplate && (
+                  <button
+                    onClick={() => {
+                      const dev = menuAnchor.device;
+                      setMenuAnchor(null);
+                      onApplyTemplate(dev);
+                    }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-cyan-300 hover:bg-cyan-500/15 hover:text-cyan-200 transition ${
+                      isRtl ? 'text-right' : 'text-left'
+                    } group/item cursor-pointer`}
+                  >
+                    <FileCode2 className="w-4 h-4 text-cyan-400 group-hover/item:scale-110 transition shrink-0" />
+                    <div className="flex flex-col">
+                      <span>{isEn ? 'Apply Config Template' : 'اعمال تمپلیت کانفیگ'}</span>
+                      <span className="text-[10px] text-cyan-400/70">{isEn ? 'Variables & Deploy' : 'تکمیل متغیرها و اجرا'}</span>
+                    </div>
+                  </button>
+                )}
+
+                {/* Quick Ping */}
+                <button
+                  onClick={() => {
+                    const devId = menuAnchor.device.id;
+                    setMenuAnchor(null);
+                    handlePing(devId);
+                  }}
+                  disabled={pingingId === menuAnchor.device.id}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:bg-white/10 transition ${
+                    isRtl ? 'text-right' : 'text-left'
+                  } cursor-pointer`}
+                >
+                  <RefreshCw className={`w-4 h-4 text-indigo-400 shrink-0 ${pingingId === menuAnchor.device.id ? 'animate-spin' : ''}`} />
+                  <div className="flex flex-col">
+                    <span>{isEn ? 'Ping & Keepalive Telemetry' : 'تست پینگ و تاخیر لحظه‌ای'}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">ICMP Keepalive Check</span>
+                  </div>
+                </button>
+
+                {/* Ports Inspector */}
+                <button
+                  onClick={() => {
+                    const dev = menuAnchor.device;
+                    setMenuAnchor(null);
+                    onInspectPorts(dev);
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:bg-white/10 transition ${
+                    isRtl ? 'text-right' : 'text-left'
+                  } cursor-pointer`}
+                >
+                  <Cable className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <div className="flex flex-col">
+                    <span>{isEn ? 'Inspect Interfaces & VLANs' : 'مشاهده وضعیت پورت‌ها و VLAN'}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">{menuAnchor.device.total_ports || 24} Interfaces</span>
+                  </div>
+                </button>
+
+                {/* Write Memory */}
+                {menuAnchor.device.has_unsaved_changes && onWriteMemory && (
+                  <button
+                    onClick={() => {
+                      const devId = menuAnchor.device.id;
+                      setMenuAnchor(null);
+                      handleWriteMem(devId);
+                    }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-300 hover:bg-amber-500/15 transition ${
+                      isRtl ? 'text-right' : 'text-left'
+                    } cursor-pointer`}
+                  >
+                    <Save className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div className="flex flex-col">
+                      <span>{isEn ? 'Save to NVRAM (Write Memory)' : 'ذخیره در NVRAM (Write Memory)'}</span>
+                      <span className="text-[10px] text-amber-400/80 font-mono">Running &gt; Startup Config</span>
+                    </div>
+                  </button>
+                )}
+
+                <div className="my-1 border-t border-white/10" />
+
+                {/* Delete Device */}
+                <button
+                  onClick={() => {
+                    const dev = menuAnchor.device;
+                    setMenuAnchor(null);
+                    const confirmMsg = isEn
+                      ? `Are you sure you want to remove device "${dev.name}" from the inventory?`
+                      : `آیا از حذف تجهیز «${dev.name}» از لیست اطمینان دارید؟`;
+                    if (window.confirm(confirmMsg)) {
+                      onDeleteDevice(dev.id);
+                    }
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition ${
+                    isRtl ? 'text-right' : 'text-left'
+                  } cursor-pointer`}
+                >
+                  <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{isEn ? 'Delete Device from System' : 'حذف تجهیز از سیستم'}</span>
+                </button>
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
     </div>
   );
 };

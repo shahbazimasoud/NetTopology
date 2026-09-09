@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   FileCode2,
   X,
@@ -28,6 +29,7 @@ interface ApplyTemplateModalProps {
   onClose: () => void;
   targetDevice: Device | null;
   allDevices?: Device[];
+  templates?: ConfigTemplate[];
   preselectedTemplateId?: string;
   onApplied?: (updatedDevice: Device) => void;
 }
@@ -37,13 +39,16 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
   onClose,
   targetDevice: initialTargetDevice,
   allDevices = [],
+  templates: propTemplates,
   preselectedTemplateId,
   onApplied,
 }) => {
   const { t, isEn } = useLanguage();
-  const [selectedDevice, setSelectedDevice] = useState<Device | null>(initialTargetDevice);
-  const [templates, setTemplates] = useState<ConfigTemplate[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(
+    initialTargetDevice || (allDevices.length > 0 ? allDevices[0] : null)
+  );
+  const [templates, setTemplates] = useState<ConfigTemplate[]>(propTemplates || []);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(preselectedTemplateId || '');
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [activeStep, setActiveStep] = useState<'variables' | 'preview' | 'executing' | 'done'>('variables');
 
@@ -59,12 +64,41 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
 
   // Update selected device if prop changes
   useEffect(() => {
-    setSelectedDevice(initialTargetDevice);
-  }, [initialTargetDevice]);
+    if (initialTargetDevice) {
+      setSelectedDevice(initialTargetDevice);
+    } else if (allDevices.length > 0 && !selectedDevice) {
+      setSelectedDevice(allDevices[0]);
+    }
+  }, [initialTargetDevice, allDevices]);
 
-  // Load available templates
+  // Sync templates if passed via props
+  useEffect(() => {
+    if (propTemplates && propTemplates.length > 0) {
+      setTemplates(propTemplates);
+    }
+  }, [propTemplates]);
+
+  // Sync preselected template
+  useEffect(() => {
+    if (preselectedTemplateId) {
+      setSelectedTemplateId(preselectedTemplateId);
+    }
+  }, [preselectedTemplateId]);
+
+  // Load available templates if not provided via props
   useEffect(() => {
     if (!isOpen) return;
+
+    if (propTemplates && propTemplates.length > 0) {
+      setTemplates(propTemplates);
+      if (preselectedTemplateId) {
+        setSelectedTemplateId(preselectedTemplateId);
+      } else if (!selectedTemplateId && propTemplates.length > 0) {
+        setSelectedTemplateId(propTemplates[0].id);
+      }
+      return;
+    }
+
     setLoadingTemplates(true);
     fetchTemplates()
       .then((res) => {
@@ -93,7 +127,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
       .finally(() => {
         setLoadingTemplates(false);
       });
-  }, [isOpen, preselectedTemplateId, selectedDevice, allDevices]);
+  }, [isOpen, preselectedTemplateId, propTemplates]);
 
   const currentTemplate = useMemo(() => {
     return templates.find((t) => t.id === selectedTemplateId) || null;
@@ -104,7 +138,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
     if (!currentTemplate || !selectedDevice) return;
 
     const initialVars: Record<string, string> = {};
-    currentTemplate.variables.forEach((v) => {
+    (currentTemplate.variables || []).forEach((v) => {
       let val = v.default_value || '';
 
       switch (v.name) {
@@ -227,7 +261,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 modal-backdrop-blur animate-fadeIn overflow-y-auto"
       data-modal-backdrop="true"
@@ -530,7 +564,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {currentTemplate.variables
+                  {(currentTemplate.variables || [])
                     .filter((v) => !['IP_ADDRESS', 'SUBNET_MASK', 'SUBNET_CIDR', 'DEFAULT_GATEWAY'].includes(v.name))
                     .map((variable) => (
                       <div
@@ -740,6 +774,7 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -627,6 +627,7 @@ export const TemplateManagementView: React.FC<TemplateManagementViewProps> = ({
         onClose={() => setApplyModalOpen(false)}
         targetDevice={applyTargetDevice}
         allDevices={devices}
+        templates={templates}
         preselectedTemplateId={applyTargetTemplateId}
         onApplied={(updatedDevice) => {
           showToast(isEn ? `Template applied successfully to "${updatedDevice.name}".` : `تمپلیت با موفقیت روی «${updatedDevice.name}» اعمال شد.`);

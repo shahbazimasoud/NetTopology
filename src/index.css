@@ -432,7 +432,7 @@
 /* Cisco Terminal Screen - Always high-contrast dark console with vivid terminal text */
 .cisco-terminal-screen,
 .theme-light .cisco-terminal-screen {
-  background-color: #030712 !important;
+  background-color: var(--cisco-terminal-bg, #020617) !important;
   color: #f8fafc !important;
   border-color: #1e293b !important;
 }

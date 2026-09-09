@@ -19,7 +19,8 @@ import {
   Router as RouterIcon,
   Cable,
   Check,
-  Play
+  Play,
+  Palette
 } from 'lucide-react';
 import { Device, SwitchPort, VlanInfo } from '../types';
 import {
@@ -57,6 +58,16 @@ interface CommandGuideItem {
   forType?: 'switch' | 'router' | 'all';
 }
 
+const TERMINAL_BG_OPTIONS = [
+  { id: 'slate', color: '#020617', nameEn: 'Slate (Default)', nameFa: 'سرمه‌ای تیره (پیش‌فرض)' },
+  { id: 'black', color: '#000000', nameEn: 'Pitch Black', nameFa: 'مشکی خالص (OLED)' },
+  { id: 'navy', color: '#081026', nameEn: 'Midnight Navy', nameFa: 'سرمه‌ای اقیانوسی' },
+  { id: 'matrix', color: '#03170e', nameEn: 'Matrix Dark Green', nameFa: 'سبز تیره ماتریکس' },
+  { id: 'purple', color: '#160824', nameEn: 'Cyberpunk Violet', nameFa: 'بنفش سایبرپانک' },
+  { id: 'teal', color: '#001e26', nameEn: 'Solarized Dark', nameFa: 'آبی‌نفتی سولارایزد' },
+  { id: 'charcoal', color: '#18181b', nameEn: 'Zinc Charcoal', nameFa: 'زغالی مات' },
+];
+
 export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   device,
   isOpen,
@@ -64,6 +75,20 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   onDeviceUpdated,
 }) => {
   const { t, isEn } = useLanguage();
+  const [terminalBgColor, setTerminalBgColor] = useState<string>(() => {
+    try {
+      return localStorage.getItem('cisco_terminal_bg_color') || '#020617';
+    } catch {
+      return '#020617';
+    }
+  });
+
+  const handleSelectBgColor = (color: string) => {
+    setTerminalBgColor(color);
+    try {
+      localStorage.setItem('cisco_terminal_bg_color', color);
+    } catch {}
+  };
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const [currentInput, setCurrentInput] = useState('');
   const [cliMode, setCliMode] = useState<CliMode>('USER_EXEC');
@@ -967,6 +992,28 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
               )}
             </div>
 
+            {/* Terminal Background Color Selector */}
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900 border border-slate-800 shadow-inner" title={isEn ? "Terminal Background Color" : "رنگ پس‌زمینه کنسول ترمینال"}>
+              <Palette className="w-3.5 h-3.5 text-slate-400 hidden sm:inline-block" />
+              <div className="flex items-center gap-1">
+                {TERMINAL_BG_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleSelectBgColor(opt.color)}
+                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded transition-all cursor-pointer border ${
+                      terminalBgColor === opt.color
+                        ? 'scale-110 border-white ring-2 ring-indigo-500 shadow-[0_0_8px_rgba(255,255,255,0.5)]'
+                        : 'border-white/20 hover:scale-110 hover:border-white/60 opacity-80 hover:opacity-100'
+                    }`}
+                    style={{ backgroundColor: opt.color }}
+                    title={`${isEn ? opt.nameEn : opt.nameFa} (${opt.color})`}
+                    aria-label={opt.nameEn}
+                  />
+                ))}
+              </div>
+            </div>
+
             {/* Window Controls */}
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
@@ -989,7 +1036,13 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
         {/* Main Body: Terminal Screen + Sidebar Guides */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Terminal Console View */}
-          <div className="cisco-terminal-screen flex-1 flex flex-col bg-slate-950 p-3.5 overflow-hidden font-mono text-xs select-text">
+          <div
+            className="cisco-terminal-screen flex-1 flex flex-col p-3.5 overflow-hidden font-mono text-xs select-text transition-colors duration-200"
+            style={{
+              backgroundColor: terminalBgColor,
+              '--cisco-terminal-bg': terminalBgColor,
+            } as React.CSSProperties}
+          >
             {/* Output Lines Canvas */}
             <div className="flex-1 overflow-y-auto space-y-1 pr-1 pb-2 scrollbar-thin scrollbar-thumb-slate-700" dir="ltr">
               {lines.map((line) => {
