@@ -11,7 +11,8 @@ import {
   X,
   ExternalLink,
   ChevronRight,
-  Server
+  Server,
+  FileText
 } from 'lucide-react';
 import { SwitchPort, VlanInfo } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -23,7 +24,7 @@ export interface CiscoPortContextMenuProps {
   deviceName: string;
   vlans?: VlanInfo[];
   onClose: () => void;
-  onExecuteAction: (action: 'shutdown' | 'no_shutdown' | 'mode_trunk' | 'mode_access' | 'port_sec_enable' | 'port_sec_disable' | 'change_vlan' | 'open_assign_vlan', extra?: any) => void;
+  onExecuteAction: (action: 'shutdown' | 'no_shutdown' | 'mode_trunk' | 'mode_access' | 'port_sec_enable' | 'port_sec_disable' | 'change_vlan' | 'open_assign_vlan' | 'edit_description', extra?: any) => void;
   onOpenTerminal?: (portId: string) => void;
 }
 
@@ -48,7 +49,7 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
 
   // Smart screen boundary positioning
   const menuWidth = 280;
-  const menuHeight = 440;
+  const menuHeight = 500;
   const safeX = Math.min(Math.max(10, x), window.innerWidth - menuWidth - 16);
   const safeY = Math.min(Math.max(10, y), window.innerHeight - menuHeight - 16);
 
@@ -96,6 +97,11 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
     return `configure terminal\ninterface ${port.port_id}\n ${cmd}\nexit`;
   };
 
+  const getDescriptionCli = () => {
+    const desc = port.description ? port.description : 'Uplink-Interface';
+    return `configure terminal\ninterface ${port.port_id}\n description ${desc}\nexit`;
+  };
+
   return (
     <div
       ref={menuRef}
@@ -122,6 +128,11 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
             <div className="text-[10px] text-slate-400 font-mono">
               {port.connected_device || (isEn ? 'Empty Port' : 'پورت آزاد')} • VLAN {port.vlan}
             </div>
+            {port.description && (
+              <div className="text-[10px] text-amber-300/90 font-mono truncate max-w-[200px] mt-0.5" title={port.description}>
+                "{port.description}"
+              </div>
+            )}
           </div>
         </div>
         <button
@@ -313,7 +324,59 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
           </button>
         </div>
 
-        {/* Action 5: Open in Cisco CLI */}
+        {/* Action 5: Set / Edit Description (Opens dedicated Modal) */}
+        <div className="group flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/90 transition cursor-pointer">
+          <button
+            type="button"
+            onClick={() => {
+              onExecuteAction('edit_description');
+              onClose();
+            }}
+            className="flex items-center gap-2.5 flex-1 text-left rtl:text-right"
+          >
+            <FileText className="w-4 h-4 text-amber-400 shrink-0" />
+            <div>
+              <div className="font-bold text-white text-xs flex items-center gap-1.5">
+                <span>{isEn ? 'Set Description...' : 'تنظیم توضیحات پورت (Description)...'}</span>
+                {port.description && (
+                  <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    {isEn ? 'Configured' : 'ثبت‌شده'}
+                  </span>
+                )}
+              </div>
+              <div className="text-[10px] font-mono text-slate-400 truncate max-w-[160px]" title={port.description}>
+                {port.description ? `"${port.description}"` : (isEn ? 'No description' : 'بدون توضیحات')}
+              </div>
+            </div>
+          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={(e) => copyCliCommand(getDescriptionCli(), e)}
+              className="p-1 rounded text-slate-400 hover:text-cyan-300 hover:bg-slate-700 transition"
+              title={isEn ? 'Copy Cisco CLI Command' : 'کپی دستورات سیسکو'}
+            >
+              {copiedCmd === getDescriptionCli() ? (
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onExecuteAction('edit_description');
+                onClose();
+              }}
+              className="p-1 text-slate-400 hover:text-amber-400 transition"
+              title={isEn ? 'Open Description Modal' : 'باز کردن مودال دیسکریپشن'}
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Action 6: Open in Cisco CLI */}
         {onOpenTerminal && (
           <button
             type="button"

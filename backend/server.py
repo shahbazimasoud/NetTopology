@@ -1621,6 +1621,8 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
                         port["allowed_vlans"] = str(updates["allowed_vlans"])
                     if "speed" in updates:
                         port["speed"] = updates["speed"]
+                    if "description" in updates:
+                        port["description"] = str(updates["description"])
                     if "port_security_enabled" in updates:
                         port["port_security_enabled"] = bool(updates["port_security_enabled"])
                         port["port_security_status"] = "secure-up" if (port.get("status") == "up" and port["port_security_enabled"]) else ("disabled" if not port["port_security_enabled"] else "secure-down")

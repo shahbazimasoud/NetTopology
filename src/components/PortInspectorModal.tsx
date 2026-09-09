@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Cable, Zap, Shield, ShieldCheck, ShieldAlert, CheckCircle2, AlertCircle, Edit3, Save, Power, Terminal, AlertTriangle, ArrowRight, Check, Lock, Key, Layers, CheckSquare, Square } from 'lucide-react';
+import { X, Cable, Zap, Shield, ShieldCheck, ShieldAlert, CheckCircle2, AlertCircle, Edit3, Save, Power, Terminal, AlertTriangle, ArrowRight, Check, Lock, Key, Layers, CheckSquare, Square, FileText } from 'lucide-react';
 import { Device, SwitchPort } from '../types';
 import { fetchDevicePorts, updateSwitchPort, writeMemory, batchUpdateSwitchPorts } from '../services/api';
 import { NetworkPortSvg } from './NetworkPortSvg';
@@ -7,6 +7,7 @@ import { CiscoPortContextMenu } from './CiscoPortContextMenu';
 import { CiscoCommandConfirmModal } from './CiscoCommandConfirmModal';
 import { CiscoPortConfigConfirmModal, PortConfigUpdates } from './CiscoPortConfigConfirmModal';
 import { AssignVlanModal } from './AssignVlanModal';
+import { PortDescriptionModal } from './PortDescriptionModal';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface PortInspectorModalProps {
@@ -77,6 +78,10 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
   const [vlanAssignModalPort, setVlanAssignModalPort] = useState<SwitchPort | null>(null);
   const [isAssigningVlan, setIsAssigningVlan] = useState(false);
 
+  // Set Port Description modal state
+  const [descriptionModalPort, setDescriptionModalPort] = useState<SwitchPort | null>(null);
+  const [isSavingDescription, setIsSavingDescription] = useState(false);
+
   // Multi-port selection and batch operations
   const [selectedPortIds, setSelectedPortIds] = useState<string[]>([]);
   const [isBatchApplying, setIsBatchApplying] = useState(false);
@@ -129,7 +134,15 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
       return;
     }
 
-    // 3. For all other actions:
+    // 3. If user chose "Set Port Description"
+    // Requirement: "وقتی یک پورت راست کلیک میکنیم امکان اضافه کردن دیسکریپشن هم باشه که برای اون پورت اضافه بشه براش مودال باز بشه و بعد از تایید بشینه رو پورت"
+    if (action === 'edit_description') {
+      setContextMenu(null);
+      setDescriptionModalPort(targetPort);
+      return;
+    }
+
+    // 4. For all other actions:
     // Requirement: "از منوی که با راست کلیک باز میشه اگر هر کدوم رو که انتخاب کردم باید یه تایید یس و نو بگیره از من اگر یس زدم باید کامند متناظرش رو در دیوایس اجرا کنه با توجه به نوع دستگاهی که هست منظورم سویچ یا روتر بودنشه"
     setContextMenu(null);
     setConfirmModalState({
@@ -204,6 +217,32 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
       console.error('Failed to assign VLAN:', err);
     } finally {
       setIsAssigningVlan(false);
+    }
+  };
+
+  const handleConfirmSetDescription = async (newDescription: string) => {
+    if (!descriptionModalPort || !device) return;
+    const targetPort = descriptionModalPort;
+    const updates: Partial<SwitchPort> = {
+      description: newDescription,
+    };
+
+    try {
+      setIsSavingDescription(true);
+      await updateSwitchPort(device.id, targetPort.port_id, updates);
+      setPorts((prev) =>
+        prev.map((p) => (p.port_id === targetPort.port_id ? { ...p, description: newDescription } : p))
+      );
+      if (selectedPort?.port_id === targetPort.port_id) {
+        setSelectedPort((prev) => (prev ? { ...prev, description: newDescription } : null));
+        setEditDesc(newDescription);
+      }
+      setDescriptionModalPort(null);
+      if (onPortUpdated) onPortUpdated();
+    } catch (err: any) {
+      console.error('Failed to set port description:', err);
+    } finally {
+      setIsSavingDescription(false);
     }
   };
 
@@ -822,6 +861,35 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
                     <p className="text-xs text-slate-400 mt-0.5 font-mono">
                       {isEn ? 'Speed' : 'سرعت'}: {selectedPort.speed} • {isEn ? 'Duplex' : 'داپلکس'}: {selectedPort.duplex}
                     </p>
+                    {selectedPort.description ? (
+                      <div className="flex items-center gap-1.5 mt-1 text-[11px] text-amber-300 font-mono bg-amber-500/10 border border-amber-500/25 px-2.5 py-0.5 rounded-lg w-fit">
+                        <FileText className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span className="text-amber-400/80 font-bold">{isEn ? 'Description:' : 'توضیحات:'}</span>
+                        <span className="text-slate-100 font-semibold">{selectedPort.description}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDescriptionModalPort(selectedPort);
+                          }}
+                          className="ml-1 text-[10px] text-amber-400/70 hover:text-amber-300 underline cursor-pointer"
+                        >
+                          {isEn ? 'Edit' : 'ویرایش'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDescriptionModalPort(selectedPort);
+                        }}
+                        className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 hover:text-amber-300 transition cursor-pointer font-mono"
+                      >
+                        <FileText className="w-2.5 h-2.5 text-slate-500" />
+                        <span>{isEn ? '+ Add Description' : '+ افزودن دیسکریپشن'}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1453,7 +1521,13 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
                           )}
                         </td>
                         <td className="px-3 py-2.5 text-slate-200 font-sans text-xs">
-                          {port.connected_device || '-'}
+                          <div>{port.connected_device || '-'}</div>
+                          {port.description && (
+                            <div className="text-[10px] text-amber-300/90 font-mono flex items-center gap-1 mt-0.5" title={port.description}>
+                              <FileText className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                              <span className="truncate max-w-[180px]">{port.description}</span>
+                            </div>
+                          )}
                         </td>
                         <td className="px-3 py-2.5 text-slate-400 text-[11px]">{port.speed}</td>
                         <td className="px-3 py-2.5 text-slate-400 text-[11px]">
@@ -1527,6 +1601,18 @@ export const PortInspectorModal: React.FC<PortInspectorModalProps> = ({
             port={vlanAssignModalPort}
             device={device}
             isLoading={isAssigningVlan}
+          />
+        )}
+
+        {/* Set Port Description Modal */}
+        {descriptionModalPort && device && (
+          <PortDescriptionModal
+            isOpen={!!descriptionModalPort}
+            onClose={() => setDescriptionModalPort(null)}
+            onConfirm={handleConfirmSetDescription}
+            port={descriptionModalPort}
+            device={device}
+            isLoading={isSavingDescription}
           />
         )}
       </div>

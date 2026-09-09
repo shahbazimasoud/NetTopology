@@ -48,7 +48,7 @@ export const NetworkPortSvg: React.FC<NetworkPortSvgProps> = ({
           ? 'bg-slate-900/90 border border-slate-700/80 hover:border-indigo-400 hover:bg-slate-800/90'
           : 'bg-rose-500/20 border border-rose-500/50 hover:border-rose-400 hover:bg-rose-500/30'
       }`}
-      title={`${port.name} (${port.port_id}) - ${port.status.toUpperCase()} - Mode: ${port.mode.toUpperCase()} - VLAN ${port.vlan}${port.connected_device ? ` - ${port.connected_device}` : ''}`}
+      title={`${port.name} (${port.port_id}) - ${port.status.toUpperCase()} - Mode: ${port.mode.toUpperCase()} - VLAN ${port.vlan}${port.connected_device ? ` - ${port.connected_device}` : ''}${port.description ? ` [Description: ${port.description}]` : ''}`}
       style={{ width: '56px' }}
     >
       {/* Top Header: Link Status LED & Mode Indicator */}
