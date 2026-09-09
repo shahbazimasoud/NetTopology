@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Server, Cable, Zap, Shield, Search, Filter, Edit3, Save, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Server, Cable, Zap, Shield, ShieldCheck, Search, Filter, Edit3, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Device, SwitchPort } from '../types';
 import { fetchDevicePorts, updateSwitchPort } from '../services/api';
 import { CiscoPortContextMenu } from './CiscoPortContextMenu';
 import { CiscoCommandConfirmModal } from './CiscoCommandConfirmModal';
 import { AssignVlanModal } from './AssignVlanModal';
+import { NetworkPortSvg } from './NetworkPortSvg';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface PortManagementViewProps {
@@ -311,45 +312,56 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
         </div>
       )}
 
-      {/* Switch Faceplate Visual */}
-      <div className="spatial-glass border border-white/10 rounded-xl p-3.5 shadow-lg">
-        <div className="flex items-center justify-between mb-2 text-xs">
-          <div className="font-bold text-white flex items-center gap-2 font-mono">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"></span>
-            <span>{t('ports_faceplate_title')}</span>
+      {/* Switch Faceplate (Visual Rack Interface) */}
+      <div className="bg-slate-900 border border-slate-800 rounded-lg p-3.5 shadow-inner">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-xs font-bold text-slate-200 font-mono">
+              {isEn
+                ? `Switch Faceplate: ${currentDevice?.model || 'Switch'} (${ports.length} Ports)`
+                : `طرح فیزیکی پورت‌های روی بدنه سوئیچ: ${currentDevice?.model || 'سوئیچ'} (${ports.length} پورت)`}
+            </span>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-slate-300">
+          {/* Legend */}
+          <div className="flex items-center gap-3 text-[11px] text-slate-400">
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              <span>{t('ports_legend_up')}</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>{isEn ? 'Up' : 'فعال (Up)'}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-slate-500"></span>
-              <span>{t('ports_legend_down')}</span>
+              <span className="w-2 h-2 rounded-full bg-slate-600"></span>
+              <span>{isEn ? 'Down' : 'غیرفعال (Down)'}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2 rounded bg-purple-600"></span>
-              <span>{t('ports_legend_trunk')}</span>
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+              <span>{isEn ? 'Disabled' : 'ادمین بسته (Disabled)'}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2 rounded bg-purple-500"></span>
+              <span>{isEn ? 'Trunk' : 'ترانک (Trunk)'}</span>
             </div>
           </div>
         </div>
 
+        {/* Visual RJ45 Ports Matrix (2-row switch design) */}
         {loading ? (
           <div className="py-8 text-center text-slate-400 text-xs animate-pulse font-mono">
-            {t('ports_loading')}
+            {isEn ? 'Loading port statuses from backend...' : 'در حال بارگذاری وضعیت پورت‌ها از بک‌اند پایتون...'}
+          </div>
+        ) : ports.length === 0 ? (
+          <div className="py-6 text-center text-slate-500 text-xs font-mono">
+            {isEn ? 'No active ports recorded.' : 'پورت فعالی ثبت نشده است.'}
           </div>
         ) : (
-          <div className="bg-black/40 border border-white/10 rounded-xl p-3 overflow-x-auto shadow-inner">
-            <div className="flex flex-wrap gap-2 justify-start min-w-[500px]">
-              {ports.map((port) => {
-                const isSelected = selectedPort?.port_id === port.port_id;
-                const isUp = port.status === 'up';
-                const isDisabled = port.admin_status === 'disabled';
-                const isTrunk = port.mode === 'trunk';
-
-                return (
-                  <button
+          <div className="switch-faceplate-chassis rounded-xl p-3 border border-slate-800 shadow-inner">
+            <div className="switch-faceplate-grid rounded-lg p-2.5 overflow-x-auto border border-slate-850">
+              <div className="flex flex-wrap gap-2 justify-start min-w-[500px]">
+                {ports.map((port) => (
+                  <NetworkPortSvg
                     key={port.port_id}
+                    port={port}
+                    isSelected={selectedPort?.port_id === port.port_id}
                     onClick={() => {
                       setSelectedPort(port);
                       setIsEditing(false);
@@ -362,43 +374,9 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                         port,
                       });
                     }}
-                    className={`relative group p-1.5 rounded-xl border transition-all flex flex-col items-center w-12 cursor-pointer ${
-                      isSelected
-                        ? 'bg-indigo-600/30 border-cyan-400 ring-2 ring-cyan-400/40 text-white shadow-[0_0_12px_rgba(6,182,212,0.4)]'
-                        : isDisabled
-                        ? 'bg-amber-500/20 border-amber-500/60 hover:border-amber-400 hover:bg-amber-500/30 text-amber-200'
-                        : isUp
-                        ? 'bg-white/5 border-white/15 hover:border-cyan-400/80 text-slate-200'
-                        : 'bg-rose-500/20 border-rose-500/50 hover:border-rose-400 hover:bg-rose-500/30 text-rose-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-0.5 mb-1">
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          isDisabled
-                            ? 'bg-amber-400'
-                            : isUp
-                            ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]'
-                            : 'bg-slate-600'
-                        }`}
-                      ></span>
-                      {isTrunk && (
-                        <span className="text-[7px] font-bold text-white bg-purple-600 px-1 rounded-xs">
-                          T
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="w-7 h-5 rounded bg-black/60 border border-white/20 flex items-center justify-center text-[8px] font-mono text-slate-200 font-bold">
-                      {port.port_id.replace('GigabitEthernet', 'Gi').replace('TenGigabitEthernet', 'Te').replace('1/0/', '').replace('0/', '')}
-                    </div>
-
-                    <div className="mt-1 text-[8px] font-mono text-indigo-300 font-bold">
-                      V{port.vlan}
-                    </div>
-                  </button>
-                );
-              })}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -406,7 +384,7 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
 
       {/* Selected Port Detailed Card */}
       {selectedPort && (
-        <div className="spatial-glass border border-white/10 rounded-xl p-4 shadow-lg space-y-3">
+        <div className="port-sub-card bg-white/5 border border-white/10 rounded-xl p-3.5 shadow-sm space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 text-white shadow-md">
@@ -473,10 +451,10 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
 
           {/* View Mode */}
           {!isEditing ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+              <div className="port-sub-card p-3 rounded-xl bg-white/5 border border-white/10">
                 <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">{isEn ? 'Connected Device / Host:' : 'تجهیز یا هاست متصل:'}</div>
-                <div className="text-white font-bold font-mono text-xs">
+                <div className="text-white font-bold font-mono text-xs truncate" title={selectedPort.connected_device}>
                   {selectedPort.connected_device || t('ports_device_not_connected')}
                 </div>
                 <div className="text-slate-400 text-[10px] mt-1 font-mono">
@@ -484,17 +462,17 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+              <div className="port-sub-card p-3 rounded-xl bg-white/5 border border-white/10">
                 <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">{isEn ? 'Assigned VLAN:' : 'ویلن (VLAN) تخصیص یافته:'}</div>
                 <div className="text-indigo-300 font-bold font-mono text-xs">
                   VLAN {selectedPort.vlan}
                 </div>
-                <div className="text-slate-400 text-[10px] mt-1 font-mono">
+                <div className="text-slate-400 text-[10px] mt-1 font-mono truncate" title={selectedPort.allowed_vlans}>
                   {isEn ? 'Allowed Trunk VLANs:' : 'ویلن‌های مجاز ترانک:'} {selectedPort.allowed_vlans || t('ports_all_vlans')}
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+              <div className="port-sub-card p-3 rounded-xl bg-white/5 border border-white/10">
                 <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">{isEn ? 'Admin Status:' : 'وضعیت مدیریتی پورت:'}</div>
                 <div className="text-emerald-400 font-bold text-xs font-mono">
                   {selectedPort.admin_status === 'enabled' ? t('ports_admin_no_shutdown') : t('ports_admin_shutdown')}
@@ -504,7 +482,55 @@ export const PortManagementView: React.FC<PortManagementViewProps> = ({ devices 
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+              {/* Cisco Port Security Status */}
+              <div
+                className={`port-sub-card p-3 rounded-xl border transition ${
+                  selectedPort.port_security_enabled
+                    ? 'bg-emerald-950/30 border-emerald-500/40 shadow-sm'
+                    : 'bg-white/5 border-white/10'
+                }`}
+              >
+                <div className="flex items-center justify-between text-[11px] mb-0.5">
+                  <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">{isEn ? 'Port Security:' : 'پورت سکیوریتی:'}</span>
+                  {selectedPort.port_security_enabled ? (
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  ) : (
+                    <Shield className="w-3.5 h-3.5 text-slate-500" />
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <span
+                    className={`font-bold font-mono text-xs ${
+                      selectedPort.port_security_enabled ? 'text-emerald-300' : 'text-slate-400'
+                    }`}
+                  >
+                    {selectedPort.port_security_enabled ? (isEn ? 'Secure' : 'فعال (Secure)') : (isEn ? 'Disabled' : 'غیرفعال (Disabled)')}
+                  </span>
+                </div>
+                {selectedPort.port_security_enabled ? (
+                  <div className="text-[10px] text-emerald-300 mt-1 font-mono space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <span>
+                        {isEn ? 'Mode' : 'مود'}: {selectedPort.port_security_mode === 'sticky' ? (isEn ? 'Sticky' : 'استیکی') : selectedPort.port_security_mode === 'configured' ? (isEn ? 'Configured' : 'کانفیگور') : (isEn ? 'Dynamic' : 'داینامیک')}
+                      </span>
+                      <span className="font-bold bg-emerald-500/20 text-emerald-300 px-1 rounded text-[9px] border border-emerald-500/30">
+                        Max: {selectedPort.port_security_max_mac || 1}
+                      </span>
+                    </div>
+                    <div className="text-[9px] text-slate-400 truncate" title={selectedPort.port_security_configured_mac || selectedPort.port_security_learned_macs?.join(', ')}>
+                      MAC: {selectedPort.port_security_mode === 'configured'
+                        ? (selectedPort.port_security_configured_mac || (isEn ? 'Static' : 'دستی'))
+                        : (selectedPort.port_security_learned_macs?.[0] || (isEn ? 'Sticky learned' : 'Sticky کشف‌شده'))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-[10px] text-slate-400 mt-1 font-mono">
+                    {isEn ? 'Violation: Default' : 'بدون محدودیت مک'}
+                  </div>
+                )}
+              </div>
+
+              <div className="port-sub-card p-3 rounded-xl bg-white/5 border border-white/10">
                 <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1">{isEn ? 'PoE Status:' : 'توان برق (PoE Status):'}</div>
                 <div className="flex items-center gap-1.5 text-white font-bold font-mono text-xs">
                   <Zap className="w-3.5 h-3.5 text-amber-400" />

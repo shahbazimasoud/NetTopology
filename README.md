@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.7.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.7.1-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۷.۰
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.7.0
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۷.۱
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.7.1
 
 ---
 
@@ -210,6 +210,12 @@ npm start
 > ۳. **گیت و کامیت خودکار**: تمامی تغییرات باید خودکار همراه با پیام توصیفی دوزبانه روی برنچ `master` مخزن گیت‌هاب کامیت و پوش شوند. جزئیات بیشتر در فایل `AGENTS.md` درج شده است.
 
 ### تاریخچه نسخه‌ها و رفع مشکلات (Release Notes & Troubleshooting)
+- **نسخه ۱.۷.۱ (v1.7.1 - یکپارچه‌سازی کامل نمایش فیزیکی پورت‌های سوئیچ با Switch Faceplate در صفحه پایش پورت‌ها و ویلن)**:
+  - **یکپارچه‌سازی کامل نمایش پورت‌ها (Switch Faceplate Harmonization):** پیاده‌سازی کامل استایل بصری شاسی سخت‌افزاری سوئیچ (`switch-faceplate-chassis` و `switch-faceplate-grid`) در صفحه «مدیریت و پایش پورت‌ها، ترانک/اکسس و ویلن» دقیقاً منطبق با مودال اختصاصی جزئیات پورت‌های دیوایس (`PortInspectorModal`).
+  - **نمایش سوکت وکتور واقعی RJ-45 (`NetworkPortSvg`):** تعویض دکمه‌های ساده قبلی با کامپوننت وکتور واقعی RJ-45، پین‌های طلایی، ضامن سوکت، ال‌ای‌دی‌های وضعیت پیوند شبکه، پالس آنلاین و برچسب‌های تفکیک‌شده شماره پورت و شماره ویلن.
+  - **افزودن کارت اختصاصی پورت سکیوریتی سیسکو (Cisco Port Security Card):** تکمیل کارت‌های ۵ گانه بازرس پورت انتخاب‌شده با کارت نظارتی پورت سکیوریتی لایه ۲ (نمایش حالت Secure/Disabled، وضعیت Sticky/Configured، حداکثر مک‌آدرس مجاز و مک‌های کشف‌شده).
+  - **هماهنگ‌سازی لژند رنگی و استایل شاسی:** یکسان‌سازی نمایشگر وضعیت پورت‌ها (Up، Down، Disabled، Trunk) و عنوان تعداد پورت‌های سوئیچ در شاسی سخت‌افزاری.
+
 - **نسخه ۱.۷.۰ (v1.7.0 - تاییدیه هوشمند دستورات سیسکو سویچ/روتر، مودال تخصیص ویلن، رنگ‌بندی وضعیت پورت‌ها و هدایت پورت سکیوریتی)**:
   - **مودال تایید تعاملی بله/خیر (Cisco Command Confirmation Modal):** اضافه شدن مودال تایید با تولید و نمایش بلادرنگ دستورات دقیق Cisco IOS متناسب با نوع تجهیز (Switch یا Router) برای تمامی اکشن‌های تغییر وضعیت پورت (`shutdown` / `no shutdown`، تغییر مد `trunk` / `access` و غیرفعال‌سازی `port-security`).
   - **مودال اختصاصی تخصیص ویلن دسترسی (Assign Access VLAN Modal):** باز شدن پنجره مستقل با نمایش لیست ویلن‌های موجود تجهیز در بالای کادر همراه با فیلد جستجو و کادر ورودی شماره دلخواه VLAN جهت تغییر امن پورت به مد Access و تخصیص VLAN با پیش‌نمایش کامند.
@@ -450,6 +456,12 @@ Any AI assistant, coding agent, or human contributor working on this repository 
 3. **Git Workflow:** Automatically commit all changes with descriptive commit messages and push to `origin master`.
 
 ### Release Notes & Bug Fixes
+- **Version 1.7.1 (Harmonize Switch Faceplate Visual & Port Matrix in Port & VLAN Monitoring View)**:
+  - **Switch Faceplate Harmonization:** Redesigned the physical port display in the "Ports, Trunk/Access & VLAN Monitoring" section to mirror the exact hardware rack chassis (`switch-faceplate-chassis` & `switch-faceplate-grid`) from the device `PortInspectorModal`.
+  - **True RJ-45 Vector Jack Integration (`NetworkPortSvg`):** Upgraded port rendering to the realistic SVG 8P8C connector with realistic socket housing, gold pins, link LEDs, and clean high-contrast VLAN tags.
+  - **Cisco Port Security Card:** Added the dedicated Layer-2 Cisco Port Security status card to the 5-card inspector grid on selected ports (inspecting security state, violation policy, sticky/configured MAC learning, and learned MAC count).
+  - **Unified Faceplate Legend & Status Header:** Synchronized port status indicators (Up, Down, Disabled, Trunk) and active port count headers across the interface.
+
 - **Version 1.7.0 (Cisco Switch/Router Command Confirmation, Assign Access VLAN Modal, Port State Visuals & Port Security Navigation)**:
   - **Interactive Cisco CLI Command Confirmation Modal (`CiscoCommandConfirmModal`):** Dual-step Yes/No confirmation dialog providing real-time preview of exact Cisco IOS CLI commands dynamically tailored to device type (Switch vs. Router) for port shutdown, no shutdown, trunk/access mode switches, and port security deactivation.
   - **Dedicated Assign Access VLAN Modal (`AssignVlanModal`):** Standalone modal presenting the device's currently configured VLANs with search filtering, manual VLAN ID input, and auto-generated Cisco CLI configuration preview.
