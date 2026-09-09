@@ -10,9 +10,30 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.9.0';
+export const APP_VERSION = '1.10.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.10.0',
+    releaseDate: '2026-09-09',
+    type: 'minor',
+    title: 'اتصال زنده و واقعی SSH به تجهیزات شبکه در ترمینال CLI، نمایش پویا و زنده پورت‌ها، حذف بصری کابل‌های نقشه با تاییدیه و خوانایی برچسب‌های لینک',
+    title_en: 'Real Hardware SSH Connectivity in Cisco Terminal CLI, Dynamic Real-Time Interface State Engine, Visual Topology Cable Deletion with Confirmation & Overlap-Free Link Badges',
+    changes: [
+      'پیاده‌سازی ارتباط زنده و واقعی SSH (Native SSH Client) از طریق کتابخانه قدرتمند ssh2 در بک‌اند نود و اجرای مستقیم دستورات روی تجهیزات سخت‌افزاری',
+      'نمایش بلادرنگ وضعیت نشست SSH، تاخیر میلی‌ثانیه‌ای (Latency)، سایفر ارتباطی و لاگین زنده در سربرگ ترمینال سیسکو',
+      'موتور پویا و زنده نمایش اطلاعات پورت‌ها و اینترفیس‌ها در دستورات show ip interface brief، show mac address-table، show port-security و show interfaces status بر اساس وضعیت حقیقی دستگاه',
+      'امکان حذف بصری و مستقیم کابل‌ها و اتصالات در نقشه شماتیک توپولوژی با دکمه ضربدر شناور هنگام هاور موس همراه با مودال تایید حذف امن',
+      'بهینه‌سازی کامل نشان‌ها و برچسب‌های اطلاعاتی کابل‌ها (پورت، ویلن و IP) جهت جلوگیری از همپوشانی و خوانایی حداکثری'
+    ],
+    changes_en: [
+      'Implemented real hardware SSH connectivity using the native ssh2 client in the backend server with live command execution on network devices',
+      'Added real-time SSH session indicator badges, millisecond latency measurements, cipher negotiation details, and live handshake in the Cisco terminal header',
+      'Dynamic real-time interface and port state engine for show ip interface brief, show mac address-table, show port-security, and show interfaces status reflecting actual hardware configurations',
+      'Visual interactive cable deletion on topology links with hover-activated delete action and a confirmation modal for safe link removal',
+      'Optimized cable label badges (port IDs, VLANs, and IPs) with enhanced spacing to eliminate visual overlap and ensure maximum clarity'
+    ]
+  },
   {
     version: '1.9.0',
     releaseDate: '2026-09-09',

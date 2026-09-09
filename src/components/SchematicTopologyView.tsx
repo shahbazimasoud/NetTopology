@@ -262,6 +262,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const [isAddDeviceOpen, setIsAddDeviceOpen] = useState(false);
   const [isManageMapOpen, setIsManageMapOpen] = useState(false);
   const [manageMapMode, setManageMapMode] = useState<'create' | 'edit' | 'delete'>('create');
+  const [hoveredLinkId, setHoveredLinkId] = useState<string | null>(null);
+  const [linkToDelete, setLinkToDelete] = useState<CustomTopologyLink | null>(null);
 
   const saveCustomMaps = useCallback((maps: CustomTopologyMap[]) => {
     setCustomMaps(maps);
@@ -291,6 +293,11 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const allAvailableDevices: Device[] = useMemo(() => {
     return topology?.nodes || localNodes || [];
   }, [topology?.nodes, localNodes]);
+
+  const getDeviceNameById = useCallback((id: string) => {
+    const found = allAvailableDevices.find((d) => d.id === id);
+    return found ? found.name : id;
+  }, [allAvailableDevices]);
 
   // Group links by pair of connected devices to separate overlapping cables
   const defaultLinkGroups = useMemo(() => {
@@ -515,6 +522,18 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       targetPort: null,
       editingLink: null,
     });
+  };
+
+  const handleDeleteLinkDirectly = (linkId: string) => {
+    if (!currentCustomMap) return;
+    const updatedLinks = currentCustomMap.links.filter((l) => l.id !== linkId);
+    const updatedMap: CustomTopologyMap = {
+      ...currentCustomMap,
+      links: updatedLinks,
+      updatedAt: new Date().toISOString(),
+    };
+    const newMaps = customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m));
+    saveCustomMaps(newMaps);
   };
 
   const handleEditExistingLink = (link: CustomTopologyLink) => {
@@ -2339,7 +2358,12 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     : '#2563eb';
 
                   return (
-                    <g key={link.id} className="transition-all cursor-pointer group">
+                    <g
+                      key={link.id}
+                      className="transition-all cursor-pointer group"
+                      onMouseEnter={() => setHoveredLinkId(link.id)}
+                      onMouseLeave={() => setHoveredLinkId(null)}
+                    >
                       {/* Invisible wider hit area for easy clicking */}
                       <path
                         d={curve.pathD}
@@ -2391,27 +2415,78 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                         </text>
                       </g>
 
+                      {/* Hover Delete Button */}
+                      {hoveredLinkId === link.id && (
+                        <g
+                          transform={`translate(${curve.midX + 66}, ${curve.midY})`}
+                          className="cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLinkToDelete(link);
+                          }}
+                        >
+                          <circle
+                            r="11"
+                            fill="#ef4444"
+                            stroke="#ffffff"
+                            strokeWidth="2"
+                            className="hover:scale-110 transition-transform"
+                          />
+                          <path
+                            d="M -3.5 -3.5 L 3.5 3.5 M 3.5 -3.5 L -3.5 3.5"
+                            stroke="#ffffff"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                          <title>{isEn ? 'Disconnect Cable Connection' : 'قطع ارتباط و حذف کابل'}</title>
+                        </g>
+                      )}
+
                       {/* Source Endpoint Badges (Port, Mode, VLAN, IP) */}
                       {showPortLabels && (
                         <g transform={`translate(${curve.srcTagX}, ${curve.srcTagY})`} className="select-none pointer-events-none">
                           <rect
-                            x="-38"
-                            y={link.sourceIp ? "-20" : "-10"}
-                            width="76"
-                            height={link.sourceIp ? "38" : "20"}
-                            rx="4"
+                            x="-44"
+                            y={link.sourceIp ? "-24" : "-18"}
+                            width="88"
+                            height={link.sourceIp ? "48" : "36"}
+                            rx="6"
                             fill="#ffffff"
-                            stroke="#cbd5e1"
-                            strokeWidth="1"
+                            stroke="#94a3b8"
+                            strokeWidth="1.2"
                           />
-                          <text textAnchor="middle" y={link.sourceIp ? "-9" : "0"} dominantBaseline="central" fill="#4f46e5" fontSize="8.5" fontFamily="monospace" fontWeight="bold">
+                          <text
+                            textAnchor="middle"
+                            y={link.sourceIp ? "-13" : "-7"}
+                            dominantBaseline="central"
+                            fill="#312e81"
+                            fontSize="9.5"
+                            fontFamily="monospace"
+                            fontWeight="bold"
+                          >
                             {link.sourcePort}
                           </text>
-                          <text textAnchor="middle" y={link.sourceIp ? "1" : "0"} dominantBaseline="central" fill={link.sourceMode === 'trunk' ? '#7e22ce' : '#2563eb'} fontSize="7" fontFamily="monospace">
+                          <text
+                            textAnchor="middle"
+                            y={link.sourceIp ? "-1" : "+8"}
+                            dominantBaseline="central"
+                            fill={link.sourceMode === 'trunk' ? '#7e22ce' : '#2563eb'}
+                            fontSize="8"
+                            fontFamily="monospace"
+                            fontWeight="600"
+                          >
                             {link.sourceMode === 'trunk' ? `TRUNK (V${link.sourceVlan || 1})` : `VLAN ${link.sourceVlan || 1}`}
                           </text>
                           {link.sourceIp && (
-                            <text textAnchor="middle" y="10" dominantBaseline="central" fill="#047857" fontSize="7" fontFamily="monospace" fontWeight="bold">
+                            <text
+                              textAnchor="middle"
+                              y="12"
+                              dominantBaseline="central"
+                              fill="#047857"
+                              fontSize="8"
+                              fontFamily="monospace"
+                              fontWeight="bold"
+                            >
                               {link.sourceIp}
                             </text>
                           )}
@@ -2422,23 +2497,47 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                       {showPortLabels && (
                         <g transform={`translate(${curve.tgtTagX}, ${curve.tgtTagY})`} className="select-none pointer-events-none">
                           <rect
-                            x="-38"
-                            y={link.targetIp ? "-20" : "-10"}
-                            width="76"
-                            height={link.targetIp ? "38" : "20"}
-                            rx="4"
+                            x="-44"
+                            y={link.targetIp ? "-24" : "-18"}
+                            width="88"
+                            height={link.targetIp ? "48" : "36"}
+                            rx="6"
                             fill="#ffffff"
-                            stroke="#cbd5e1"
-                            strokeWidth="1"
+                            stroke="#94a3b8"
+                            strokeWidth="1.2"
                           />
-                          <text textAnchor="middle" y={link.targetIp ? "-9" : "0"} dominantBaseline="central" fill="#0284c7" fontSize="8.5" fontFamily="monospace" fontWeight="bold">
+                          <text
+                            textAnchor="middle"
+                            y={link.targetIp ? "-13" : "-7"}
+                            dominantBaseline="central"
+                            fill="#0369a1"
+                            fontSize="9.5"
+                            fontFamily="monospace"
+                            fontWeight="bold"
+                          >
                             {link.targetPort}
                           </text>
-                          <text textAnchor="middle" y={link.targetIp ? "1" : "0"} dominantBaseline="central" fill={link.targetMode === 'trunk' ? '#7e22ce' : '#2563eb'} fontSize="7" fontFamily="monospace">
+                          <text
+                            textAnchor="middle"
+                            y={link.targetIp ? "-1" : "+8"}
+                            dominantBaseline="central"
+                            fill={link.targetMode === 'trunk' ? '#7e22ce' : '#2563eb'}
+                            fontSize="8"
+                            fontFamily="monospace"
+                            fontWeight="600"
+                          >
                             {link.targetMode === 'trunk' ? `TRUNK (V${link.targetVlan || 1})` : `VLAN ${link.targetVlan || 1}`}
                           </text>
                           {link.targetIp && (
-                            <text textAnchor="middle" y="10" dominantBaseline="central" fill="#047857" fontSize="7" fontFamily="monospace" fontWeight="bold">
+                            <text
+                              textAnchor="middle"
+                              y="12"
+                              dominantBaseline="central"
+                              fill="#047857"
+                              fontSize="8"
+                              fontFamily="monospace"
+                              fontWeight="bold"
+                            >
                               {link.targetIp}
                             </text>
                           )}
@@ -4204,8 +4303,88 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
           side={cableWorkflow.step === 'select_target_port' ? 'target' : 'source'}
           partnerDevice={cableWorkflow.step === 'select_target_port' ? cableWorkflow.sourceDevice : null}
           partnerPort={cableWorkflow.step === 'select_target_port' ? cableWorkflow.sourcePort : null}
+          customMapLinks={currentCustomMap?.links || []}
+          allDevices={allAvailableDevices}
+          onDisconnectLink={handleDeleteLinkDirectly}
           onSelectPort={handleSelectPort}
         />
+      )}
+
+      {/* Confirmation Modal for Disconnecting Cable Link */}
+      {linkToDelete && (
+        <div
+          className="fixed inset-0 z-[100005] flex items-center justify-center p-4 modal-backdrop-blur"
+          data-modal-backdrop="true"
+          dir={isRtl ? 'rtl' : 'ltr'}
+          onClick={() => setLinkToDelete(null)}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6 space-y-4 text-slate-800 dark:text-slate-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  {isEn ? 'Disconnect Cable Connection' : 'قطع ارتباط و حذف کابل شبکه'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {isEn ? 'Confirm link removal from network topology' : 'تایید قطع اتصال و حذف کابل از توپولوژی شبکه'}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-xs font-mono space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Source Device:' : 'دستگاه مبدا:'}</span>
+                <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                  {getDeviceNameById(linkToDelete.sourceDeviceId)} ({linkToDelete.sourcePort})
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Destination Device:' : 'دستگاه مقصد:'}</span>
+                <span className="font-bold text-purple-600 dark:text-purple-400">
+                  {getDeviceNameById(linkToDelete.targetDeviceId)} ({linkToDelete.targetPort})
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-1.5 border-t border-slate-200 dark:border-slate-750">
+                <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Cable Specs:' : 'مشخصات کابل:'}</span>
+                <span className="text-slate-700 dark:text-slate-300">
+                  {linkToDelete.speed || '1G'} • {linkToDelete.cableType?.toUpperCase() || 'COPPER'}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              {isEn
+                ? 'Are you sure you want to disconnect this cable? The connection will be removed from this topology map.'
+                : 'آیا از قطع ارتباط این کابل اطمینان دارید؟ این ارتباط از نقشه توپولوژی حذف خواهد شد.'}
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setLinkToDelete(null)}
+                className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition font-medium text-xs cursor-pointer"
+              >
+                {isEn ? 'Cancel' : 'انصراف'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleDeleteLinkDirectly(linkToDelete.id);
+                  setLinkToDelete(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isEn ? 'Yes, Disconnect Link' : 'بله، قطع ارتباط و حذف'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {isLinkConfigOpen && cableWorkflow.sourceDevice && cableWorkflow.targetDevice && (

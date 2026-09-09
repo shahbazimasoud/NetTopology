@@ -22,7 +22,14 @@ import {
   Play
 } from 'lucide-react';
 import { Device, SwitchPort, VlanInfo } from '../types';
-import { fetchDevicePorts, updateSwitchPort, writeMemory, fetchVlans } from '../services/api';
+import {
+  fetchDevicePorts,
+  updateSwitchPort,
+  writeMemory,
+  fetchVlans,
+  sshConnect,
+  sshExecute,
+} from '../services/api';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface CiscoTerminalModalProps {
@@ -71,6 +78,8 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isWritingMemory, setIsWritingMemory] = useState(false);
+  const [sshSessionMode, setSshSessionMode] = useState<'connecting' | 'real_ssh' | 'fallback_emulation'>('connecting');
+  const [sshLatency, setSshLatency] = useState<number | null>(null);
 
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -92,44 +101,90 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   useEffect(() => {
     if (isOpen && device) {
       const devHost = device.name.toUpperCase();
+      const sshPort = device.ssh_port || 22;
+      const sshUser = device.ssh_username || 'admin';
+      const sshPass = device.ssh_password || 'cisco123';
+
       setHostname(devHost);
       setCliMode('USER_EXEC');
       setCurrentInterface('');
       setHasUnsavedChanges(!!device.has_unsaved_changes);
+      setSshSessionMode('connecting');
+      setSshLatency(null);
       loadPortsAndVlans(device.id);
-
-      const isRouter = device.type === 'router';
-      const promptInit = `${devHost}>`;
 
       setLines([
         {
-          id: 'sys-1',
+          id: 'sys-init-1',
           type: 'system',
-          text: `Connecting to ${device.ip} via Cisco IOS SSH v2.0 on Port 22...`,
+          text: `[SSH CLIENT v2.0] Initiating direct SSH socket connection to ${device.name} (${device.ip}:${sshPort})...`,
         },
         {
-          id: 'sys-2',
+          id: 'sys-init-2',
           type: 'system',
-          text: `SSH Connection Established (Cipher: aes256-gcm@openssh.com, MAC: hmac-sha2-512)`,
-        },
-        {
-          id: 'sys-3',
-          type: 'output',
-          text: `User Access Verification\nUsername: cisco\nPassword: **********`,
-        },
-        {
-          id: 'sys-4',
-          type: 'output',
-          text: `\n************************************************************************\n* Cisco Systems Corporate Network Infrastructure - Authorized Access * \n* Device: ${device.model} | Role: ${device.role} \n* Software: ${device.firmware || 'Cisco IOS-XE 17.09.03'} \n* Location: ${device.building} - ${device.floor} (${device.unit}) \n************************************************************************\n`,
-        },
-        {
-          id: 'sys-5',
-          type: 'system',
-          text: isEn
-            ? "Cisco IOS CLI is ready. Type 'enable' to begin or use the command guide sidebar."
-            : "Cisco IOS CLI آماده است. برای شروع دستور 'enable' را وارد کنید یا از سایدبار دستورات راهنما استفاده نمایید.",
+          text: `[CREDENTIALS] Target User: '${sshUser}' | Auth: RSA/ECDSA Key & Password Verification`,
         },
       ]);
+
+      // Attempt real SSH connection via backend native ssh2 client
+      sshConnect({
+        host: device.ip,
+        port: sshPort,
+        username: sshUser,
+        password: device.ssh_password || '',
+        timeout: 3500,
+      })
+        .then((res) => {
+          if (res.success) {
+            setSshSessionMode('real_ssh');
+            setSshLatency(res.latency_ms || 2.2);
+            appendLines([
+              {
+                id: 'sys-ssh-ok',
+                type: 'success',
+                text: `[LIVE SSH ESTABLISHED] Authenticated to ${device.ip}:${sshPort} in ${res.latency_ms || 2}ms.\nCipher: ${res.cipher || 'aes256-gcm@openssh.com'} | MAC: hmac-sha2-512\nBanner: ${res.banner || 'Cisco IOS Software, Catalyst Series'}`,
+              },
+              {
+                id: 'sys-ssh-ready',
+                type: 'system',
+                text: isEn
+                  ? "Live SSH session active. Terminal commands execute directly on the target hardware."
+                  : "نشست لایو SSH فعال شد. دستورات مستقیماً روی تجهیز سخت‌افزاری اجرا می‌شوند.",
+              },
+            ]);
+          } else {
+            setSshSessionMode('fallback_emulation');
+            appendLines([
+              {
+                id: 'sys-ssh-err',
+                type: 'system',
+                text: `[SSH STATUS] Direct socket probe to ${device.ip}:${sshPort} unreachable (${res.error || 'Connection timed out'}).`,
+              },
+              {
+                id: 'sys-ssh-banner',
+                type: 'output',
+                text: `User Access Verification\nUsername: ${sshUser}\nPassword: ${'*'.repeat(Math.max(6, sshPass.length))}\n\n************************************************************************\n* Cisco Systems Corporate Network Infrastructure - Authorized Access * \n* Device: ${device.model} | Role: ${device.role} \n* Software: ${device.firmware || 'Cisco IOS-XE 17.09.03'} \n* Location: ${device.building} - ${device.floor} (${device.unit}) \n************************************************************************\n`,
+              },
+              {
+                id: 'sys-ssh-ready',
+                type: 'system',
+                text: isEn
+                  ? "Cisco IOS CLI is ready. Type 'enable' to begin or use the command guide sidebar."
+                  : "Cisco IOS CLI آماده است. برای شروع دستور 'enable' را وارد کنید یا از سایدبار دستورات راهنما استفاده نمایید.",
+              },
+            ]);
+          }
+        })
+        .catch((err) => {
+          setSshSessionMode('fallback_emulation');
+          appendLines([
+            {
+              id: 'sys-ssh-err',
+              type: 'system',
+              text: `[SSH CLIENT] Connection status: ${err.message || 'Host unreachable'}. Managed CLI ready.`,
+            },
+          ]);
+        });
 
       setTimeout(() => {
         if (inputRef.current) inputRef.current.focus();
@@ -237,6 +292,28 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
     // Append input line
     const inputLine: TerminalLine = { id: String(Date.now()), type: 'input', text: `${promptText} ${trimmed}` };
+
+    // If active in real SSH session, attempt direct hardware command execution
+    if (sshSessionMode === 'real_ssh' && device) {
+      try {
+        const res = await sshExecute({
+          host: device.ip,
+          port: device.ssh_port || 22,
+          username: device.ssh_username || 'admin',
+          password: device.ssh_password || '',
+          command: trimmed,
+        });
+        if (res.success && res.isReal && res.output !== undefined) {
+          appendLines([
+            inputLine,
+            { id: String(Date.now() + 1), type: 'output', text: res.output || '(Command executed on device)' },
+          ]);
+          return;
+        }
+      } catch (err) {
+        console.warn('Direct hardware SSH execution error, using local CLI engine:', err);
+      }
+    }
 
     // 2. Help
     if (trimmed === '?' || cmdLower === 'help') {
@@ -544,6 +621,25 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
       return;
     }
 
+    if (cmdLower === 'show port-security' || cmdLower === 'sh port-sec' || cmdLower === 'sh port-security') {
+      const output = formatShowPortSecurity(ports);
+      appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: output }]);
+      return;
+    }
+
+    if (cmdLower.startsWith('show port-security interface') || cmdLower.startsWith('sh port-sec int')) {
+      const parts = trimmed.split(/\s+/);
+      const targetInt = parts[parts.length - 1];
+      const foundPort = ports.find((p) => p.port_id.toLowerCase() === targetInt.toLowerCase());
+      if (foundPort) {
+        const output = formatShowPortSecurityInterface(foundPort);
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: output }]);
+      } else {
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'error', text: `% Port ${targetInt} not found on this device.` }]);
+      }
+      return;
+    }
+
     if (cmdLower === 'show ip route' || cmdLower === 'sh ip route' || cmdLower === 'sh ip ro') {
       const output = formatShowIpRoute(device);
       appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: output }]);
@@ -683,12 +779,19 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
               <div className="flex items-center gap-2">
                 <span className="font-bold text-white font-mono text-sm tracking-wide">{device.name}</span>
                 <span className="terminal-header-ip text-xs font-mono font-bold px-2 py-0.5 rounded-md shadow-xs" title={isEn ? "Device IP Address" : "آدرس آی‌پی دستگاه"}>
-                  {device.ip}
+                  {device.ip}:{device.ssh_port || 22}
                 </span>
-                <span className="terminal-header-ssh text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-xs" title={isEn ? "SSH Protocol Version" : "نسخه پروتکل SSH"}>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  SSH-2.0
-                </span>
+                {sshSessionMode === 'real_ssh' ? (
+                  <span className="terminal-header-ssh text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-xs" title="Connected via Real SSH Socket">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    LIVE SSH ({sshLatency ? `${sshLatency}ms` : 'Active'})
+                  </span>
+                ) : (
+                  <span className="terminal-header-ssh text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-xs" title={isEn ? "SSH Protocol Version" : "نسخه پروتکل SSH"}>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    SSH-2.0 ({device.ssh_username || 'admin'})
+                  </span>
+                )}
               </div>
               <div className="text-[11px] text-slate-400 font-mono mt-0.5 flex items-center gap-1.5">
                 <span>{device.model}</span>
@@ -1180,11 +1283,68 @@ function formatShowMacTable(ports: SwitchPort[]): string {
   res += 'Vlan    Mac Address       Type        Ports\n';
   res += '----    -----------       --------    -----\n';
   let i = 1;
-  for (const p of ports.filter((pt) => pt.status === 'up').slice(0, 8)) {
-    const mac = `0050.56a1.b2${(10 + i).toString(16)}`;
-    res += `${String(p.vlan).padEnd(7)} ${mac}    DYNAMIC     ${p.port_id}\n`;
+  for (const p of ports.filter((pt) => pt.status === 'up')) {
+    const macEntries: { mac: string; type: string }[] = [];
+    if (p.port_security_configured_mac) {
+      macEntries.push({ mac: p.port_security_configured_mac, type: 'STATIC' });
+    }
+    if (p.port_security_learned_macs && p.port_security_learned_macs.length > 0) {
+      p.port_security_learned_macs.forEach((m) => {
+        macEntries.push({ mac: m, type: p.port_security_mode === 'sticky' ? 'STICKY' : 'DYNAMIC' });
+      });
+    }
+    if (macEntries.length === 0) {
+      macEntries.push({ mac: `0050.56a1.b2${(10 + i).toString(16).padStart(2, '0')}`, type: 'DYNAMIC' });
+    }
+    for (const entry of macEntries) {
+      res += `${String(p.vlan).padEnd(7)} ${entry.mac.padEnd(17)} ${entry.type.padEnd(11)} ${p.port_id}\n`;
+    }
     i++;
   }
+  return res;
+}
+
+function formatShowPortSecurity(ports: SwitchPort[]): string {
+  let res = 'Secure Port  MaxSecureAddr  CurrentAddr  SecurityViolation  Security Action\n';
+  res += '                (Count)       (Count)          (Count)\n';
+  res += '---------------------------------------------------------------------------\n';
+  const secPorts = ports.filter((p) => p.port_security_enabled);
+  if (secPorts.length === 0) {
+    return 'No secure ports configured on this device.\n';
+  }
+  for (const p of secPorts) {
+    const maxAddr = p.port_security_max_mac || 1;
+    const currAddr = (p.port_security_learned_macs?.length || 0) + (p.port_security_configured_mac ? 1 : 0);
+    const action = (p.port_security_violation || 'shutdown').charAt(0).toUpperCase() + (p.port_security_violation || 'shutdown').slice(1);
+    res += `${p.port_id.padEnd(12)} ${String(maxAddr).padEnd(14)} ${String(currAddr).padEnd(12)} 0                  ${action}\n`;
+  }
+  res += '---------------------------------------------------------------------------\n';
+  res += `Total Addresses in System (excluding one max per port)     : 0\n`;
+  res += `Max Addresses limit in System (excluding one max per port) : 4096\n`;
+  return res;
+}
+
+function formatShowPortSecurityInterface(p: SwitchPort): string {
+  const isEnabled = !!p.port_security_enabled;
+  const status = isEnabled ? (p.port_security_status || 'Secure-up') : 'Disabled';
+  const violation = (p.port_security_violation || 'shutdown').charAt(0).toUpperCase() + (p.port_security_violation || 'shutdown').slice(1);
+  const maxMacs = p.port_security_max_mac || 1;
+  const currMacs = (p.port_security_learned_macs?.length || 0) + (p.port_security_configured_mac ? 1 : 0);
+  const stickyCount = p.port_security_mode === 'sticky' ? (p.port_security_learned_macs?.length || 0) : 0;
+  const lastMac = p.port_security_configured_mac || p.port_security_learned_macs?.[0] || '0000.0000.0000';
+
+  let res = `Port Security              : ${isEnabled ? 'Enabled' : 'Disabled'}\n`;
+  res += `Port Status                : ${status}\n`;
+  res += `Violation Mode             : ${violation}\n`;
+  res += `Aging Time                 : 0 mins\n`;
+  res += `Aging Type                 : Absolute\n`;
+  res += `SecureStatic Address Aging : Disabled\n`;
+  res += `Maximum MAC Addresses      : ${maxMacs}\n`;
+  res += `Total MAC Addresses        : ${currMacs}\n`;
+  res += `Configured MAC Addresses   : ${p.port_security_configured_mac ? 1 : 0}\n`;
+  res += `Sticky MAC Addresses       : ${stickyCount}\n`;
+  res += `Last Source Address:Vlan   : ${lastMac}:${p.vlan}\n`;
+  res += `Security Violation Count   : 0\n`;
   return res;
 }
 

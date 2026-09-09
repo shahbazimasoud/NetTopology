@@ -265,3 +265,48 @@ export async function extractConfigFromDevice(
   }
   return res.json();
 }
+
+export async function sshConnect(params: {
+  host: string;
+  port?: number;
+  username?: string;
+  password?: string;
+  timeout?: number;
+}): Promise<{
+  success: boolean;
+  mode: 'real_ssh' | 'unreachable';
+  banner?: string;
+  cipher?: string;
+  latency_ms?: number;
+  error?: string;
+  code?: string;
+}> {
+  const res = await fetch(`${API_BASE}/ssh/connect`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  return res.json();
+}
+
+export async function sshExecute(params: {
+  host: string;
+  port?: number;
+  username?: string;
+  password?: string;
+  command: string;
+  timeout?: number;
+}): Promise<{
+  success: boolean;
+  output: string;
+  isReal: boolean;
+  exitCode?: number;
+  error?: string;
+}> {
+  const res = await fetch(`${API_BASE}/ssh/execute`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  return res.json();
+}

@@ -1,11 +1,11 @@
 # NetTopology 🌐
 
-[![Version](https://img.shields.io/badge/version-1.9.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
+[![Version](https://img.shields.io/badge/version-1.10.0-blue.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/shahbazimasoud/NetTopology)
 [![Node](https://img.shields.io/badge/node-20%2B%20%7C%2022%20LTS-brightgreen.svg)](https://nodejs.org)
 
-سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۹.۰
-A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.9.0
+سامانه جامع مدیریت، مانیتورینگ توپولوژی شبکه و مدیریت تجهیزات سیسکو (سویچ و روتر) - نسخه ۱.۱۰.۰
+A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Configuration Platform - Version 1.10.0
 
 ---
 
@@ -157,6 +157,13 @@ A Comprehensive Network Topology, Cisco Switch/Router Management & Visual Config
 - **انتخاب چندگانه پورت‌های فیزیکی:** امکان انتخاب همزمان چندین پورت سوئیچ با نگه‌داشتن کلیدهای `Ctrl`، `Cmd` یا `Shift` بر روی فیس‌پلیت وکتور سخت‌افزاری یا با استفاده از چک‌باکس‌های اختصاصی جدول پورت‌ها.
 - **پنل پیکربندی گروهی (Batch Configuration Panel):** اعمال یکجای تغییرات برای تمام پورت‌های انتخاب‌شده شامل وضعیت ادمین (`no shutdown` / `shutdown`)، تغییر حالت عملیاتی سوئیچ‌پورت (`Trunk` یا `Access`)، تخصیص شماره Access VLAN، تعیین Allowed VLANs ترانک و اعمال دسته‌ای سیاست‌های Cisco Port Security.
 - **یکپارچگی در دو نمای اصلی:** پشتیبانی کامل از عملیات دسته‌ای در هر دو پنجره بازرس پورت دیوایس (`PortInspectorModal`) و صفحه مستقل مانیتورینگ پورت‌ها (`PortManagementView`).
+
+### ۱۹. اتصال واقعی و زنده SSH در خط فرمان ترمینال، پایش زنده پورت‌ها و حذف بصری کابل‌های نقشه (Live Real SSH Terminal, Dynamic Ports & Topology Cable Removal)
+- **ارتباط زنده و مستقیم SSH با کلاینت بومی ssh2:** ترمینال سیسکو مجهز به اتصال مستقیم SSH به سوئیچ‌ها و روترهای سخت‌افزاری بر اساس مشخصات ثبت‌شده در سیستم (IP، پورت، نام‌کاربری و کلمه عبور) با قابلیت اجرای زنده دستورات روی دیوایس.
+- **نمایش بلادرنگ وضعیت نشست، سایفر و تاخیر:** ارائه بج وضعیت نشست SSH، تاخیر رفت و برگشت پکت‌ها به میلی‌ثانیه، پروتکل‌های رمزنگاری توافق‌شده و سوئیچ خودکار و هوشمند به شبیه‌ساز پایپ‌لاین در صورت عدم دسترسی فیزیکی به دیوایس در محیط‌های ایزوله.
+- **نمایش کاملاً پویا و زنده اینترفیس‌ها در دستورات IOS:** به‌روزرسانی زنده خروجی دستورات `show ip interface brief`, `show mac address-table`, `show port-security` و `show interfaces status` بر اساس وضعیت واقعی پورت‌ها، مک‌آدرس‌های فعال و پیکربندی‌های ذخیره‌شده.
+- **حذف تعاملی و بصری کابل‌ها روی نقشه توپولوژی:** اضافه شدن دکمه ضربدر قرمز شناور روی کابل‌ها هنگام هاور موس همراه با دیالوگ تاییدیه امن جهت پیشگیری از قطع ناخواسته لینک‌ها.
+- **بهینه‌سازی برچسب‌های اطلاعاتی لینک‌ها:** افزایش فواصل و خوانایی بج‌های پورت، ویلن و آی‌پی برای رفع کامل همپوشانی در کابل‌های متقاطع.
 
 ---
 
@@ -448,6 +455,13 @@ npm start
 - **Hardware-Accurate Multi-Port Selection:** Select multiple interfaces simultaneously by holding `Ctrl`, `Cmd`, or `Shift` while clicking ports on the vector switch faceplate, or by using table selection checkboxes.
 - **Dedicated Batch Configuration Panel:** Bulk update administrative status (`no shutdown` / `shutdown`), switchport operational modes (`Trunk` vs `Access`), access VLAN assignment, allowed trunk VLAN lists, and Cisco Port Security policies across all selected ports in one click.
 - **Unified Across Views:** Seamlessly integrated into both the device inspector modal (`PortInspectorModal`) and the dedicated port management page (`PortManagementView`).
+
+### 19. Native Real-Hardware SSH Terminal Engine, Dynamic Live Interfaces & Visual Topology Cable Removal
+- **Native Live SSH Connectivity via `ssh2`:** The Cisco CLI terminal executes direct SSH sessions to real network hardware using the configured credentials (IP, SSH Port, Username, and Password).
+- **Live Session Metrics, Ciphers & Latency Indicator:** Displays real-time connection status badges, round-trip latency in milliseconds, negotiated cryptographic ciphers, and graceful fallback to the local IOS-XE emulation engine if the physical device is in an isolated sandbox.
+- **Live Hardware Interface Output Engine:** All show commands (`show ip interface brief`, `show mac address-table`, `show port-security`, `show interfaces status`) dynamically reflect live interface states, active/sticky MAC addresses, and assigned IP addresses.
+- **Visual Hover-Based Cable Deletion with Confirmation Modal:** Added an interactive hover-triggered delete (X) badge on canvas cable links with a safety confirmation dialog to prevent accidental link disconnects.
+- **Overlap-Free Link Badge Typography:** Redesigned cable labels (port IDs, VLANs, and IP addresses) with enhanced padding and positioning to eliminate visual overlaps on crowded links.
 
 ---
 
