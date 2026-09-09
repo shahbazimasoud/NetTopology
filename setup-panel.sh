@@ -31,6 +31,8 @@ log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 PANEL_VERSION="1.10.0"
+REPO_URL="${REPO_URL:-https://github.com/arkaadia/net.git}"
+FALLBACK_REPO_URL="https://github.com/shahbazimasoud/NetTopology.git"
 
 clear 2>/dev/null || true
 echo -e "${CYAN}${BOLD}"
@@ -260,15 +262,16 @@ if [ "$(pwd)" != "$INSTALL_DIR" ]; then
     CLONE_SUCCESS=false
 
     # Try 1: Direct Git Clone
-    log_info "Attempt 1: Direct git clone from GitHub..."
-    if git -c network.maxSubmissions=1 -c network.lowSpeedLimit=1000 -c network.lowSpeedTime=30 clone https://github.com/shahbazimasoud/NetTopology.git "$INSTALL_DIR"; then
+    log_info "Attempt 1: Direct git clone from GitHub ($REPO_URL)..."
+    if git -c network.maxSubmissions=1 -c network.lowSpeedLimit=1000 -c network.lowSpeedTime=30 clone "$REPO_URL" "$INSTALL_DIR"; then
       CLONE_SUCCESS=true
     fi
 
-    # Try 2: Mirror Proxy Clone
+    # Try 2: Mirror Proxy Clone / Fallback
     if [ "$CLONE_SUCCESS" = false ]; then
-      log_warning "Direct git clone failed. Attempt 2: Cloning via GitHub Mirror Proxy..."
-      if git -c network.maxSubmissions=1 -c network.lowSpeedLimit=1000 -c network.lowSpeedTime=30 clone https://mirror.ghproxy.com/https://github.com/shahbazimasoud/NetTopology.git "$INSTALL_DIR"; then
+      log_warning "Direct git clone failed. Attempt 2: Trying fallback or mirror..."
+      if git -c network.maxSubmissions=1 -c network.lowSpeedLimit=1000 -c network.lowSpeedTime=30 clone "https://mirror.ghproxy.com/$REPO_URL" "$INSTALL_DIR" || \
+         git -c network.maxSubmissions=1 -c network.lowSpeedLimit=1000 -c network.lowSpeedTime=30 clone "$FALLBACK_REPO_URL" "$INSTALL_DIR"; then
         CLONE_SUCCESS=true
       fi
     fi
@@ -278,11 +281,16 @@ if [ "$(pwd)" != "$INSTALL_DIR" ]; then
       log_warning "Attempt 3: Downloading repository ZIP archive..."
       apt-get install -y unzip || true
       rm -f /tmp/NetTopology.zip
-      if curl -f -sSL --connect-timeout 20 --max-time 120 -o /tmp/NetTopology.zip https://github.com/shahbazimasoud/NetTopology/archive/refs/heads/master.zip || \
-         curl -f -sSL --connect-timeout 20 --max-time 120 -o /tmp/NetTopology.zip https://mirror.ghproxy.com/https://github.com/shahbazimasoud/NetTopology/archive/refs/heads/master.zip; then
+      ZIP_URL="${REPO_URL%.git}/archive/refs/heads/master.zip"
+      if curl -f -sSL --connect-timeout 20 --max-time 120 -o /tmp/NetTopology.zip "$ZIP_URL" || \
+         curl -f -sSL --connect-timeout 20 --max-time 120 -o /tmp/NetTopology.zip "https://mirror.ghproxy.com/$ZIP_URL" || \
+         curl -f -sSL --connect-timeout 20 --max-time 120 -o /tmp/NetTopology.zip "https://github.com/shahbazimasoud/NetTopology/archive/refs/heads/master.zip"; then
         mkdir -p /tmp/nettop-extracted
         unzip -q -o /tmp/NetTopology.zip -d /tmp/nettop-extracted
-        mv /tmp/nettop-extracted/NetTopology-master/* "$INSTALL_DIR/" || cp -r /tmp/nettop-extracted/NetTopology-master/* "$INSTALL_DIR/" || true
+        EXTRACTED_DIR=$(find /tmp/nettop-extracted -maxdepth 1 -type d | grep -v "^/tmp/nettop-extracted$" | head -n 1)
+        if [ -n "$EXTRACTED_DIR" ]; then
+          cp -r "$EXTRACTED_DIR"/* "$INSTALL_DIR/" || true
+        fi
         rm -rf /tmp/nettop-extracted /tmp/NetTopology.zip
         CLONE_SUCCESS=true
       fi
