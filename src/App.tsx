@@ -385,7 +385,8 @@ export default function App() {
             activeTab === 'settings-groups' ||
             activeTab === 'settings-users' ||
             activeTab === 'settings-ad' ||
-            activeTab === 'settings-rbac') && (
+            activeTab === 'settings-rbac' ||
+            activeTab === 'settings-backup') && (
             <SettingsView
               devices={devices}
               activeSubTab={
@@ -395,6 +396,8 @@ export default function App() {
                   ? 'ad'
                   : activeTab === 'settings-rbac'
                   ? 'rbac'
+                  : activeTab === 'settings-backup'
+                  ? 'backup'
                   : 'groups'
               }
               onSelectSubTab={(sub) => {
@@ -405,9 +408,12 @@ export default function App() {
                     ? 'settings-ad'
                     : sub === 'rbac'
                     ? 'settings-rbac'
+                    : sub === 'backup'
+                    ? 'settings-backup'
                     : 'settings-groups'
                 );
               }}
+              onRefreshAllData={loadData}
             />
           )}
         </main>

@@ -360,6 +360,83 @@ export interface AccessPolicy {
   canManageDevices: boolean;          // add, edit, delete device
   canApplyTemplates: boolean;         // apply config template
   canBatchOperate: boolean;           // batch port configuration
+
+  // 5. Backup & Disaster Recovery Operations
+  canExportBackup?: boolean;          // Export full or partial network backup package
+  canImportBackup?: boolean;          // Import and restore network backup package
+}
+
+export type BackupScope = 'full' | 'devices_topology' | 'security_rbac' | 'templates_only';
+
+export interface BackupMetadata {
+  version: string;
+  appVersion: string;
+  timestamp: string;
+  createdAt: string;
+  createdBy: string;
+  createdRole: string;
+  scope: BackupScope;
+  scopeLabel: string;
+  isEncrypted: boolean;
+  isSanitized: boolean; // Passwords & secrets removed/masked
+  checksumSha256: string;
+  counts: {
+    devices: number;
+    customMaps: number;
+    deviceGroups: number;
+    localUsers: number;
+    localGroups: number;
+    accessPolicies: number;
+    templates: number;
+    hasActiveDirectory: boolean;
+    hasCustomHierarchy: boolean;
+  };
+  environment?: {
+    hostname?: string;
+    userAgent?: string;
+  };
+}
+
+export interface NetworkBackupPackage {
+  format: 'nettopology-backup-v1';
+  metadata: BackupMetadata;
+  // Payload items (optionally omitted depending on scope)
+  devices?: Device[];
+  topologyData?: TopologyData;
+  customMaps?: any[];
+  nodePositions?: Record<string, { x: number; y: number }>;
+  viewport?: { zoom: number; pan: { x: number; y: number } };
+  physicalHierarchy?: {
+    buildings: string[];
+    floors: Record<string, string[]>;
+    units: Record<string, string[]>;
+    racks: Record<string, string[]>;
+  };
+  deviceGroups?: DeviceGroup[];
+  localUsers?: LocalUser[];
+  localGroups?: LocalGroup[];
+  activeDirectory?: ActiveDirectoryConfig;
+  accessPolicies?: AccessPolicy[];
+  templates?: ConfigTemplate[];
+  // If encrypted, the encrypted payload blob
+  encryptedData?: string;
+  salt?: string;
+  iv?: string;
+}
+
+export interface BackupAuditEntry {
+  id: string;
+  timestamp: string;
+  action: 'export' | 'export_blocked' | 'import_success' | 'import_failed' | 'import_blocked' | 'rollback';
+  username: string;
+  role: string;
+  fileName?: string;
+  fileSizeKb?: number;
+  scope: string;
+  itemCount: number;
+  status: 'success' | 'warning' | 'error';
+  details: string;
+  checksum?: string;
 }
 
 

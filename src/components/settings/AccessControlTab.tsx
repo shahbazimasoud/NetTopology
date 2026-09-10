@@ -31,7 +31,10 @@ import {
   Router as RouterIcon,
   Globe,
   Wrench,
-  HardDrive
+  HardDrive,
+  Archive,
+  DownloadCloud,
+  UploadCloud
 } from 'lucide-react';
 import {
   AccessPolicy,
@@ -122,6 +125,9 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
     canManageDevices: false,
     canApplyTemplates: false,
     canBatchOperate: false,
+    // Backup & Disaster Recovery
+    canExportBackup: false,
+    canImportBackup: false,
   });
 
   const handleStartCreate = () => {
@@ -337,6 +343,21 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
                       {policy.canGenericDiagnostics ? 'Diag ' : ''}
                       {policy.canGenericToggleLink ? 'Link ' : ''}
                       {policy.genericTerminalAccess && policy.genericTerminalAccess !== 'none' ? 'Shell' : ''}
+                    </span>
+                  </span>
+
+                  {/* Backup & DR Badge */}
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold flex items-center gap-1 border ${
+                    policy.canImportBackup
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      : policy.canExportBackup
+                      ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                      : 'bg-slate-800 text-slate-500 border-white/5'
+                  }`}>
+                    <Archive className="w-2.5 h-2.5" />
+                    <span>Backup:</span>
+                    <span className="font-mono">
+                      {policy.canImportBackup ? 'Full (Exp+Imp)' : policy.canExportBackup ? 'Export' : 'Locked'}
                     </span>
                   </span>
                 </div>
@@ -1141,6 +1162,81 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
                         <div>
                           <div className="font-bold text-xs text-white">{label}</div>
                           <div className="text-[10px] text-slate-400">{desc}</div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 5. Backup Portal & Disaster Recovery Governance */}
+              <div className="p-3 rounded-xl bg-cyan-950/20 border border-cyan-500/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300">
+                      <Archive className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-xs text-cyan-300">
+                        {isEn ? '5. Backup & Disaster Recovery Portal Operations' : '۵. پشتیبان‌گیری، استخراج و بازیابی کلان شبکه (Backup Portal)'}
+                      </span>
+                      <p className="text-[10px] text-slate-400">
+                        {isEn
+                          ? 'Control access to generating snapshots, exporting encrypted backups, and overwriting network state.'
+                          : 'تعیین سطح دسترسی کاربر یا گروه به دانلود فایل‌های پشتیبان و بازیابی و بازنویسی پایگاه داده'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[
+                    {
+                      key: 'canExportBackup',
+                      label: isEn ? 'Export Network Backup Package' : 'تولید و دانلود فایل پشتیبان (Export Backup)',
+                      desc: isEn ? 'Generate and export full/partial network state packages' : 'امکان تولید و دانلود پکیج پشتیبان شامل نقشه‌ها، دیوایس‌ها و RBAC',
+                      risk: 'normal',
+                      icon: DownloadCloud
+                    },
+                    {
+                      key: 'canImportBackup',
+                      label: isEn ? 'Import & Restore Network Data' : 'بازیابی و بازنویسی دیتابیس (Restore / Import)',
+                      desc: isEn ? 'High Risk: Overwrite or merge devices, topology maps, and policies' : '⚠️ عملیات فوق بحرانی: بازنویسی، ایمپورت و جایگزینی کامل اطلاعات سامانه',
+                      risk: 'high',
+                      icon: UploadCloud
+                    },
+                  ].map(({ key, label, desc, risk, icon: Icon }) => {
+                    const checked = (editingPolicy as any)[key];
+                    return (
+                      <label
+                        key={key}
+                        className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
+                          checked
+                            ? risk === 'high'
+                              ? 'bg-amber-500/15 border-amber-500/40 text-amber-200'
+                              : 'bg-cyan-500/15 border-cyan-500/40 text-cyan-200'
+                            : 'bg-slate-900/60 border-white/10 text-slate-400'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => setEditingPolicy({ ...editingPolicy, [key]: e.target.checked })}
+                          className={`w-4 h-4 mt-0.5 rounded ${risk === 'high' ? 'accent-amber-500' : 'accent-cyan-500'}`}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div className="font-bold text-xs text-white flex items-center gap-1.5">
+                              <Icon className="w-3 h-3 text-slate-400" />
+                              <span>{label}</span>
+                            </div>
+                            {risk === 'high' && (
+                              <span className="px-1.5 py-0.5 rounded text-[8px] bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold">
+                                {isEn ? 'HIGH RISK' : 'بحرانی'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">{desc}</div>
                         </div>
                       </label>
                     );

@@ -10,9 +10,36 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.12.0';
+export const APP_VERSION = '1.13.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.13.0',
+    releaseDate: '2026-09-10',
+    type: 'minor',
+    title: 'پورتال جامع پشتیبان‌گیری و بازیابی اطلاعات شبکه (Backup & Disaster Recovery Portal) با رمزنگاری AES-GCM، ممیزی امنیتی SHA-256 و نقطه بازگشت خودکار',
+    title_en: 'Enterprise Backup & Disaster Recovery Portal with 256-bit AES-GCM Encryption, SHA-256 Checksum Auditing & Instant Safety Rollback Protection',
+    changes: [
+      'ایجاد پورتال اختصاصی و پیشرفته پشتیبان‌گیری و بازیابی اطلاعات شبکه (Backup Portal) در منوی تنظیمات و سایدبار با رویکرد تاب‌آوری در برابر فاجعه (Disaster Recovery)',
+      'پشتیبانی از تفکیک دامنه‌های استخراج: پکیج جامع شبکه (Full DR)، نقشه‌ها و توپولوژی سفارشی، کاربران و سطوح دسترسی (RBAC)، و الگوهای پیکربندی',
+      'امنیت حداکثری داده‌ها: رمزنگاری استاندارد AES-GCM (256-bit) با مشتق‌گیری کلید PBKDF2 از رمز عبور دلخواه و قابلیت پاکسازی و ماسک‌کردن سکرت‌ها و پسوردهای SSH جهت اهداف ممیزی',
+      'حفاظت و ارزیابی پیش از بازیابی (Pre-flight Inspection): بررسی خودکار اصالت امضای دیجیتال و هش SHA-256 و پیش‌نمایش دقیق محتوا قبل از اعمال روی دیتابیس',
+      'مکانیزم ایمن بازگردانی: پشتیبانی از دو استراتژی جایگزینی کامل (Full Overwrite) با تایید کلمه‌ای و ادغام هوشمند افزایشی (Smart Incremental Merge)',
+      'نقطه بازیابی اضطراری خودکار (Safety Snapshot): ایجاد اسنپ‌شات پیش از هرگونه تغییر با قابلیت بازگشت آنی یک‌کلیکه (Instant Rollback)',
+      'کنترل دسترسی دقیق (RBAC): افزودن مجوزهای مجزای canExportBackup و canImportBackup به ماتریس پالیسی‌های دسترسی جهت مسدودسازی دسترسی کاربران غیرمجاز',
+      'دفتر کل رویدادها (Audit Trail): ثبت دائمی تمام فعالیت‌های استخراج، بازیابی، رول‌بک و درخواست‌های مسدودشده با جزئیات کاربر و هش فایل'
+    ],
+    changes_en: [
+      'Introduced dedicated Enterprise Backup & Disaster Recovery Portal in Settings and Sidebar with disaster resilience and state preservation architecture',
+      'Multi-scope export engine: Full Disaster Recovery package, Custom Topology Maps & Inventory, Identity & Access Policies (RBAC), and Configuration Templates',
+      'High-grade cryptographic security: 256-bit AES-GCM encryption with PBKDF2 key derivation from custom passphrase, plus sensitive credential sanitization for safe audit exports',
+      'Pre-flight integrity validation: Automatic SHA-256 checksum verification, structural schema validation, and item inventory preview before database commit',
+      'Two restore execution modes: Full Overwrite with safety keyword confirmation ("RESTORE") or Smart Incremental Merge preserving existing state',
+      'Automated disaster rollback snapshot (Safety Point): Captures live system state prior to any restore operation with one-click Instant Rollback capability',
+      'Granular RBAC integration: Added dedicated canExportBackup and canImportBackup capability flags to access control policies, locking actions for unauthorized roles',
+      'Tamper-evident Disaster Recovery Audit Trail: Real-time logging of all export, restore, rollback, and RBAC-blocked events with timestamps and SHA-256 hashes'
+    ]
+  },
   {
     version: '1.12.0',
     releaseDate: '2026-09-09',

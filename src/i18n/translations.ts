@@ -80,6 +80,7 @@ export const translations = {
     tab_settings_users: 'Local Users & Groups',
     tab_settings_ad: 'Active Directory / LDAP',
     tab_settings_rbac: 'Access Control (RBAC)',
+    tab_settings_backup: 'Backup & Disaster Recovery',
 
     // Footer
     footer_network_status: 'Network Status:',
@@ -694,6 +695,7 @@ export const translations = {
     tab_settings_users: 'کاربران و گروه‌های محلی',
     tab_settings_ad: 'اتصال به اکتیو دایرکتوری',
     tab_settings_rbac: 'سطوح دسترسی و اختیارات (RBAC)',
+    tab_settings_backup: 'پورتال بکاپ و بازیابی (DR)',
 
     // Footer
     footer_network_status: 'وضعیت شبکه:',

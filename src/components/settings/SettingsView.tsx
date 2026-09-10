@@ -8,7 +8,8 @@ import {
   ChevronRight,
   Sparkles,
   ArrowRight,
-  ArrowLeft
+  ArrowLeft,
+  Archive
 } from 'lucide-react';
 import {
   Device,
@@ -36,15 +37,17 @@ import { DeviceGroupingTab } from './DeviceGroupingTab';
 import { ActiveDirectoryTab } from './ActiveDirectoryTab';
 import { AccessControlTab } from './AccessControlTab';
 import { LocalUsersTab } from './LocalUsersTab';
+import { BackupPortalTab } from './BackupPortalTab';
 import { useLanguage } from '../../i18n';
 
-export type SettingsSubTab = 'groups' | 'users' | 'ad' | 'rbac';
+export type SettingsSubTab = 'groups' | 'users' | 'ad' | 'rbac' | 'backup';
 
 interface SettingsViewProps {
   devices: Device[];
   onUpdateDeviceGroups?: (groups: DeviceGroup[]) => void;
   activeSubTab?: SettingsSubTab;
   onSelectSubTab?: (subTab: SettingsSubTab) => void;
+  onRefreshAllData?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -52,6 +55,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onUpdateDeviceGroups,
   activeSubTab: externalSubTab,
   onSelectSubTab,
+  onRefreshAllData
 }) => {
   const { isRtl, isEn } = useLanguage();
   const [internalTab, setInternalTab] = useState<SettingsSubTab>(externalSubTab || 'groups');
@@ -151,6 +155,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       icon: ShieldCheck,
       badge: `${policies.length} ${isEn ? 'Policies' : 'پالیسی'}`,
       badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+    },
+    backup: {
+      title: isEn ? 'Enterprise Backup & Disaster Recovery Portal' : 'پورتال پشتیبان‌گیری و بازیابی کلان شبکه (Disaster Recovery)',
+      desc: isEn
+        ? 'Export signed & encrypted state packages and execute pre-flight validated restores with instant rollback protection.'
+        : 'استخراج پکیج‌های رمزنگاری‌شده از کل اطلاعات شبکه، ممیزی امنیتی SHA-256 و بازیابی مطمئن با نقطه بازگشت خودکار.',
+      icon: Archive,
+      badge: isEn ? 'DR Portal' : 'پورتال DR',
+      badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
     }
   };
 
@@ -264,6 +277,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             {policies.length}
           </span>
         </button>
+
+        {/* Sub-menu 5: Backup & Disaster Recovery Portal */}
+        <button
+          type="button"
+          onClick={() => handleSwitchTab('backup')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs transition-all duration-200 shrink-0 cursor-pointer ${
+            activeTab === 'backup'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-lg ring-1 ring-cyan-400/30'
+              : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+          }`}
+        >
+          <Archive className="w-3.5 h-3.5 text-cyan-400" />
+          <span>{isEn ? 'Backup Portal' : 'پورتال بکاپ و بازیابی'}</span>
+          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+            DR
+          </span>
+        </button>
       </div>
 
       {/* Sub-Menu Views */}
@@ -304,6 +334,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             onSelectSimulatedPolicy={handleSelectSimulatedPolicy}
             localUsers={localUsers}
             localGroups={localGroups}
+          />
+        )}
+
+        {activeTab === 'backup' && (
+          <BackupPortalTab
+            isEn={isEn}
+            activePolicy={activePolicy}
+            allPolicies={policies}
+            onSelectSimulatedPolicy={handleSelectSimulatedPolicy}
+            devices={devices}
+            onRefreshData={onRefreshAllData}
           />
         )}
       </div>

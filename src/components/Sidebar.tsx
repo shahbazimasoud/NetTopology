@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   FolderTree,
   Users,
-  Server
+  Server,
+  Archive
 } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
@@ -30,7 +31,8 @@ export type ActiveTab =
   | 'settings-groups'
   | 'settings-users'
   | 'settings-ad'
-  | 'settings-rbac';
+  | 'settings-rbac'
+  | 'settings-backup';
 
 interface SidebarProps {
   activeTab: ActiveTab;
@@ -154,6 +156,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           labelKey: 'tab_settings_rbac',
           icon: ShieldCheck,
           badge: null,
+        },
+        {
+          id: 'settings-backup',
+          labelKey: 'tab_settings_backup',
+          icon: Archive,
+          badge: 'DR',
         },
       ],
     },

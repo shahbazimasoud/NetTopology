@@ -284,6 +284,8 @@ export const DEFAULT_ACCESS_POLICIES: AccessPolicy[] = [
     canManageDevices: false,            // Cannot add/delete switch
     canApplyTemplates: false,           // Cannot push CLI templates
     canBatchOperate: false,             // Cannot execute mass bulk edits
+    canExportBackup: false,             // Cannot export backup
+    canImportBackup: false,             // Cannot import backup
   },
   {
     id: 'policy-noc-observer',
@@ -330,6 +332,8 @@ export const DEFAULT_ACCESS_POLICIES: AccessPolicy[] = [
     canManageDevices: false,
     canApplyTemplates: false,
     canBatchOperate: false,
+    canExportBackup: false,
+    canImportBackup: false,
   },
   {
     id: 'policy-super-admin',
@@ -376,6 +380,8 @@ export const DEFAULT_ACCESS_POLICIES: AccessPolicy[] = [
     canManageDevices: true,
     canApplyTemplates: true,
     canBatchOperate: true,
+    canExportBackup: true,
+    canImportBackup: true,
   },
 ];
 

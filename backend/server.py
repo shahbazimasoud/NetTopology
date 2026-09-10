@@ -1253,6 +1253,22 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
             })
             return
 
+        if path == "/api/backup/export":
+            self._send_json(200, {
+                "success": True,
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "data": data,
+                "counts": {
+                    "devices": len(data.get("devices", [])),
+                    "templates": len(data.get("templates", [])),
+                    "device_groups": len(data.get("device_groups", [])),
+                    "access_policies": len(data.get("access_policies", [])),
+                    "local_users": len(data.get("local_users", [])),
+                    "local_groups": len(data.get("local_groups", []))
+                }
+            })
+            return
+
         self._send_json(404, {"error": "Endpoint not found"})
 
     def do_POST(self):
@@ -1829,6 +1845,79 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
                 self._send_json(200, {"success": True, "policies": data["access_policies"]})
                 return
             self._send_json(400, {"error": "Invalid access policies payload format"})
+            return
+
+        if path == "/api/backup/restore":
+            backup_data = body.get("data", body) if isinstance(body, dict) else body
+            mode = body.get("mode", "overwrite") if isinstance(body, dict) else "overwrite"
+
+            # Create server-side safety snapshot file before touching anything
+            try:
+                import shutil
+                bak_filename = f"{DATA_FILE}.bak.{int(time.time())}"
+                if os.path.exists(DATA_FILE):
+                    shutil.copyfile(DATA_FILE, bak_filename)
+            except Exception as e:
+                print(f"[Backup Engine] Failed to create local safety snapshot: {e}")
+
+            if isinstance(backup_data, dict):
+                if mode == "overwrite":
+                    if "devices" in backup_data and isinstance(backup_data["devices"], list):
+                        data["devices"] = backup_data["devices"]
+                    if "ports" in backup_data and isinstance(backup_data["ports"], dict):
+                        data["ports"] = backup_data["ports"]
+                    if "templates" in backup_data and isinstance(backup_data["templates"], list):
+                        data["templates"] = backup_data["templates"]
+                    if "device_groups" in backup_data and isinstance(backup_data["device_groups"], list):
+                        data["device_groups"] = backup_data["device_groups"]
+                    if "active_directory" in backup_data and isinstance(backup_data["active_directory"], dict):
+                        data["active_directory"] = backup_data["active_directory"]
+                    if "access_policies" in backup_data and isinstance(backup_data["access_policies"], list):
+                        data["access_policies"] = backup_data["access_policies"]
+                    if "local_users" in backup_data and isinstance(backup_data["local_users"], list):
+                        data["local_users"] = backup_data["local_users"]
+                    if "local_groups" in backup_data and isinstance(backup_data["local_groups"], list):
+                        data["local_groups"] = backup_data["local_groups"]
+                    if "topology_links" in backup_data and isinstance(backup_data["topology_links"], list):
+                        data["topology_links"] = backup_data["topology_links"]
+                else: # incremental merge
+                    existing_dev_ids = {d["id"] for d in data.get("devices", [])}
+                    for d in backup_data.get("devices", []):
+                        if d.get("id") not in existing_dev_ids:
+                            data.setdefault("devices", []).append(d)
+                            existing_dev_ids.add(d.get("id"))
+
+                    existing_tmpl_ids = {t["id"] for t in data.get("templates", [])}
+                    for t in backup_data.get("templates", []):
+                        if t.get("id") not in existing_tmpl_ids:
+                            data.setdefault("templates", []).append(t)
+                            existing_tmpl_ids.add(t.get("id"))
+
+                    existing_grp_ids = {g["id"] for g in data.get("device_groups", [])}
+                    for g in backup_data.get("device_groups", []):
+                        if g.get("id") not in existing_grp_ids:
+                            data.setdefault("device_groups", []).append(g)
+                            existing_grp_ids.add(g.get("id"))
+
+                    existing_pol_ids = {p["id"] for p in data.get("access_policies", [])}
+                    for p in backup_data.get("access_policies", []):
+                        if p.get("id") not in existing_pol_ids:
+                            data.setdefault("access_policies", []).append(p)
+                            existing_pol_ids.add(p.get("id"))
+
+                save_data(data)
+                self._send_json(200, {
+                    "success": True,
+                    "message": "پایگاه داده شبکه با موفقیت بازیابی شد.",
+                    "counts": {
+                        "devices": len(data.get("devices", [])),
+                        "templates": len(data.get("templates", [])),
+                        "device_groups": len(data.get("device_groups", [])),
+                        "access_policies": len(data.get("access_policies", [])),
+                    }
+                })
+                return
+            self._send_json(400, {"error": "Invalid backup payload format"})
             return
 
         self._send_json(404, {"error": "Endpoint not found"})
