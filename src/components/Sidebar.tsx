@@ -16,7 +16,8 @@ import {
   FolderTree,
   Users,
   Server,
-  Archive
+  Archive,
+  ScrollText
 } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
@@ -27,6 +28,7 @@ export type ActiveTab =
   | 'templates'
   | 'ports'
   | 'scanner'
+  | 'logs'
   | 'settings'
   | 'settings-groups'
   | 'settings-users'
@@ -123,6 +125,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           labelKey: 'tab_scanner',
           icon: Radar,
           badge: null,
+        },
+        {
+          id: 'logs',
+          labelKey: 'tab_logs',
+          icon: ScrollText,
+          badge: 'Live',
         },
       ],
     },

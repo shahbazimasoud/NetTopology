@@ -23,6 +23,7 @@ import {
   UserCog
 } from 'lucide-react';
 import { LocalUser, LocalGroup } from '../../types';
+import { logPortalEvent } from '../../services/auditLogger';
 
 interface LocalUsersTabProps {
   users: LocalUser[];
@@ -181,6 +182,42 @@ export const LocalUsersTab: React.FC<LocalUsersTabProps> = ({
 
     onSaveUsers(newUsers);
     onSaveGroups(newGroups);
+
+    // Audit Log user creation / role modification
+    try {
+      logPortalEvent({
+        category: 'user_management',
+        action: isNew ? 'USER_CREATED' : 'USER_ROLE_CHANGED',
+        title: isNew
+          ? `ایجاد کاربر محلی جدید «${updatedUser.username}» (${updatedUser.fullName})`
+          : `ویرایش مشخصات و سطح دسترسی کاربر «${updatedUser.username}»`,
+        title_en: isNew
+          ? `New local user account created: ${updatedUser.username}`
+          : `User profile & role updated for ${updatedUser.username}`,
+        target: {
+          type: 'user',
+          id: updatedUser.id,
+          name: `${updatedUser.fullName} (${updatedUser.username})`,
+          metadata: {
+            username: updatedUser.username,
+            role: updatedUser.role,
+            status: updatedUser.status,
+            groupIds: updatedUser.groupIds,
+          }
+        },
+        severity: isNew ? 'info' : 'notice',
+        status: 'success',
+        details: isNew
+          ? `کاربر جدید «${updatedUser.fullName}» با شناسه ${updatedUser.username} و نقش ${updatedUser.role} ایجاد شد.`
+          : `مشخصات، نقش یا عضویت گروه کاربر ${updatedUser.username} تغییر یافت.`,
+        details_en: isNew
+          ? `User ${updatedUser.username} created with role ${updatedUser.role}.`
+          : `Profile and roles updated for user ${updatedUser.username}.`,
+      });
+    } catch (err) {
+      console.warn('Failed to log user audit event:', err);
+    }
+
     setUserModalOpen(false);
   };
 
@@ -190,10 +227,32 @@ export const LocalUsersTab: React.FC<LocalUsersTabProps> = ({
       alert(isEn ? 'The root administrator account cannot be disabled.' : 'امکان غیرفعال‌سازی کاربر اصلی ادمین وجود ندارد.');
       return;
     }
+    const newStatus = user.status === 'active' ? 'disabled' : 'active';
     const newUsers = users.map((u) =>
-      u.id === user.id ? { ...u, status: (u.status === 'active' ? 'disabled' : 'active') as 'active' | 'disabled' } : u
+      u.id === user.id ? { ...u, status: newStatus as 'active' | 'disabled' } : u
     );
     onSaveUsers(newUsers);
+
+    try {
+      logPortalEvent({
+        category: 'user_management',
+        action: 'USER_STATUS_TOGGLED',
+        title: `تغییر وضعیت فعال/غیرفعال کاربر «${user.username}» به ${newStatus}`,
+        title_en: `User ${user.username} status toggled to ${newStatus}`,
+        target: {
+          type: 'user',
+          id: user.id,
+          name: `${user.fullName} (${user.username})`,
+          metadata: { previousStatus: user.status, newStatus }
+        },
+        severity: 'warning',
+        status: 'success',
+        details: `وضعیت حساب کاربری ${user.username} به ${newStatus} تغییر یافت.`,
+        details_en: `Account status for ${user.username} was set to ${newStatus}.`,
+      });
+    } catch (e) {
+      // ignore
+    }
   };
 
   // Handler: Delete User
@@ -202,6 +261,7 @@ export const LocalUsersTab: React.FC<LocalUsersTabProps> = ({
       alert(isEn ? 'The root administrator account cannot be deleted.' : 'امکان حذف کاربر اصلی مدیر سیستم وجود ندارد.');
       return;
     }
+    const targetUser = users.find((u) => u.id === userId);
     const newUsers = users.filter((u) => u.id !== userId);
     // Remove from all groups
     const newGroups = groups.map((g) => ({
@@ -210,6 +270,30 @@ export const LocalUsersTab: React.FC<LocalUsersTabProps> = ({
     }));
     onSaveUsers(newUsers);
     onSaveGroups(newGroups);
+
+    if (targetUser) {
+      try {
+        logPortalEvent({
+          category: 'user_management',
+          action: 'USER_DELETED',
+          title: `حذف حساب کاربری «${targetUser.username}» (${targetUser.fullName})`,
+          title_en: `Local user account deleted: ${targetUser.username}`,
+          target: {
+            type: 'user',
+            id: targetUser.id,
+            name: `${targetUser.fullName} (${targetUser.username})`,
+            metadata: { username: targetUser.username, role: targetUser.role }
+          },
+          severity: 'warning',
+          status: 'success',
+          details: `کاربر ${targetUser.username} (${targetUser.fullName}) توسط مدیر ارشد از سامانه حذف گردید.`,
+          details_en: `User account ${targetUser.username} was permanently removed.`,
+        });
+      } catch (e) {
+        // ignore
+      }
+    }
+
     setDeleteConfirm(null);
   };
 

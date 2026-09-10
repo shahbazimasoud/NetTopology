@@ -48,6 +48,7 @@ import {
   logBackupAudit,
   clearBackupAuditLogs
 } from '../../services/backupService';
+import { logPortalEvent } from '../../services/auditLogger';
 import { APP_VERSION } from '../../version';
 
 interface BackupPortalTabProps {
@@ -201,6 +202,30 @@ export const BackupPortalTab: React.FC<BackupPortalTabProps> = ({
         checksum: pkg.metadata.checksumSha256
       });
 
+      // Also dispatch to system-wide audit portal log
+      logPortalEvent({
+        category: 'backup_recovery',
+        action: pkg.metadata.isEncrypted ? 'BACKUP_EXPORT_ENCRYPTED' : 'BACKUP_EXPORT',
+        title: `استخراج پکیج پشتیبان جامع (${pkg.metadata.scopeLabel})`,
+        title_en: `Full backup package exported (${pkg.metadata.scopeLabel})`,
+        actor: { username: activePolicy.subjectName, role: activePolicy.name },
+        target: {
+          type: 'backup',
+          name: `nettopology-backup-${pkg.metadata.scope}.${pkg.metadata.isEncrypted ? 'enc.json' : 'json'}`,
+          metadata: {
+            scope: pkg.metadata.scope,
+            isEncrypted: pkg.metadata.isEncrypted,
+            checksum: pkg.metadata.checksumSha256,
+            deviceCount: pkg.metadata.counts.devices,
+            mapsCount: pkg.metadata.counts.customMaps,
+          }
+        },
+        severity: 'notice',
+        status: 'success',
+        details: `تولید و دانلود پکیج بکاپ شامل ${pkg.metadata.counts.devices} تجهیز، ${pkg.metadata.counts.customMaps} نقشه.`,
+        details_en: `Exported backup package containing ${pkg.metadata.counts.devices} devices and ${pkg.metadata.counts.customMaps} maps.`,
+      });
+
       refreshAuditLogs();
     } catch (err: any) {
       alert(`خطا در ایجاد پکیج بکاپ: ${err.message}`);
@@ -289,6 +314,26 @@ export const BackupPortalTab: React.FC<BackupPortalTabProps> = ({
         status: 'success',
         details: `بازیابی موفق (${restoreMode === 'overwrite' ? 'جایگزینی کامل' : 'ادغام هوشمند'}). ${res.details}`,
         checksum: inspectionResult.metadata?.checksumSha256
+      });
+
+      logPortalEvent({
+        category: 'backup_recovery',
+        action: restoreMode === 'overwrite' ? 'BACKUP_RESTORE_OVERWRITE' : 'BACKUP_RESTORE_MERGE',
+        title: `بازیابی پایگاه داده سامانه (${restoreMode === 'overwrite' ? 'جایگزینی کامل' : 'ادغام هوشمند'})`,
+        title_en: `Database backup restored (${restoreMode})`,
+        actor: { username: activePolicy.subjectName, role: activePolicy.name },
+        target: {
+          type: 'backup',
+          name: selectedFile?.name || 'backup-package.json',
+          metadata: {
+            mode: restoreMode,
+            checksum: inspectionResult.metadata?.checksumSha256,
+          }
+        },
+        severity: 'warning',
+        status: 'success',
+        details: `بازیابی موفقیت‌آمیز پایگاه داده (${restoreMode === 'overwrite' ? 'جایگزینی کامل' : 'ادغام هوشمند'}). ${res.details}`,
+        details_en: `Database restored successfully. ${res.details}`,
       });
 
       refreshAuditLogs();

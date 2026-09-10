@@ -50,6 +50,7 @@ import {
   loadSimulatedRoleId,
   saveSimulatedRoleId
 } from '../../services/settingsStorage';
+import { logPortalEvent } from '../../services/auditLogger';
 import { useLanguage } from '../../i18n';
 
 interface AccessControlTabProps {
@@ -153,10 +154,34 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
     );
     if (!confirmed) return;
 
+    const targetPolicy = policies.find((p) => p.id === id);
     const updated = policies.filter((p) => p.id !== id);
     onSavePolicies(updated);
     if (activeSimulatedPolicyId === id) {
       onSelectSimulatedPolicy(updated[0]?.id || '');
+    }
+
+    if (targetPolicy) {
+      try {
+        logPortalEvent({
+          category: 'rbac_policy',
+          action: 'RBAC_POLICY_DELETED',
+          title: `حذف پالیسی دسترسی «${targetPolicy.name}»`,
+          title_en: `Access policy deleted: ${targetPolicy.name}`,
+          target: {
+            type: 'policy',
+            id: targetPolicy.id,
+            name: targetPolicy.name,
+            metadata: { subjectName: targetPolicy.subjectName, subjectType: targetPolicy.subjectType }
+          },
+          severity: 'warning',
+          status: 'success',
+          details: `پالیسی دسترسی ${targetPolicy.name} با شناسه ${targetPolicy.id} حذف شد.`,
+          details_en: `Access policy ${targetPolicy.name} was removed.`,
+        });
+      } catch (err) {
+        // ignore
+      }
     }
   };
 
@@ -171,6 +196,38 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
       updated = policies.map((p) => (p.id === editingPolicy.id ? editingPolicy : p));
     }
     onSavePolicies(updated);
+
+    try {
+      logPortalEvent({
+        category: 'rbac_policy',
+        action: isCreating ? 'RBAC_POLICY_CREATED' : 'RBAC_POLICY_UPDATED',
+        title: isCreating
+          ? `ایجاد پالیسی دسترسی جدید «${editingPolicy.name}»`
+          : `تغییر سطح دسترسی و اختیارات در پالیسی «${editingPolicy.name}»`,
+        title_en: isCreating
+          ? `New access policy created: ${editingPolicy.name}`
+          : `Access policy updated: ${editingPolicy.name}`,
+        target: {
+          type: 'policy',
+          id: editingPolicy.id,
+          name: editingPolicy.name,
+          metadata: {
+            subjectName: editingPolicy.subjectName,
+            subjectType: editingPolicy.subjectType,
+            canExportBackup: editingPolicy.permissions?.canExportBackup,
+            canImportBackup: editingPolicy.permissions?.canImportBackup,
+            terminalAccess: editingPolicy.permissions?.terminalAccess,
+          }
+        },
+        severity: 'notice',
+        status: 'success',
+        details: `پالیسی ${editingPolicy.name} برای ${editingPolicy.subjectType} ${editingPolicy.subjectName} ذخیره شد.`,
+        details_en: `Access policy ${editingPolicy.name} saved.`,
+      });
+    } catch (err) {
+      // ignore
+    }
+
     setEditingPolicy(null);
     setIsCreating(false);
   };

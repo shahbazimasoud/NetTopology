@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Device, ConfigTemplate, TemplateApplyResult, TemplateExecutionLog } from '../types';
 import { fetchTemplates, applyTemplateToDevice } from '../services/api';
+import { logDeviceCommand } from '../services/auditLogger';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface ApplyTemplateModalProps {
@@ -248,6 +249,27 @@ export const ApplyTemplateModal: React.FC<ApplyTemplateModalProps> = ({
 
       setApplyResult(result);
       setActiveStep('done');
+
+      // Audit Log template application
+      try {
+        logDeviceCommand({
+          deviceId: selectedDevice.id,
+          deviceName: selectedDevice.name,
+          deviceIp: selectedDevice.ip,
+          deviceVendor: selectedDevice.model.toLowerCase().includes('mikrotik') ? 'mikrotik' : 'cisco',
+          deviceModel: selectedDevice.model,
+          deviceLocation: [selectedDevice.building, selectedDevice.floor, selectedDevice.unit, selectedDevice.rack ? `رک ${selectedDevice.rack}` : ''].filter(Boolean).join(' > '),
+          channel: 'template_push',
+          command: result.rendered_script || currentTemplate.commands,
+          riskLevel: 'medium',
+          status: 'success',
+          outputSummary: result.message,
+          notes: `اعمال موفقیت‌آمیز قالب «${currentTemplate.name}»`,
+        });
+      } catch (logErr) {
+        console.warn('Failed to audit template execution:', logErr);
+      }
+
       if (onApplied) {
         onApplied(result.device);
       }

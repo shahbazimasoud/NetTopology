@@ -14,6 +14,7 @@ import { CiscoTerminalModal } from './components/CiscoTerminalModal';
 import { ApplyTemplateModal } from './components/ApplyTemplateModal';
 import { ReleaseNotesModal } from './components/ReleaseNotesModal';
 import { SettingsView } from './components/settings/SettingsView';
+import { AuditLogsView } from './components/logs/AuditLogsView';
 import { APP_VERSION } from './version';
 import { Device, TopologyData } from './types';
 import {
@@ -28,6 +29,12 @@ import {
   resetDemoData,
   writeMemory
 } from './services/api';
+import {
+  logDeviceAddition,
+  logDeviceDeletion,
+  logDeviceUpdate,
+  logDeviceCommand
+} from './services/auditLogger';
 import { useLanguage } from './i18n';
 
 export default function App() {
@@ -217,6 +224,9 @@ export default function App() {
   const handleAddDevice = async (newDev: Partial<Device>) => {
     const res = await addDevice(newDev);
     await loadData();
+    if (res.device) {
+      logDeviceAddition(res.device);
+    }
     showToast(t('toast_device_added', { name: newDev.name || '' }));
     return res.device;
   };
@@ -224,8 +234,12 @@ export default function App() {
   // Update existing device
   const handleUpdateDevice = async (id: string, updates: Partial<Device>) => {
     try {
+      const oldDev = devices.find((d) => d.id === id);
       const res = await updateDevice(id, updates);
       await loadData();
+      if (res.device) {
+        logDeviceUpdate(id, oldDev, res.device);
+      }
       showToast(isEn ? `Device "${res.device.name}" updated successfully.` : `مشخصات تجهیز «${res.device.name}» با موفقیت ویرایش و ذخیره شد.`);
       return res.device;
     } catch (err: any) {
@@ -237,6 +251,10 @@ export default function App() {
   // Delete device
   const handleDeleteDevice = async (id: string) => {
     try {
+      const targetDev = devices.find((d) => d.id === id);
+      if (targetDev) {
+        logDeviceDeletion(targetDev);
+      }
       await deleteDevice(id);
       await loadData();
       showToast(t('toast_device_deleted'));
@@ -261,8 +279,25 @@ export default function App() {
   // Write running-config to startup-config (NVRAM)
   const handleWriteMemory = async (deviceId: string) => {
     try {
+      const dev = devices.find((d) => d.id === deviceId);
       const res = await writeMemory(deviceId);
       await loadData();
+      if (dev) {
+        logDeviceCommand({
+          deviceId: dev.id,
+          deviceName: dev.name,
+          deviceIp: dev.ip,
+          deviceVendor: dev.model.toLowerCase().includes('mikrotik') ? 'mikrotik' : 'cisco',
+          deviceModel: dev.model,
+          deviceLocation: [dev.building, dev.floor, dev.unit, dev.rack ? `رک ${dev.rack}` : ''].filter(Boolean).join(' > '),
+          channel: 'port_context_menu',
+          command: 'write memory',
+          riskLevel: 'medium',
+          status: 'success',
+          outputSummary: 'Building configuration...\n[OK]',
+          notes: 'ذخیره Running-Config در Startup-Config از طریق کنترل پنل پورتال',
+        });
+      }
       showToast(isEn ? ((res as any).message_en || t('toast_write_mem_success')) : (res.message || t('toast_write_mem_success')));
     } catch (err: any) {
       showToast(t('toast_write_mem_error', { error: err.message }));
@@ -380,6 +415,8 @@ export default function App() {
           {activeTab === 'scanner' && (
             <CdpLldpScannerView onNavigateToTopology={() => setActiveTab('schematic')} />
           )}
+
+          {activeTab === 'logs' && <AuditLogsView />}
 
           {(activeTab === 'settings' ||
             activeTab === 'settings-groups' ||

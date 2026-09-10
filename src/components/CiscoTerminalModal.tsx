@@ -37,6 +37,7 @@ import {
   sshDisconnect,
 } from '../services/api';
 import { useLanguage } from '../i18n/LanguageContext';
+import { logDeviceCommand, evaluateCommandRisk } from '../services/auditLogger';
 
 interface CiscoTerminalModalProps {
   device: Device | null;
@@ -401,6 +402,27 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
     // Append input line
     const inputLine: TerminalLine = { id: String(Date.now()), type: 'input', text: `${promptText} ${trimmed}` };
+
+    // Audit Log command execution
+    if (device && cmdLower !== '?' && cmdLower !== 'help') {
+      try {
+        logDeviceCommand({
+          deviceId: device.id,
+          deviceName: device.name,
+          deviceIp: device.ip,
+          deviceVendor: isMikroTik ? 'mikrotik' : 'cisco',
+          deviceModel: device.model,
+          deviceLocation: [device.building, device.floor, device.unit, device.rack ? `رک ${device.rack}` : ''].filter(Boolean).join(' > '),
+          channel: 'terminal_interactive',
+          command: trimmed,
+          riskLevel: evaluateCommandRisk(trimmed),
+          status: 'success',
+          notes: `اجرای تعاملی در مد ${cliMode}`,
+        });
+      } catch (err) {
+        console.warn('Failed to audit command:', err);
+      }
+    }
 
     // If active in real SSH session, attempt direct hardware command execution
     if (sshSessionMode === 'real_ssh' && device) {

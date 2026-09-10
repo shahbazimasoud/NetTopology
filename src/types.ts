@@ -439,4 +439,85 @@ export interface BackupAuditEntry {
   checksum?: string;
 }
 
+// ==========================================
+// Centralized Enterprise Audit & Activity Logs System
+// ==========================================
+
+export type AuditLogCategory = 
+  | 'user_management'
+  | 'rbac_policy'
+  | 'device_inventory'
+  | 'backup_recovery'
+  | 'topology_network'
+  | 'port_interface'
+  | 'system_auth';
+
+export type AuditLogSeverity = 'info' | 'notice' | 'warning' | 'critical';
+export type AuditLogStatus = 'success' | 'failed' | 'denied';
+
+export interface AuditActor {
+  username: string;
+  role: string;
+  ipAddress?: string;
+}
+
+export interface AuditTarget {
+  type: 'user' | 'group' | 'policy' | 'device' | 'backup' | 'map' | 'port' | 'template';
+  id?: string;
+  name: string;
+  ip?: string;
+  model?: string;
+  vendor?: string;
+  location?: string; // e.g. "ساختمان مرکزی > طبقه ۲ > اتاق IT > رک B02"
+  portsCount?: number;
+  metadata?: Record<string, any>;
+}
+
+export interface PortalAuditLogEntry {
+  id: string;
+  timestamp: string; // ISO 8601
+  category: AuditLogCategory;
+  action: string;
+  title: string;
+  title_en: string;
+  actor: AuditActor;
+  target: AuditTarget;
+  severity: AuditLogSeverity;
+  status: AuditLogStatus;
+  details: string;
+  details_en: string;
+  changesDiff?: {
+    field: string;
+    before?: any;
+    after?: any;
+  }[];
+}
+
+export type CommandRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+export type CommandChannel = 
+  | 'terminal_interactive'
+  | 'template_push'
+  | 'port_context_menu'
+  | 'batch_config'
+  | 'api_script';
+
+export interface DeviceCommandLogEntry {
+  id: string;
+  timestamp: string; // ISO 8601
+  actor: AuditActor;
+  deviceId: string;
+  deviceName: string;
+  deviceIp: string;
+  deviceVendor: 'cisco' | 'mikrotik' | 'linux' | 'generic';
+  deviceModel?: string;
+  deviceLocation: string;
+  channel: CommandChannel;
+  command: string;
+  riskLevel: CommandRiskLevel;
+  status: 'success' | 'failed' | 'denied';
+  outputSummary?: string;
+  durationMs?: number;
+  notes?: string;
+}
+
 
