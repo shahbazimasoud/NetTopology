@@ -55,6 +55,109 @@ export async function deleteDevice(id: string): Promise<{ message: string }> {
   return res.json();
 }
 
+export async function fetchDeviceCapabilities(deviceId: string): Promise<import('../types').DevicePlatformInfo> {
+  const res = await fetch(`${API_BASE}/devices/${deviceId}/capabilities`);
+  if (!res.ok) throw new Error('Failed to fetch device capabilities');
+  return res.json();
+}
+
+export async function fetchDeviceConnection(deviceId: string): Promise<{
+  connected: boolean;
+  platform: string;
+  protocol: string;
+  latency_ms?: number;
+  sessionId?: string;
+  isReal?: boolean;
+  banner?: string;
+  mode?: string;
+}> {
+  const res = await fetch(`${API_BASE}/devices/${deviceId}/connection`);
+  if (!res.ok) throw new Error('Failed to fetch device connection state');
+  return res.json();
+}
+
+export async function connectDevice(deviceId: string): Promise<{
+  success: boolean;
+  connected: boolean;
+  sessionId: string;
+  platform: string;
+  isReal: boolean;
+  latency_ms: number;
+  banner: string;
+  mode?: string;
+}> {
+  const res = await fetch(`${API_BASE}/devices/${deviceId}/connection`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) throw new Error('Failed to connect to device');
+  return res.json();
+}
+
+export async function disconnectDevice(deviceId: string): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`${API_BASE}/devices/${deviceId}/connection`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to disconnect device');
+  return res.json();
+}
+
+export async function executeDeviceOperation(
+  deviceId: string,
+  operation: string,
+  iface?: string,
+  params?: Record<string, any>,
+  userRole?: string
+): Promise<{
+  success: boolean;
+  cli_command: string;
+  output: string;
+  isReal: boolean;
+  durationMs: number;
+  port?: SwitchPort;
+  message?: string;
+}> {
+  const res = await fetch(`${API_BASE}/devices/${deviceId}/operations`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(userRole ? { 'X-User-Role': userRole } : {}),
+    },
+    body: JSON.stringify({ operation, interface: iface, params, user_role: userRole }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Operation failed on device');
+  }
+  return res.json();
+}
+
+export async function executeDeviceTerminal(
+  deviceId: string,
+  command: string,
+  userRole?: string
+): Promise<{
+  success: boolean;
+  output: string;
+  isReal: boolean;
+  durationMs: number;
+  exitCode?: number;
+}> {
+  const res = await fetch(`${API_BASE}/devices/${deviceId}/terminal/execute`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(userRole ? { 'X-User-Role': userRole } : {}),
+    },
+    body: JSON.stringify({ command, user_role: userRole }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || err.error || 'Failed to execute command on device');
+  }
+  return res.json();
+}
+
 export async function fetchDevicePorts(deviceId: string): Promise<{
   device: Device;
   ports: SwitchPort[];

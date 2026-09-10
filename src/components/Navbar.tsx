@@ -36,16 +36,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   useEffect(() => {
     if (!profileOpen) return;
-    const handleOutsideClick = (event: MouseEvent | TouchEvent) => {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+    const handleOutsideClick = (event: Event) => {
+      const target = event.target as Node | null;
+      if (profileRef.current && target && !profileRef.current.contains(target)) {
         setProfileOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleOutsideClick, true);
-    document.addEventListener('touchstart', handleOutsideClick, true);
+    window.addEventListener('pointerdown', handleOutsideClick, true);
+    window.addEventListener('mousedown', handleOutsideClick, true);
+    window.addEventListener('touchstart', handleOutsideClick, true);
     return () => {
-      document.removeEventListener('mousedown', handleOutsideClick, true);
-      document.removeEventListener('touchstart', handleOutsideClick, true);
+      window.removeEventListener('pointerdown', handleOutsideClick, true);
+      window.removeEventListener('mousedown', handleOutsideClick, true);
+      window.removeEventListener('touchstart', handleOutsideClick, true);
     };
   }, [profileOpen]);
 
@@ -61,7 +64,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const currentThemeObj = themeOptions.find((t) => t.id === panelTheme) || themeOptions[0];
 
   return (
-    <header className="h-14 spatial-glass text-white flex items-center justify-between px-4 lg:px-6 shrink-0 border-b border-white/10 sticky top-0 z-30 shadow-xl backdrop-blur-xl">
+    <header className="h-14 spatial-glass text-white flex items-center justify-between px-4 lg:px-6 shrink-0 border-b border-white/10 sticky top-0 z-50 shadow-xl backdrop-blur-xl">
       {/* Brand & Identity */}
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-white shadow-[0_0_15px_rgba(99,102,241,0.5)] text-xs font-mono pulse-glow-cyan border border-white/20">

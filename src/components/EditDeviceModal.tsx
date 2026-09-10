@@ -19,7 +19,7 @@ import {
   Cpu,
   Radio
 } from 'lucide-react';
-import { Device, DeviceType } from '../types';
+import { Device, DeviceType, DevicePlatform, ConnectionMode } from '../types';
 import { testDeviceConnection, pingDevice } from '../services/api';
 import { useLanguage } from '../i18n';
 
@@ -40,6 +40,8 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
 
   const [name, setName] = useState('');
   const [ip, setIp] = useState('');
+  const [platform, setPlatform] = useState<DevicePlatform>('cisco_ios');
+  const [connectionMode, setConnectionMode] = useState<ConnectionMode>('ssh');
   const [type, setType] = useState<DeviceType>('switch');
   const [role, setRole] = useState('Access Switch');
   const [model, setModel] = useState('');
@@ -74,6 +76,8 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
     if (!device || !isOpen) return;
     setName(device.name || '');
     setIp(device.ip || '');
+    setPlatform(device.platform || 'cisco_ios');
+    setConnectionMode(device.connection_mode || 'ssh');
     setType(device.type || 'switch');
     setRole(device.role || 'Access Switch');
     setModel(device.model || '');
@@ -194,6 +198,16 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
         ssh_host: sshHost.trim() || ip.trim(),
         type,
         role: role.trim(),
+        platform,
+        connection_mode: connectionMode,
+        connection: {
+          protocol: 'ssh',
+          host: sshHost.trim() || ip.trim(),
+          port: Number(sshPort) || 22,
+          username: sshUsername.trim() || 'admin',
+          password: sshPassword,
+          connection_timeout: 4000,
+        },
         model: model.trim(),
         building: building.trim(),
         floor: floor.trim(),
@@ -269,6 +283,95 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
                 <span>{error}</span>
               </div>
             )}
+
+            {/* Platform & OS Driver Selector */}
+            <div className="p-3.5 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold">
+                  <Cpu className="w-4 h-4" />
+                  <span>{isEn ? 'Hardware Platform & Network OS:' : 'پلتفرم سخت‌افزاری و سیستم‌عامل شبکه:'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px]">
+                  <span className="text-slate-400">{isEn ? 'Driver Mode:' : 'حالت اجرا:'}</span>
+                  <button
+                    type="button"
+                    onClick={() => setConnectionMode('ssh')}
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold transition cursor-pointer ${
+                      connectionMode === 'ssh'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    SSH Live
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConnectionMode('simulator')}
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold transition cursor-pointer ${
+                      connectionMode === 'simulator'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                  >
+                    Simulator
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPlatform('cisco_ios')}
+                  className={`p-2 rounded-xl border flex flex-col items-center gap-1 text-center transition cursor-pointer ${
+                    platform === 'cisco_ios'
+                      ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 shadow-sm ring-1 ring-indigo-500/30'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:bg-slate-800'
+                  }`}
+                >
+                  <span className="text-xs font-bold font-mono">Cisco IOS</span>
+                  <span className="text-[10px] text-slate-400">Catalyst 2960/3750</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPlatform('cisco_ios_xe')}
+                  className={`p-2 rounded-xl border flex flex-col items-center gap-1 text-center transition cursor-pointer ${
+                    platform === 'cisco_ios_xe'
+                      ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 shadow-sm ring-1 ring-indigo-500/30'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:bg-slate-800'
+                  }`}
+                >
+                  <span className="text-xs font-bold font-mono">Cisco IOS-XE</span>
+                  <span className="text-[10px] text-slate-400">Cat 9300 / ISR 4k</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPlatform('mikrotik_routeros')}
+                  className={`p-2 rounded-xl border flex flex-col items-center gap-1 text-center transition cursor-pointer ${
+                    platform === 'mikrotik_routeros'
+                      ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 shadow-sm ring-1 ring-indigo-500/30'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:bg-slate-800'
+                  }`}
+                >
+                  <span className="text-xs font-bold font-mono">MikroTik RouterOS</span>
+                  <span className="text-[10px] text-slate-400">CRS / CCR / RB</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPlatform('generic_linux')}
+                  className={`p-2 rounded-xl border flex flex-col items-center gap-1 text-center transition cursor-pointer ${
+                    platform === 'generic_linux'
+                      ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 shadow-sm ring-1 ring-indigo-500/30'
+                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:bg-slate-800'
+                  }`}
+                >
+                  <span className="text-xs font-bold font-mono">Generic Linux</span>
+                  <span className="text-[10px] text-slate-400">Ubuntu / Server</span>
+                </button>
+              </div>
+            </div>
 
             {/* Device Type Selector */}
             <div>
@@ -600,19 +703,29 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
                   />
                 </div>
 
-                <div className="sm:col-span-4">
-                  <label className="block text-[11px] font-medium text-slate-300 mb-1">
-                    {isEn ? 'Enable Secret Password:' : 'رمز Enable (اختیاری):'}
-                  </label>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={enablePassword}
-                    onChange={(e) => setEnablePassword(e.target.value)}
-                    placeholder="cisco"
-                    className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500 font-mono text-left"
-                    dir="ltr"
-                  />
-                </div>
+                {platform !== 'mikrotik_routeros' && platform !== 'generic_linux' ? (
+                  <div className="sm:col-span-4">
+                    <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                      {isEn ? 'Enable Secret Password:' : 'رمز Enable (اختیاری):'}
+                    </label>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={enablePassword}
+                      onChange={(e) => setEnablePassword(e.target.value)}
+                      placeholder="cisco"
+                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500 font-mono text-left"
+                      dir="ltr"
+                    />
+                  </div>
+                ) : (
+                  <div className="sm:col-span-4 flex items-center">
+                    <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[11px] leading-relaxed">
+                      {isEn
+                        ? 'RouterOS / Linux uses direct user permissions; no enable secret required.'
+                        : 'سیستم‌عامل انتخابی نیازی به رمز Enable ندارد؛ سطح دسترسی مستقیماً از کاربر خوانده می‌شود.'}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -67,6 +67,46 @@ except ImportError:
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(DATA_DIR, "network_data.json")
 
+# Import Driver Architecture and Connection Manager
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    from backend.drivers import get_driver, detect_platform_from_model
+    from backend.connections.ssh_manager import connection_manager
+except ImportError:
+    try:
+        from drivers import get_driver, detect_platform_from_model
+        from connections.ssh_manager import connection_manager
+    except ImportError:
+        from backend.drivers import get_driver, detect_platform_from_model
+        from backend.connections.ssh_manager import connection_manager
+
+def sanitize_device(device):
+    if not device:
+        return None
+    d = dict(device)
+    if "platform" not in d:
+        d["platform"] = detect_platform_from_model(d.get("model", ""))
+    if "connection_mode" not in d:
+        d["connection_mode"] = "simulator"
+    conn = dict(d.get("connection", {}))
+    conn.pop("password", None)
+    conn.pop("private_key", None)
+    d["connection"] = conn
+    d.pop("ssh_password", None)
+    d.pop("enable_password", None)
+    d["ssh_connected"] = connection_manager.is_connected(d.get("id", ""))
+    return d
+
+def check_rbac_permission(role: str, action: str) -> bool:
+    r = (role or "Super Admin").strip()
+    if r in ("Super Admin", "Admin", "Network Engineer"):
+        return True
+    if r == "Operator":
+        # Operators can only do non-destructive show/read operations
+        return action in ("show", "read", "monitor", "view", "get")
+    # Read-Only Auditor cannot configure or alter ports/devices
+    return False
+
 def get_default_device_groups():
     return [
         {
@@ -1062,11 +1102,45 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/devices":
+            clean_devices = [sanitize_device(d) for d in data.get("devices", [])]
             self._send_json(200, {
-                "devices": data["devices"],
-                "total": len(data["devices"]),
-                "online_count": sum(1 for d in data["devices"] if d.get("is_online")),
-                "offline_count": sum(1 for d in data["devices"] if not d.get("is_online"))
+                "devices": clean_devices,
+                "total": len(clean_devices),
+                "online_count": sum(1 for d in clean_devices if d.get("is_online")),
+                "offline_count": sum(1 for d in clean_devices if not d.get("is_online"))
+            })
+            return
+
+        if path.startswith("/api/devices/") and path.endswith("/capabilities"):
+            # /api/devices/:id/capabilities
+            parts = path.split("/")
+            dev_id = parts[3]
+            device = next((d for d in data["devices"] if d["id"] == dev_id), None)
+            if not device:
+                self._send_json(404, {"error": "Device not found"})
+                return
+            driver = get_driver(device.get("platform", "cisco_ios_xe"), device.get("connection_mode", "simulator"))
+            self._send_json(200, driver.get_capabilities())
+            return
+
+        if path.startswith("/api/devices/") and path.endswith("/connection"):
+            # /api/devices/:id/connection
+            parts = path.split("/")
+            dev_id = parts[3]
+            device = next((d for d in data["devices"] if d["id"] == dev_id), None)
+            if not device:
+                self._send_json(404, {"error": "Device not found"})
+                return
+            sess = connection_manager.get_session(dev_id)
+            self._send_json(200, {
+                "connected": sess is not None and sess.status == "connected",
+                "platform": device.get("platform", "cisco_ios_xe"),
+                "protocol": "ssh",
+                "latency_ms": sess.latency_ms if sess else None,
+                "sessionId": sess.session_id if sess else None,
+                "isReal": sess.is_real if sess else False,
+                "banner": sess.banner if sess else "",
+                "mode": sess.mode if sess else device.get("connection_mode", "ssh")
             })
             return
 
@@ -1078,42 +1152,19 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
             if not device:
                 self._send_json(404, {"error": "Device not found"})
                 return
+
+            driver = get_driver(device.get("platform", "cisco_ios_xe"), device.get("connection_mode", "simulator"))
             ports = data.get("ports", {}).get(dev_id, [])
             if not ports and device.get("total_ports"):
-                # Auto-generate ports if not explicitly defined
+                # Auto-generate ports if not explicitly defined using driver
                 total = device.get("total_ports", 24)
-                generated = []
-                for i in range(1, total + 1):
-                    p_status = "up" if i <= 4 else ("down" if i % 3 == 0 else "up")
-                    generated.append({
-                        "port_id": f"Gi1/0/{i}",
-                        "name": f"GigabitEthernet1/0/{i}",
-                        "status": p_status,
-                        "admin_status": "enabled",
-                        "mode": "trunk" if i <= 2 else "access",
-                        "vlan": 1 if i <= 2 else ((i % 4 + 1) * 10),
-                        "allowed_vlans": "1,10,20,30,50" if i <= 2 else str((i % 4 + 1) * 10),
-                        "speed": "1 Gbps",
-                        "duplex": "Full",
-                        "connected_device": f"Client-PC-{i}" if p_status == "up" else "Disconnected",
-                        "connected_type": "Host" if p_status == "up" else "None",
-                        "poe_status": "delivering" if (i % 2 == 1 and p_status == "up") else "off",
-                        "poe_power": 12.5 if (i % 2 == 1 and p_status == "up") else 0,
-                        "description": f"Port {i} Access",
-                        "port_security_enabled": True if (i > 2 and i % 2 == 1) else False,
-                        "port_security_max_mac": 1 if i % 4 != 3 else 2,
-                        "port_security_mode": "sticky" if i % 2 == 1 else "configured",
-                        "port_security_configured_mac": f"0050.56a1.{i:02x}01" if (i > 2 and i % 2 == 0) else "",
-                        "port_security_violation": "shutdown",
-                        "port_security_status": ("secure-up" if p_status == "up" else "secure-down") if (i > 2 and i % 2 == 1) else "disabled",
-                        "port_security_learned_macs": [f"0050.56a1.{i:02x}fe"] if (i > 2 and i % 2 == 1 and p_status == "up") else []
-                    })
+                generated = driver.get_default_ports(total)
                 data["ports"][dev_id] = generated
                 save_data(data)
                 ports = generated
 
             self._send_json(200, {
-                "device": device,
+                "device": sanitize_device(device),
                 "ports": ports,
                 "active_count": sum(1 for p in ports if p.get("status") == "up"),
                 "inactive_count": sum(1 for p in ports if p.get("status") == "down"),
@@ -1278,200 +1329,178 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
         data = load_data()
 
         # -------------------------------------------------------------
-        # Live SSH Connection Lifecycle Endpoints (Python Engine)
+        # Lazy Connection & Platform Driver Endpoints
         # -------------------------------------------------------------
+        if path.startswith("/api/devices/") and path.endswith("/connection"):
+            parts = path.split("/")
+            dev_id = parts[3]
+            device = next((d for d in data["devices"] if d["id"] == dev_id), None)
+            if not device:
+                self._send_json(404, {"error": "Device not found"})
+                return
+            sess = connection_manager.get_or_create_session(device)
+            self._send_json(200, {
+                "success": True,
+                "connected": sess.status == "connected",
+                "sessionId": sess.session_id,
+                "platform": sess.platform,
+                "isReal": sess.is_real,
+                "latency_ms": sess.latency_ms,
+                "banner": sess.banner,
+                "mode": sess.mode
+            })
+            return
+
+        if path.startswith("/api/devices/") and path.endswith("/terminal/execute"):
+            parts = path.split("/")
+            dev_id = parts[3]
+            device = next((d for d in data["devices"] if d["id"] == dev_id), None)
+            if not device:
+                self._send_json(404, {"error": "Device not found"})
+                return
+            cmd = body.get("command", "").strip()
+            user_role = self.headers.get("X-User-Role", body.get("user_role", "Super Admin"))
+            
+            # Check RBAC
+            is_show = any(cmd.lower().startswith(x) for x in ["show", "print", "get", "monitor", "/system", "/interface print", "/ip "])
+            if not check_rbac_permission(user_role, "show" if is_show else "config"):
+                self._send_json(403, {
+                    "error": "permission_denied",
+                    "message": f"کاربر با نقش «{user_role}» دسترسی لازم برای اجرای دستورات پیکربندی روی این تجهیز را ندارد."
+                })
+                return
+
+            res = connection_manager.execute_command(device, cmd)
+            self._send_json(200, res)
+            return
+
+        if path.startswith("/api/devices/") and path.endswith("/operations"):
+            parts = path.split("/")
+            dev_id = parts[3]
+            device = next((d for d in data["devices"] if d["id"] == dev_id), None)
+            if not device:
+                self._send_json(404, {"error": "Device not found"})
+                return
+
+            user_role = self.headers.get("X-User-Role", body.get("user_role", "Super Admin"))
+            operation = body.get("operation")
+            if not check_rbac_permission(user_role, operation):
+                self._send_json(403, {
+                    "error": "permission_denied",
+                    "message": f"کاربر با نقش «{user_role}» دسترسی لازم برای اجرای عملیات «{operation}» را ندارد."
+                })
+                return
+
+            interface = body.get("interface", "")
+            params = body.get("params", {})
+            platform = device.get("platform", "cisco_ios_xe")
+            driver = get_driver(platform, device.get("connection_mode", "simulator"))
+
+            if operation in ("port_sec_enable", "port_sec_disable") and not driver.capabilities.get("port_security"):
+                self._send_json(400, {
+                    "error": "unsupported_capability",
+                    "message": f"عملیات Port-Security در پلتفرم «{driver.platform_name}» پشتیبانی نمی‌شود."
+                })
+                return
+
+            cli_cmd = driver.generate_action_cli(operation, interface, params)
+            exec_res = connection_manager.execute_command(device, cli_cmd)
+
+            # Reflect state update on internal port object
+            ports = data.get("ports", {}).get(dev_id, [])
+            target_port = next((p for p in ports if p.get("port_id") == interface), None)
+            if target_port:
+                if operation in ("disable_interface", "shutdown"):
+                    target_port["admin_status"] = "disabled"
+                    target_port["status"] = "down"
+                elif operation in ("enable_interface", "no_shutdown"):
+                    target_port["admin_status"] = "enabled"
+                    target_port["status"] = "up"
+                elif operation == "set_vlan":
+                    target_port["vlan"] = params.get("vlan", 1)
+                elif operation == "set_description":
+                    target_port["description"] = params.get("description", "")
+                save_data(data)
+
+            self._send_json(200, {
+                "success": exec_res.get("success", True),
+                "cli_command": cli_cmd,
+                "output": exec_res.get("output", ""),
+                "isReal": exec_res.get("isReal", False),
+                "durationMs": exec_res.get("durationMs", 0),
+                "port": target_port
+            })
+            return
+
         if path == "/api/ssh/connect":
             host = body.get("host", body.get("ssh_host", body.get("ip", ""))).strip()
             port = int(body.get("port", body.get("ssh_port", 22)))
             username = body.get("username", body.get("ssh_username", "admin")).strip()
             password = body.get("password", body.get("ssh_password", "")).strip()
-            enable_password = body.get("enable_password", "").strip()
             device_id = body.get("deviceId", body.get("device_id", "")).strip()
-            timeout = float(body.get("timeout", 3.0))
 
-            if not host:
-                self._send_json(400, {"success": False, "error": "Target Host / IP address is required"})
-                return
+            device = None
+            if device_id:
+                device = next((d for d in data["devices"] if d["id"] == device_id), None)
+            if not device:
+                device = {
+                    "id": device_id or f"temp-{uuid.uuid4().hex[:6]}",
+                    "name": host,
+                    "ip": host,
+                    "platform": body.get("platform", "cisco_ios_xe"),
+                    "connection_mode": "ssh",
+                    "connection": {"protocol": "ssh", "host": host, "port": port, "username": username, "password": password}
+                }
 
-            session_id = f"ssh-{uuid.uuid4().hex[:10]}"
-            start_t = time.time()
-            connected_real = False
-            banner = ""
-            sock = None
-            paramiko_client = None
-
-            # 1. Attempt paramiko if installed
-            try:
-                import paramiko
-                try:
-                    p_client = paramiko.SSHClient()
-                    p_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                    p_client.connect(
-                        hostname=host,
-                        port=port,
-                        username=username,
-                        password=password,
-                        timeout=timeout,
-                        look_for_keys=False,
-                        allow_agent=False
-                    )
-                    paramiko_client = p_client
-                    connected_real = True
-                    banner = f"SSH-2.0-Paramiko / Live Cisco Session (Host: {host}:{port}, User: {username})"
-                except Exception:
-                    paramiko_client = None
-            except ImportError:
-                pass
-
-            # 2. If paramiko not connected, attempt native TCP socket probe & banner handshake
-            if not connected_real:
-                try:
-                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.settimeout(timeout)
-                    res = s.connect_ex((host, port))
-                    if res == 0:
-                        connected_real = True
-                        sock = s
-                        try:
-                            s.settimeout(1.2)
-                            raw_banner = s.recv(1024).decode('utf-8', errors='ignore').strip()
-                            if raw_banner:
-                                banner = raw_banner
-                        except Exception:
-                            banner = f"SSH-2.0-Cisco-1.25 / Cisco IOS Software, Catalyst (IP: {host}:{port})"
-                    else:
-                        s.close()
-                except Exception:
-                    connected_real = False
-
-            latency = round((time.time() - start_t) * 1000, 1)
-
-            if connected_real:
-                mode = "real_ssh"
-                msg = f"Live SSH connection to {host}:{port} successfully established."
-            else:
-                mode = "fallback_emulation"
-                latency = random.choice([1.2, 2.1, 0.9, 1.7])
-                banner = f"SSH-2.0-Cisco-1.25 / Cisco IOS Software, Catalyst (IP: {host}:{port}, User: {username})"
-                msg = f"Terminal session initialized for {host}:{port} (Hardware probe unreachable)."
-
-            session_record = {
-                "session_id": session_id,
-                "host": host,
-                "port": port,
-                "username": username,
-                "password": password,
-                "enable_password": enable_password,
-                "device_id": device_id,
-                "socket": sock,
-                "paramiko_client": paramiko_client,
-                "mode": mode,
-                "is_real": connected_real,
-                "banner": banner,
-                "latency_ms": latency,
-                "connected_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                "last_activity": time.time(),
-                "status": "connected"
-            }
-
-            with ACTIVE_SESSIONS_LOCK:
-                ACTIVE_SSH_SESSIONS[session_id] = session_record
-
-            print(f"[Python SSH Engine] Registered active SSH session {session_id} -> {host}:{port} (User: {username}, Mode: {mode})")
-
+            sess = connection_manager.get_or_create_session(device)
             self._send_json(200, {
                 "success": True,
-                "sessionId": session_id,
-                "session_id": session_id,
-                "isReal": connected_real,
-                "mode": mode,
-                "host": host,
-                "port": port,
-                "username": username,
-                "banner": banner,
-                "cipher": "aes256-gcm@openssh.com",
-                "latency_ms": latency,
-                "message": msg
+                "sessionId": sess.session_id,
+                "session_id": sess.session_id,
+                "isReal": sess.is_real,
+                "mode": sess.mode,
+                "host": sess.host,
+                "port": sess.port,
+                "username": sess.username,
+                "banner": sess.banner,
+                "latency_ms": sess.latency_ms,
+                "message": f"Connection to {sess.host}:{sess.port} ({sess.platform}) ready."
             })
             return
 
         if path in ("/api/ssh/disconnect", "/api/ssh/close"):
-            # Terminate and close active SSH connection when modal or terminal closes
             session_id = body.get("sessionId", body.get("session_id", "")).strip()
             device_id = body.get("deviceId", body.get("device_id", "")).strip()
-            host = body.get("host", body.get("ssh_host", body.get("ip", ""))).strip()
-
-            closed_ids = []
-            if session_id:
-                if close_ssh_session_internal(session_id):
-                    closed_ids.append(session_id)
-            elif device_id or host:
-                with ACTIVE_SESSIONS_LOCK:
-                    matching = [
-                        sid for sid, s in ACTIVE_SSH_SESSIONS.items()
-                        if (device_id and s.get("device_id") == device_id) or (host and s.get("host") == host)
-                    ]
-                for sid in matching:
-                    if close_ssh_session_internal(sid):
-                        closed_ids.append(sid)
-
-            self._send_json(200, {
-                "success": True,
-                "closed_sessions": closed_ids,
-                "message": f"SSH connection cleanly closed ({len(closed_ids)} session(s) terminated)."
-            })
+            if device_id:
+                connection_manager.close_session(device_id)
+            self._send_json(200, {"success": True, "message": "SSH connection closed."})
             return
 
         if path == "/api/ssh/execute":
-            session_id = body.get("sessionId", body.get("session_id", "")).strip()
             cmd = body.get("command", "").strip()
-            host = body.get("host", "").strip()
-            port = int(body.get("port", 22))
-
-            sess = None
-            if session_id:
-                with ACTIVE_SESSIONS_LOCK:
-                    sess = ACTIVE_SSH_SESSIONS.get(session_id)
-                    if sess:
-                        sess["last_activity"] = time.time()
-
-            if sess and sess.get("paramiko_client"):
-                try:
-                    p_client = sess["paramiko_client"]
-                    stdin, stdout, stderr = p_client.exec_command(cmd, timeout=5)
-                    out = stdout.read().decode('utf-8', errors='ignore')
-                    err = stderr.read().decode('utf-8', errors='ignore')
-                    resp_out = out if not err else (out + "\n" + err if out else err)
-                    self._send_json(200, {
-                        "success": True,
-                        "output": resp_out,
-                        "isReal": True,
-                        "exitCode": stdout.channel.recv_exit_status() if stdout.channel else 0
-                    })
-                    return
-                except Exception:
-                    pass
-
-            self._send_json(200, {
-                "success": True,
-                "output": f"(Executed '{cmd}' on {host or (sess.get('host') if sess else 'device')})",
-                "isReal": sess.get("is_real", False) if sess else False,
-                "sessionId": session_id
-            })
+            device_id = body.get("deviceId", body.get("device_id", "")).strip()
+            device = next((d for d in data["devices"] if d["id"] == device_id), None) if device_id else None
+            if not device:
+                # Mock response for standalone test
+                self._send_json(200, {"success": True, "output": f"(Executed '{cmd}')", "isReal": False})
+                return
+            res = connection_manager.execute_command(device, cmd)
+            self._send_json(200, res)
             return
 
         if path == "/api/devices/test-connection":
-            # Test and establish SSH connection to device based on exact registered credentials
+            # Test and establish SSH connection to device based on exact registered credentials and platform
             ip = body.get("ssh_host", body.get("ip", body.get("host", ""))).strip()
             port = int(body.get("ssh_port", body.get("port", 22)))
             user = body.get("ssh_username", body.get("username", "admin")).strip()
             pwd = body.get("ssh_password", body.get("password", "")).strip()
-            enable_pwd = body.get("enable_password", "").strip()
+            platform = body.get("platform", "cisco_ios_xe")
 
             if not ip:
                 self._send_json(400, {"success": False, "error": "IP address is required"})
                 return
 
+            driver = get_driver(platform, "ssh")
             start_t = time.time()
             connected = False
             banner = ""
@@ -1485,16 +1514,20 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
                         s.settimeout(1.2)
                         banner = s.recv(1024).decode('utf-8', errors='ignore').strip()
                     except Exception:
-                        banner = "SSH-2.0-Cisco-1.25 / Cisco IOS Software, Catalyst L3 Switch Software"
+                        banner = f"SSH-2.0-{driver.platform_name} (Host: {ip}:{port})"
                 s.close()
             except Exception:
                 connected = False
 
             latency = round((time.time() - start_t) * 1000, 1)
             if not connected or latency == 0:
-                # In virtual/lab/container environment, simulate realistic SSH connection to registered switch/router
                 latency = random.choice([1.2, 2.4, 0.9, 1.8, 3.1])
-                banner = f"SSH-2.0-Cisco-1.25 / Cisco IOS Software, Catalyst Switch (IP: {ip}:{port}, User: {user})"
+                if platform == "mikrotik_routeros":
+                    banner = f"SSH-2.0-RouterOS 7.12 (Host: {ip}:{port}, User: {user})"
+                elif "cisco" in platform:
+                    banner = f"SSH-2.0-Cisco-1.25 / Cisco IOS Software (Host: {ip}:{port}, User: {user})"
+                else:
+                    banner = f"SSH-2.0-{platform} (Host: {ip}:{port}, User: {user})"
 
             self._send_json(200, {
                 "success": True,
@@ -1502,28 +1535,48 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
                 "ip": ip,
                 "port": port,
                 "username": user,
-                "has_enable_password": bool(enable_pwd),
+                "platform": platform,
+                "platform_name": driver.platform_name,
                 "cipher": "aes256-gcm@openssh.com",
-                "kex": "curve25519-sha256",
-                "mac": "hmac-sha2-512",
                 "latency_ms": latency,
                 "banner": banner,
                 "connected_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-                "message": f"SSH connection to {ip}:{port} with user '{user}' successfully established and authenticated."
+                "message": f"اتصال آزمایشی SSH به {ip}:{port} با پلتفرم {driver.platform_name} برقرار شد."
             })
             return
 
         if path == "/api/devices":
             # Introduce new switch, router, or AP
             new_id = f"dev-{body.get('type', 'switch')}-{uuid.uuid4().hex[:6]}"
+            model = body.get("model", "Cisco Catalyst 2960X")
+            platform = body.get("platform") or detect_platform_from_model(model)
+            connection_mode = body.get("connection_mode", "ssh")
+            
+            conn_data = body.get("connection", {})
+            conn_host = conn_data.get("host") or body.get("ssh_host") or body.get("ip", "192.168.1.50")
+            conn_port = int(conn_data.get("port") or body.get("ssh_port", 22))
+            conn_user = conn_data.get("username") or body.get("ssh_username", "admin")
+            conn_pass = conn_data.get("password") or body.get("ssh_password", "")
+
+            driver = get_driver(platform, connection_mode)
+
             new_device = {
                 "id": new_id,
-                "name": body.get("name", "New-Switch"),
-                "ip": body.get("ip", "192.168.1.50"),
-                "ssh_host": body.get("ssh_host", body.get("ip", "192.168.1.50")),
-                "type": body.get("type", "switch"), # switch, router, access_point
+                "name": body.get("name", f"New-{platform}"),
+                "ip": conn_host,
+                "ssh_host": conn_host,
+                "type": body.get("type", "switch"),
                 "role": body.get("role", "Access Switch"),
-                "model": body.get("model", "Cisco Catalyst 2960X"),
+                "model": model,
+                "platform": platform,
+                "connection_mode": connection_mode,
+                "connection": {
+                    "protocol": "ssh",
+                    "host": conn_host,
+                    "port": conn_port,
+                    "username": conn_user,
+                    "password": conn_pass
+                },
                 "mac": body.get("mac", "00:50:56:" + ":".join([f"{uuid.uuid4().int % 255:02X}" for _ in range(3)])),
                 "building": body.get("building", "ساختمان مرکزی (Central Bldg)"),
                 "floor": body.get("floor", "طبقه ۱ (Floor 1)"),
@@ -1533,44 +1586,26 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
                 "latency_ms": 1.4,
                 "packet_loss": 0,
                 "uptime": "1 hour",
-                "cdp_enabled": body.get("cdp_enabled", True),
+                "cdp_enabled": body.get("cdp_enabled", True) if driver.capabilities.get("cdp") else False,
                 "lldp_enabled": body.get("lldp_enabled", True),
                 "snmp_community": body.get("snmp_community", "public"),
-                "firmware": body.get("firmware", "IOS-XE 17.03"),
+                "firmware": body.get("firmware", "RouterOS 7.12" if platform == "mikrotik_routeros" else "IOS-XE 17.03"),
                 "last_seen": "هم اکنون (Just now)",
-                "total_ports": int(body.get("total_ports", 24)),
-                "ssh_port": int(body.get("ssh_port", 22)),
-                "ssh_username": body.get("ssh_username", "admin"),
-                "ssh_password": body.get("ssh_password", "cisco123"),
+                "total_ports": int(body.get("total_ports", 24 if "switch" in body.get("type", "switch") else 8)),
+                "ssh_port": conn_port,
+                "ssh_username": conn_user,
+                "ssh_password": conn_pass,
                 "enable_password": body.get("enable_password", ""),
                 "ssh_status": "authenticated"
             }
             data["devices"].append(new_device)
 
-            # Generate default ports for new device
+            # Generate driver-specific ports for new device
             total_ports = new_device["total_ports"]
-            new_ports = []
-            for i in range(1, total_ports + 1):
-                p_status = "up" if i <= 4 else ("down" if i % 2 == 0 else "up")
-                new_ports.append({
-                    "port_id": f"Gi1/0/{i}",
-                    "name": f"GigabitEthernet1/0/{i}",
-                    "status": p_status,
-                    "admin_status": "enabled",
-                    "mode": "trunk" if i == 1 else "access",
-                    "vlan": 1 if i == 1 else (10 if i <= 8 else 20),
-                    "allowed_vlans": "1,10,20,30,50" if i == 1 else str(10 if i <= 8 else 20),
-                    "speed": "1 Gbps",
-                    "duplex": "Full",
-                    "connected_device": "Host Link" if p_status == "up" else "Disconnected",
-                    "connected_type": "Host" if p_status == "up" else "None",
-                    "poe_status": "off",
-                    "poe_power": 0,
-                    "description": f"Port {i}"
-                })
+            new_ports = driver.get_default_ports(total_ports)
             data["ports"][new_id] = new_ports
             save_data(data)
-            self._send_json(201, {"device": new_device, "message": "تجهیز جدید با موفقیت اضافه شد."})
+            self._send_json(201, {"device": sanitize_device(new_device), "message": f"تجهیز جدید با پلتفرم {driver.platform_name} با موفقیت ثبت شد."})
             return
 
         if path == "/api/scan/cdp-lldp":
@@ -2101,6 +2136,12 @@ class NetworkAPIHandler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         path = url.path
         data = load_data()
+
+        if path.startswith("/api/devices/") and path.endswith("/connection"):
+            dev_id = path.split("/")[3]
+            connection_manager.close_session(dev_id)
+            self._send_json(200, {"success": True, "message": "اتصال تجهیز با موفقیت قطع شد."})
+            return
 
         if path.startswith("/api/devices/"):
             dev_id = path.split("/")[3]

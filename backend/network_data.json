@@ -29,7 +29,16 @@
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
       "ssh_status": "authenticated",
-      "ssh_host": "192.168.1.1"
+      "ssh_host": "192.168.1.1",
+      "platform": "cisco_ios_xe",
+      "connection_mode": "simulator",
+      "connection": {
+        "protocol": "ssh",
+        "host": "192.168.1.1",
+        "port": 22,
+        "username": "admin",
+        "password": "cisco123"
+      }
     },
     {
       "id": "dev-router-gw",
@@ -58,7 +67,16 @@
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
       "ssh_status": "authenticated",
-      "ssh_host": "192.168.1.254"
+      "ssh_host": "192.168.1.254",
+      "platform": "cisco_ios",
+      "connection_mode": "simulator",
+      "connection": {
+        "protocol": "ssh",
+        "host": "192.168.1.254",
+        "port": 22,
+        "username": "admin",
+        "password": "cisco123"
+      }
     },
     {
       "id": "dev-dist-bldg-a",
@@ -87,7 +105,16 @@
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
       "ssh_status": "authenticated",
-      "ssh_host": "192.168.1.10"
+      "ssh_host": "192.168.1.10",
+      "platform": "cisco_ios_xe",
+      "connection_mode": "simulator",
+      "connection": {
+        "protocol": "ssh",
+        "host": "192.168.1.10",
+        "port": 22,
+        "username": "admin",
+        "password": "cisco123"
+      }
     },
     {
       "id": "dev-acc-bldg-a-f3",
@@ -116,7 +143,16 @@
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
       "ssh_status": "authenticated",
-      "ssh_host": "192.168.1.21"
+      "ssh_host": "192.168.1.21",
+      "platform": "cisco_ios",
+      "connection_mode": "simulator",
+      "connection": {
+        "protocol": "ssh",
+        "host": "192.168.1.21",
+        "port": 22,
+        "username": "admin",
+        "password": "cisco123"
+      }
     },
     {
       "id": "dev-dist-bldg-b",
@@ -145,7 +181,16 @@
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
       "ssh_status": "authenticated",
-      "ssh_host": "192.168.1.11"
+      "ssh_host": "192.168.1.11",
+      "platform": "cisco_ios_xe",
+      "connection_mode": "simulator",
+      "connection": {
+        "protocol": "ssh",
+        "host": "192.168.1.11",
+        "port": 22,
+        "username": "admin",
+        "password": "cisco123"
+      }
     },
     {
       "id": "dev-acc-bldg-b-f2",
@@ -174,7 +219,16 @@
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
       "ssh_status": "authenticated",
-      "ssh_host": "192.168.1.32"
+      "ssh_host": "192.168.1.32",
+      "platform": "cisco_ios",
+      "connection_mode": "simulator",
+      "connection": {
+        "protocol": "ssh",
+        "host": "192.168.1.32",
+        "port": 22,
+        "username": "admin",
+        "password": "cisco123"
+      }
     },
     {
       "id": "dev-ap-bldg-a-f1",
@@ -205,7 +259,16 @@
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
       "ssh_status": "authenticated",
-      "ssh_host": "192.168.1.101"
+      "ssh_host": "192.168.1.101",
+      "platform": "cisco_ios",
+      "connection_mode": "simulator",
+      "connection": {
+        "protocol": "ssh",
+        "host": "192.168.1.101",
+        "port": 22,
+        "username": "admin",
+        "password": "cisco123"
+      }
     },
     {
       "id": "dev-ap-bldg-a-f3",
@@ -234,7 +297,16 @@
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
       "ssh_status": "authenticated",
-      "ssh_host": "192.168.1.103"
+      "ssh_host": "192.168.1.103",
+      "platform": "cisco_ios",
+      "connection_mode": "simulator",
+      "connection": {
+        "protocol": "ssh",
+        "host": "192.168.1.103",
+        "port": 22,
+        "username": "admin",
+        "password": "cisco123"
+      }
     },
     {
       "id": "dev-ap-bldg-b-f1",
@@ -263,7 +335,51 @@
       "ssh_password": "cisco123",
       "enable_password": "cisco_enable",
       "ssh_status": "authenticated",
-      "ssh_host": "192.168.1.105"
+      "ssh_host": "192.168.1.105",
+      "platform": "cisco_ios",
+      "connection_mode": "simulator",
+      "connection": {
+        "protocol": "ssh",
+        "host": "192.168.1.105",
+        "port": 22,
+        "username": "admin",
+        "password": "cisco123"
+      }
+    },
+    {
+      "id": "dev-mikrotik-ccr2004",
+      "name": "MK-CCR2004-CORE",
+      "ip": "192.168.88.1",
+      "type": "router",
+      "role": "Border Router / Core Gateway",
+      "model": "MikroTik CCR2004-16G-2S+",
+      "platform": "mikrotik_routeros",
+      "connection_mode": "simulator",
+      "mac": "48:8F:5A:12:34:01",
+      "building": "ساختمان اداری مرکزی",
+      "floor": "طبقه همکف",
+      "unit": "اتاق سرور و رک اصلی",
+      "rack": "R-MK-01",
+      "is_online": true,
+      "latency_ms": 1.8,
+      "packet_loss": 0,
+      "uptime": "48d 14:32:10",
+      "cdp_enabled": false,
+      "lldp_enabled": true,
+      "snmp_community": "public",
+      "firmware": "RouterOS v7.14.3 (stable)",
+      "total_ports": 18,
+      "ssh_host": "192.168.88.1",
+      "ssh_port": 22,
+      "ssh_username": "admin",
+      "ssh_password": "admin",
+      "connection": {
+        "protocol": "ssh",
+        "host": "192.168.88.1",
+        "port": 22,
+        "username": "admin",
+        "password": "admin"
+      }
     }
   ],
   "ports": {
@@ -1269,6 +1385,314 @@
         "port_security_violation": "shutdown",
         "port_security_status": "disabled",
         "port_security_learned_macs": []
+      }
+    ],
+    "dev-mikrotik-ccr2004": [
+      {
+        "port_id": "ether1",
+        "name": "ether1",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 1,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "LAN-Host-1",
+        "connected_type": "Host",
+        "poe_status": "delivering",
+        "poe_power": 15.4,
+        "description": "MikroTik LAN Port 1",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether2",
+        "name": "ether2",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 30,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "LAN-Host-2",
+        "connected_type": "Host",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 2",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether3",
+        "name": "ether3",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 10,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "LAN-Host-3",
+        "connected_type": "Host",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 3",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether4",
+        "name": "ether4",
+        "status": "down",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 20,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Disconnected",
+        "connected_type": "None",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 4",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether5",
+        "name": "ether5",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 30,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "LAN-Host-5",
+        "connected_type": "Host",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 5",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether6",
+        "name": "ether6",
+        "status": "down",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 10,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Disconnected",
+        "connected_type": "None",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 6",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether7",
+        "name": "ether7",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 20,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "LAN-Host-7",
+        "connected_type": "Host",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 7",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether8",
+        "name": "ether8",
+        "status": "down",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 30,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Disconnected",
+        "connected_type": "None",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 8",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether9",
+        "name": "ether9",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 10,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "LAN-Host-9",
+        "connected_type": "Host",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 9",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether10",
+        "name": "ether10",
+        "status": "down",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 20,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Disconnected",
+        "connected_type": "None",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 10",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether11",
+        "name": "ether11",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 30,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "LAN-Host-11",
+        "connected_type": "Host",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 11",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether12",
+        "name": "ether12",
+        "status": "down",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 10,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Disconnected",
+        "connected_type": "None",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 12",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether13",
+        "name": "ether13",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 20,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "LAN-Host-13",
+        "connected_type": "Host",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 13",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether14",
+        "name": "ether14",
+        "status": "down",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 30,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Disconnected",
+        "connected_type": "None",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 14",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether15",
+        "name": "ether15",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 10,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "LAN-Host-15",
+        "connected_type": "Host",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 15",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "ether16",
+        "name": "ether16",
+        "status": "down",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 20,
+        "allowed_vlans": "1",
+        "speed": "1 Gbps",
+        "duplex": "Full",
+        "connected_device": "Disconnected",
+        "connected_type": "None",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "MikroTik LAN Port 16",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "sfp-sfpplus1",
+        "name": "sfp-sfpplus1",
+        "status": "up",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 1,
+        "allowed_vlans": "1-4094",
+        "speed": "10 Gbps",
+        "duplex": "Full",
+        "connected_device": "Fiber Uplink",
+        "connected_type": "Switch",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "SFP+ 10G Optical Uplink 1",
+        "port_security_enabled": false
+      },
+      {
+        "port_id": "sfp-sfpplus2",
+        "name": "sfp-sfpplus2",
+        "status": "down",
+        "admin_status": "enabled",
+        "mode": "access",
+        "vlan": 1,
+        "allowed_vlans": "1-4094",
+        "speed": "10 Gbps",
+        "duplex": "Full",
+        "connected_device": "Disconnected",
+        "connected_type": "None",
+        "poe_status": "off",
+        "poe_power": 0,
+        "description": "SFP+ 10G Optical Uplink 2",
+        "port_security_enabled": false
       }
     ]
   },
@@ -2453,7 +2877,9 @@
       "email": "admin@corp.internal",
       "role": "Super Admin",
       "status": "active",
-      "groupIds": ["grp-admins"],
+      "groupIds": [
+        "grp-admins"
+      ],
       "createdAt": "2026-03-01 08:00:00",
       "lastLogin": "2026-09-09 17:15:00"
     },
@@ -2464,7 +2890,9 @@
       "email": "h.karimi@corp.internal",
       "role": "Operator",
       "status": "active",
-      "groupIds": ["grp-helpdesk"],
+      "groupIds": [
+        "grp-helpdesk"
+      ],
       "createdAt": "2026-03-05 09:30:00",
       "lastLogin": "2026-09-09 14:10:00"
     },
@@ -2475,7 +2903,9 @@
       "email": "s.moradi@corp.internal",
       "role": "Viewer",
       "status": "active",
-      "groupIds": ["grp-noc"],
+      "groupIds": [
+        "grp-noc"
+      ],
       "createdAt": "2026-03-06 11:20:00",
       "lastLogin": "2026-09-09 11:00:00"
     }
@@ -2486,7 +2916,9 @@
       "name": "مدیران زیرساخت شبکه (Network Core Admins)",
       "description": "دسترسی کامل و نامحدود به تمامی تجهیزات، کنسول‌های تعاملی و تنظیمات سیستمی",
       "color": "indigo",
-      "memberUserIds": ["usr-admin"],
+      "memberUserIds": [
+        "usr-admin"
+      ],
       "createdAt": "2026-03-01 08:00:00"
     },
     {
@@ -2494,7 +2926,9 @@
       "name": "تیم هلپ‌دسک و پشتیبانی روزمره (Helpdesk Team)",
       "description": "امکان جابجایی ویلن‌ها، تغییر دیسکریپشن و مشاهده لاگ پورت‌ها بدون دسترسی به دستورات حساس",
       "color": "amber",
-      "memberUserIds": ["usr-helpdesk-1"],
+      "memberUserIds": [
+        "usr-helpdesk-1"
+      ],
       "createdAt": "2026-03-01 08:00:00"
     },
     {
@@ -2502,7 +2936,9 @@
       "name": "مرکز مانیتورینگ شبکه (NOC Monitoring)",
       "description": "فقط مشاهده وضعیت شبکه، مانیتورینگ پورت‌ها و بررسی پینگ بدون اجازه تغییر در کانفیگ",
       "color": "cyan",
-      "memberUserIds": ["usr-noc-1"],
+      "memberUserIds": [
+        "usr-noc-1"
+      ],
       "createdAt": "2026-03-01 08:00:00"
     }
   ]

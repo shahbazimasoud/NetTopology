@@ -76,10 +76,12 @@ function getLinkCurve(
   x2: number,
   y2: number,
   indexInGroup: number,
-  totalInGroup: number
+  totalInGroup: number,
+  isReversedDirection: boolean = false
 ) {
-  const mx = (x1 + x2) / 2;
-  const my = (y1 + y2) / 2;
+  // If direction is reversed (target -> source), invert index so it matches the spatial slot
+  const actualIndex = isReversedDirection ? totalInGroup - 1 - indexInGroup : indexInGroup;
+
   const dx = x2 - x1;
   const dy = y2 - y1;
   const len = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -87,6 +89,8 @@ function getLinkCurve(
   const ny = dx / len;
 
   if (totalInGroup <= 1) {
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
     return {
       pathD: `M ${x1} ${y1} L ${x2} ${y2}`,
       midX: mx,
@@ -98,26 +102,37 @@ function getLinkCurve(
     };
   }
 
-  // Spacing between multiple parallel cables connecting the same pair of devices
-  const spacing = 36;
-  const offset = (indexInGroup - (totalInGroup - 1) / 2) * spacing;
-  const cx = mx + nx * offset * 1.6;
-  const cy = my + ny * offset * 1.6;
+  // Spacing at device endpoints so cables connect to separate physical pins along device edge
+  const endpointSpacing = Math.min(22, 120 / Math.max(2, totalInGroup));
+  const endpointOffset = (actualIndex - (totalInGroup - 1) / 2) * endpointSpacing;
 
-  // Bezier evaluation: B(t) = (1-t)^2 P0 + 2(1-t)t P1 + t^2 P2
+  const sx = x1 + nx * endpointOffset;
+  const sy = y1 + ny * endpointOffset;
+  const ex = x2 + nx * endpointOffset;
+  const ey = y2 + ny * endpointOffset;
+
+  // Arc spacing along the bezier curve
+  const curveSpacing = Math.max(38, 26 + totalInGroup * 10);
+  const curveOffset = (actualIndex - (totalInGroup - 1) / 2) * curveSpacing;
+  const mx = (sx + ex) / 2;
+  const my = (sy + ey) / 2;
+  const cx = mx + nx * curveOffset * 1.6;
+  const cy = my + ny * curveOffset * 1.6;
+
+  // Quadratic Bezier evaluation: B(t) = (1-t)^2 P0 + 2(1-t)t P1 + t^2 P2
   const evalBezier = (t: number) => {
     const inv = 1 - t;
-    const px = inv * inv * x1 + 2 * inv * t * cx + t * t * x2;
-    const py = inv * inv * y1 + 2 * inv * t * cy + t * t * y2;
+    const px = inv * inv * sx + 2 * inv * t * cx + t * t * ex;
+    const py = inv * inv * sy + 2 * inv * t * cy + t * t * ey;
     return { x: px, y: py };
   };
 
   const mid = evalBezier(0.5);
-  const srcTag = evalBezier(0.22);
-  const tgtTag = evalBezier(0.78);
+  const srcTag = evalBezier(0.24);
+  const tgtTag = evalBezier(0.76);
 
   return {
-    pathD: `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`,
+    pathD: `M ${sx} ${sy} Q ${cx} ${cy} ${ex} ${ey}`,
     midX: mid.x,
     midY: mid.y,
     srcTagX: srcTag.x,
@@ -2048,7 +2063,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
             {/* Custom Map Tools: Select Tool, Cable Tool, Add Device, Clear Links */}
             {activeMapId !== 'default' && currentCustomMap && (
               <div className="flex items-center flex-wrap gap-2">
-                <div className="flex items-center bg-slate-800/90 rounded-xl p-1 border border-white/15 shadow-inner">
+                <div className="flex items-center bg-slate-800/90 rounded-xl p-1 border border-white/15 shadow-inner toolbar-dark-pill force-white-text">
                   <button
                     type="button"
                     onClick={() => {
@@ -2062,7 +2077,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     }`}
                   >
                     <MousePointer className="w-3.5 h-3.5 text-white" />
-                    <span className="text-white font-medium">{t('topology_tool_select')}</span>
+                    <span className="text-white font-medium" style={{ color: '#ffffff' }}>{t('topology_tool_select')}</span>
                   </button>
                   <button
                     type="button"
@@ -2077,7 +2092,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     }`}
                   >
                     <Cable className="w-3.5 h-3.5 text-white" />
-                    <span className="text-white font-medium">{t('topology_tool_cable')}</span>
+                    <span className="text-white font-medium" style={{ color: '#ffffff' }}>{t('topology_tool_cable')}</span>
                   </button>
                 </div>
 
@@ -2190,10 +2205,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowToolbarInFullMode((prev) => !prev)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/25 hover:border-white/40 text-xs text-white font-medium shadow-xl backdrop-blur-xl transition active:scale-95 cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/25 hover:border-white/40 text-xs text-white font-medium shadow-xl backdrop-blur-xl transition active:scale-95 cursor-pointer toolbar-dark-btn force-white-text"
                     title={showToolbarInFullMode ? t('topology_hide_toolbar') : t('topology_show_toolbar')}
                   >
-                    <span className="text-white font-medium">{showToolbarInFullMode ? t('topology_hide_toolbar') : t('topology_show_toolbar')}</span>
+                    <span className="text-white font-medium" style={{ color: '#ffffff' }}>{showToolbarInFullMode ? t('topology_hide_toolbar') : t('topology_show_toolbar')}</span>
                   </button>
 
                   <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono backdrop-blur-md">
@@ -2250,7 +2265,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   const indexInGroup = group.findIndex((l: any) => l.id === link.id);
                   const totalInGroup = group.length;
 
-                  const curve = getLinkCurve(x1, y1, x2, y2, indexInGroup >= 0 ? indexInGroup : 0, totalInGroup);
+                  const isReversed = link.source > link.target;
+                  const curve = getLinkCurve(x1, y1, x2, y2, indexInGroup >= 0 ? indexInGroup : 0, totalInGroup, isReversed);
 
                   return (
                     <g key={link.id} className="transition-all pointer-events-none">
@@ -2345,7 +2361,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   const indexInGroup = group.findIndex((l) => l.id === link.id);
                   const totalInGroup = group.length;
 
-                  const curve = getLinkCurve(x1, y1, x2, y2, indexInGroup >= 0 ? indexInGroup : 0, totalInGroup);
+                  const isReversed = link.sourceDeviceId > link.targetDeviceId;
+                  const curve = getLinkCurve(x1, y1, x2, y2, indexInGroup >= 0 ? indexInGroup : 0, totalInGroup, isReversed);
 
                   const strokeColor = isDown
                     ? '#ef4444'

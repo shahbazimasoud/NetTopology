@@ -1,5 +1,51 @@
 export type DeviceType = 'switch' | 'router' | 'access_point';
 
+export type DevicePlatform =
+  | 'cisco_ios_xe'
+  | 'cisco_ios'
+  | 'mikrotik_routeros'
+  | 'generic_linux';
+
+export type ConnectionMode = 'ssh' | 'simulator';
+
+export interface DeviceConnection {
+  protocol: 'ssh';
+  host: string;
+  port: number;
+  username: string;
+  password?: string;
+  private_key?: string;
+  connection_timeout?: number;
+}
+
+export interface PlatformCapabilities {
+  vlan: boolean;
+  interface_enable_disable: boolean;
+  port_security: boolean;
+  switchport_mode: boolean;
+  trunk: boolean;
+  save_config: boolean;
+  interface_description: boolean;
+  speed_duplex: boolean;
+  poe: boolean;
+  lldp_cdp: boolean;
+}
+
+export interface CommandGuideItem {
+  cmd: string;
+  desc: string;
+  descEn?: string;
+  category: 'show' | 'config' | 'action';
+  mode: string;
+}
+
+export interface DevicePlatformInfo {
+  platform: DevicePlatform;
+  platform_name: string;
+  capabilities: PlatformCapabilities;
+  command_guide: CommandGuideItem[];
+}
+
 export interface Device {
   id: string;
   name: string;
@@ -7,6 +53,9 @@ export interface Device {
   type: DeviceType;
   role: string;
   model: string;
+  platform?: DevicePlatform;
+  connection_mode?: ConnectionMode;
+  connection?: DeviceConnection;
   mac: string;
   building: string;
   floor: string;
@@ -30,6 +79,7 @@ export interface Device {
   ssh_password?: string;
   enable_password?: string;
   ssh_status?: 'connected' | 'authenticated' | 'disconnected' | 'failed';
+  ssh_connected?: boolean;
 }
 
 export interface SwitchPort {

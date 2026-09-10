@@ -358,6 +358,31 @@
 }
 .theme-light .text-emerald-300,
 .theme-light .text-emerald-400 { color: #047857 !important; }
+
+/* Preserve white text for dark buttons, pills, and toolbars in light theme */
+.theme-light .toolbar-dark-pill,
+.theme-light .toolbar-dark-pill button,
+.theme-light .toolbar-dark-pill button span,
+.theme-light .toolbar-dark-pill button svg,
+.theme-light .toolbar-dark-btn,
+.theme-light .toolbar-dark-btn span,
+.theme-light .toolbar-dark-btn svg,
+.theme-light .force-white-text,
+.theme-light .force-white-text * {
+  color: #ffffff !important;
+}
+
+.theme-light .toolbar-dark-pill button:not([class*="from-"]):not([class*="bg-indigo-"]):not([class*="bg-gradient"]) {
+  color: #ffffff !important;
+}
+
+.theme-light .toolbar-dark-pill button:not([class*="from-"]):not([class*="bg-indigo-"]):not([class*="bg-gradient"]) span {
+  color: #ffffff !important;
+}
+
+.theme-light .toolbar-dark-pill button:not([class*="from-"]):not([class*="bg-indigo-"]):not([class*="bg-gradient"]) svg {
+  color: #ffffff !important;
+}
 .theme-light .text-amber-300,
 .theme-light .text-amber-400 { color: #b45309 !important; }
 .theme-light .text-red-400,

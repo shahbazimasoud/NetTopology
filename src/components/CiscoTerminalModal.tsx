@@ -60,7 +60,7 @@ interface CommandGuideItem {
   descEn: string;
   category: 'exec' | 'config' | 'show' | 'action';
   mode: CliMode;
-  forType?: 'switch' | 'router' | 'mikrotik' | 'all';
+  forType?: 'switch' | 'router' | 'mikrotik' | 'linux' | 'all';
 }
 
 const TERMINAL_BG_OPTIONS = [
@@ -240,25 +240,77 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             ]);
           } else {
             setSshSessionMode('fallback_emulation');
-            appendLines([
-              {
-                id: 'sys-ssh-err',
-                type: 'system',
-                text: `[SSH STATUS] Socket probe to ${targetHost}:${sshPort} unreachable (${res.error || 'Connection timed out'}). Switching to managed Cisco IOS CLI emulation.`,
-              },
-              {
-                id: 'sys-ssh-banner',
-                type: 'output',
-                text: `User Access Verification\nUsername: ${sshUser}\nPassword: ${'*'.repeat(Math.max(6, sshPass.length))}\n\n************************************************************************\n* Cisco Systems Corporate Network Infrastructure - Authorized Access * \n* Device: ${device.model} | Role: ${device.role} \n* Connection Host: ${targetHost}:${sshPort} | Management IP: ${device.ip} \n* Software: ${device.firmware || 'Cisco IOS-XE 17.09.03'} \n* Location: ${device.building} - ${device.floor} (${device.unit}) \n************************************************************************\n`,
-              },
-              {
-                id: 'sys-ssh-ready',
-                type: 'system',
-                text: isEn
-                  ? "Cisco IOS CLI is ready. Type 'enable' to begin or use the command guide sidebar."
-                  : "Cisco IOS CLI آماده است. برای شروع دستور 'enable' را وارد کنید یا از سایدبار دستورات راهنما استفاده نمایید.",
-              },
-            ]);
+            const isDevMikroTik =
+              device.platform === 'mikrotik_routeros' ||
+              !!device.model?.toLowerCase().includes('mikrotik') ||
+              !!device.model?.toLowerCase().includes('routerboard') ||
+              !!device.model?.toLowerCase().includes('crs') ||
+              !!device.model?.toLowerCase().includes('ccr') ||
+              !!device.name?.toLowerCase().includes('mikrotik');
+
+            const isDevLinux = device.platform === 'generic_linux';
+
+            if (isDevMikroTik) {
+              appendLines([
+                {
+                  id: 'sys-ssh-err',
+                  type: 'system',
+                  text: `[SSH STATUS] Socket probe to ${targetHost}:${sshPort} unreachable (${res.error || 'Connection timed out'}). Switching to managed MikroTik RouterOS emulation.`,
+                },
+                {
+                  id: 'sys-ssh-banner',
+                  type: 'output',
+                  text: `  MMM      MMM       KKK                          TTTTTTTTTTT      KKK\n  MMMM    MMMM       KKK                              TTT          KKK\n  MMM MMMM MMM  III  KKK  KKK  RRRRRR     OOOOOO      TTT     III  KKK  KKK\n  MMM  MM  MMM  III  KKKKK     RRR  RRR  OOO  OOO     TTT     III  KKKKK\n  MMM      MMM  III  KKK KKK   RRRRRR    OOO  OOO     TTT     III  KKK KKK\n  MMM      MMM  III  KKK  KKK  RRR  RRR   OOOOOO      TTT     III  KKK  KKK\n\n  MikroTik RouterOS 7.14 (c) 1999-2024       https://mikrotik.com/\n  Terminal Host: ${targetHost}:${sshPort} | Management IP: ${device.ip}\n  Model: ${device.model} | Role: ${device.role}\n  Location: ${device.building} - ${device.floor} (${device.unit})\n  Logged in as '${sshUser}'\n`,
+                },
+                {
+                  id: 'sys-ssh-ready',
+                  type: 'system',
+                  text: isEn
+                    ? "MikroTik RouterOS CLI ready. Try '/interface print', '/ip address print', '/export compact', or the sidebar guide."
+                    : "کنسول MikroTik RouterOS آماده است. از دستوراتی مانند '/interface print' یا '/export compact' استفاده کنید.",
+                },
+              ]);
+            } else if (isDevLinux) {
+              appendLines([
+                {
+                  id: 'sys-ssh-err',
+                  type: 'system',
+                  text: `[SSH STATUS] Socket probe to ${targetHost}:${sshPort} unreachable (${res.error || 'Connection timed out'}). Switching to managed Linux shell emulation.`,
+                },
+                {
+                  id: 'sys-ssh-banner',
+                  type: 'output',
+                  text: `Welcome to Ubuntu 22.04.4 LTS (GNU/Linux 5.15.0-generic x86_64)\n\n * Documentation:  https://help.ubuntu.com\n * Management:     https://landscape.canonical.com\n * Target Host:    ${targetHost}:${sshPort} (${device.ip})\n * Appliance:      ${device.model}\n`,
+                },
+                {
+                  id: 'sys-ssh-ready',
+                  type: 'system',
+                  text: isEn
+                    ? "Linux terminal session ready. Standard POSIX / bash shell commands enabled."
+                    : "ترمینال لینوکس آماده است. دستورات پوسته POSIX / bash فعال هستند.",
+                },
+              ]);
+            } else {
+              appendLines([
+                {
+                  id: 'sys-ssh-err',
+                  type: 'system',
+                  text: `[SSH STATUS] Socket probe to ${targetHost}:${sshPort} unreachable (${res.error || 'Connection timed out'}). Switching to managed Cisco IOS CLI emulation.`,
+                },
+                {
+                  id: 'sys-ssh-banner',
+                  type: 'output',
+                  text: `User Access Verification\nUsername: ${sshUser}\nPassword: ${'*'.repeat(Math.max(6, sshPass.length))}\n\n************************************************************************\n* Cisco Systems Corporate Network Infrastructure - Authorized Access * \n* Device: ${device.model} | Role: ${device.role} \n* Connection Host: ${targetHost}:${sshPort} | Management IP: ${device.ip} \n* Software: ${device.firmware || (device.platform === 'cisco_ios' ? 'Cisco IOS 15.2' : 'Cisco IOS-XE 17.09.03')} \n* Location: ${device.building} - ${device.floor} (${device.unit}) \n************************************************************************\n`,
+                },
+                {
+                  id: 'sys-ssh-ready',
+                  type: 'system',
+                  text: isEn
+                    ? "Cisco IOS CLI is ready. Type 'enable' to begin or use the command guide sidebar."
+                    : "Cisco IOS CLI آماده است. برای شروع دستور 'enable' را وارد کنید یا از سایدبار دستورات راهنما استفاده نمایید.",
+                },
+              ]);
+            }
           }
         })
         .catch((err) => {
@@ -311,6 +363,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   if (!isOpen || !device) return null;
 
   const isMikroTik =
+    device.platform === 'mikrotik_routeros' ||
     !!device.model?.toLowerCase().includes('mikrotik') ||
     !!device.model?.toLowerCase().includes('routerboard') ||
     !!device.model?.toLowerCase().includes('crs') ||
@@ -318,13 +371,18 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
     !!device.name?.toLowerCase().includes('mikrotik') ||
     !!device.firmware?.toLowerCase().includes('routeros');
 
-  const isRouter = device.type === 'router' && !isMikroTik;
-  const isSwitch = device.type === 'switch' && !isMikroTik;
+  const isGenericLinux = device.platform === 'generic_linux';
+  const isRouter = device.type === 'router' && !isMikroTik && !isGenericLinux;
+  const isSwitch = device.type === 'switch' && !isMikroTik && !isGenericLinux;
 
   // Compute Current Prompt
   const getPrompt = (): string => {
+    const user = device.ssh_username || 'admin';
     if (isMikroTik) {
-      return `[admin@${hostname}] >`;
+      return `[${user}@${hostname}] >`;
+    }
+    if (isGenericLinux) {
+      return `${user}@${hostname.toLowerCase()}:~$`;
     }
     switch (cliMode) {
       case 'USER_EXEC':
@@ -845,6 +903,64 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
       }
     }
 
+    // Linux Shell command emulation handlers
+    if (isGenericLinux) {
+      if (cmdLower === 'ip -c a' || cmdLower === 'ip a' || cmdLower === 'ip addr' || cmdLower === 'ifconfig') {
+        const out = `1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000\n    inet 127.0.0.1/8 scope host lo\n2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000\n    inet ${device.ip}/24 brd ${device.ip.split('.').slice(0, 3).join('.')}.255 scope global eth0`;
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: out }]);
+        return;
+      }
+      if (cmdLower === 'ip route' || cmdLower === 'ip route show' || cmdLower === 'route -n') {
+        const out = `default via ${device.ip.split('.').slice(0, 3).join('.')}.1 dev eth0 proto dhcp src ${device.ip} metric 100\n${device.ip.split('.').slice(0, 3).join('.')}.0/24 dev eth0 proto kernel scope link src ${device.ip} metric 100`;
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: out }]);
+        return;
+      }
+      if (cmdLower === 'ss -tulpn' || cmdLower === 'netstat -tulpn') {
+        const out = `Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess\ntcp   LISTEN 0      128          0.0.0.0:22         0.0.0.0:*    users:(("sshd",pid=642,fd=3))\ntcp   LISTEN 0      100        127.0.0.1:25         0.0.0.0:*    users:(("master",pid=1120,fd=13))`;
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: out }]);
+        return;
+      }
+      if (cmdLower === 'uname -a') {
+        const out = `Linux ${hostname.toLowerCase()} 5.15.0-107-generic #117-Ubuntu SMP Fri Apr 26 12:26:49 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux`;
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: out }]);
+        return;
+      }
+      if (cmdLower === 'uptime') {
+        const out = ` 14:22:05 up 24 days,  3:18,  2 users,  load average: 0.12, 0.08, 0.05`;
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'output', text: out }]);
+        return;
+      }
+      if (cmdLower === 'exit' || cmdLower === 'logout') {
+        appendLines([inputLine, { id: String(Date.now() + 1), type: 'system', text: 'logout' }]);
+        setTimeout(() => handleCloseModal(), 400);
+        return;
+      }
+    }
+
+    if (isMikroTik) {
+      appendLines([
+        inputLine,
+        {
+          id: String(Date.now() + 1),
+          type: 'error',
+          text: `bad command name ${trimmed.split(' ')[0]} (line 1 column 1)`,
+        },
+      ]);
+      return;
+    }
+
+    if (isGenericLinux) {
+      appendLines([
+        inputLine,
+        {
+          id: String(Date.now() + 1),
+          type: 'error',
+          text: `bash: ${trimmed.split(' ')[0]}: command not found`,
+        },
+      ]);
+      return;
+    }
+
     // 10. Default / Unrecognized Cisco CLI output
     appendLines([
       inputLine,
@@ -915,6 +1031,30 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
         '/log print',
         '/ping',
         'quit',
+        'exit',
+        'clear',
+      ];
+    }
+
+    if (isGenericLinux) {
+      return [
+        'ip -c a',
+        'ip route show',
+        'ip link show',
+        'ss -tulpn',
+        'netstat -tulpn',
+        'ethtool eth0',
+        'systemctl status networking',
+        'systemctl restart networking',
+        'ping 8.8.8.8',
+        'traceroute 8.8.8.8',
+        'sudo iptables -L -n -v',
+        'cat /etc/resolv.conf',
+        'journalctl -u ssh -n 50',
+        'uname -a',
+        'uptime',
+        'df -h',
+        'free -m',
         'exit',
         'clear',
       ];
@@ -1357,14 +1497,30 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
     // VLAN_CONFIG
     { cmd: 'name Staff-Office', desc: 'نام‌گذاری شناسه ویلن جاری', descEn: 'Assign descriptive name to current VLAN ID', category: 'config', mode: 'VLAN_CONFIG', forType: 'switch' },
     { cmd: 'exit', desc: 'خروج و ذخیره تغییرات ویلن در دیتابیس', descEn: 'Exit and save VLAN changes to switch database', category: 'action', mode: 'VLAN_CONFIG', forType: 'switch' },
+
+    // LINUX COMMANDS
+    { cmd: 'ip -c a', desc: 'نمایش تمامی آدرس‌های IP و اینترفیس‌های لینوکس', descEn: 'Show all network interfaces and IP addresses', category: 'show', mode: 'USER_EXEC', forType: 'linux' },
+    { cmd: 'ip route show', desc: 'مشاهده جدول مسیریابی هسته لینوکس', descEn: 'Display Linux kernel routing table', category: 'show', mode: 'USER_EXEC', forType: 'linux' },
+    { cmd: 'ss -tulpn', desc: 'لیست پورت‌های باز و سرویس‌های در حال شنود (Listening)', descEn: 'List open ports and listening TCP/UDP sockets', category: 'show', mode: 'USER_EXEC', forType: 'linux' },
+    { cmd: 'ethtool eth0', desc: 'مشاهده مشخصات لایه فیزیکی کارت شبکه، سرعت و Duplex', descEn: 'Display NIC physical parameters, speed, duplex', category: 'show', mode: 'USER_EXEC', forType: 'linux' },
+    { cmd: 'systemctl status networking', desc: 'بررسی وضعیت سرویس شبکه سیستم‌عامل', descEn: 'Check Linux networking service status', category: 'show', mode: 'USER_EXEC', forType: 'linux' },
+    { cmd: 'ping 8.8.8.8', desc: 'تست ارتباط شبکه با پینگ ICMP', descEn: 'Send ICMP echo packets to test connectivity', category: 'action', mode: 'USER_EXEC', forType: 'linux' },
+    { cmd: 'traceroute 8.8.8.8', desc: 'ردیابی مسیر بسته‌ها تا مقصد', descEn: 'Trace route hops to destination', category: 'action', mode: 'USER_EXEC', forType: 'linux' },
+    { cmd: 'sudo iptables -L -n -v', desc: 'مشاهده رول‌های فایروال iptables با جزئیات ترافیک', descEn: 'List iptables packet filtering rules with packet counters', category: 'show', mode: 'USER_EXEC', forType: 'linux' },
+    { cmd: 'cat /etc/resolv.conf', desc: 'مشاهده سرورهای DNS تعریف‌شده در سیستم', descEn: 'View configured DNS nameservers', category: 'show', mode: 'USER_EXEC', forType: 'linux' },
+    { cmd: 'journalctl -u ssh -n 50', desc: 'مشاهده لاگ‌های ۵۰ لاگین اخیر سرویس SSH', descEn: 'View last 50 SSH service log entries', category: 'show', mode: 'USER_EXEC', forType: 'linux' },
+    { cmd: 'uname -a', desc: 'نمایش نسخه دقیق کرنل لینوکس و معماری سیستم', descEn: 'Display Linux kernel release and system architecture', category: 'show', mode: 'USER_EXEC', forType: 'linux' },
+    { cmd: 'uptime', desc: 'مدت زمان روشن بودن سیستم و میانگین لود پردازنده', descEn: 'Show system uptime and load average', category: 'show', mode: 'USER_EXEC', forType: 'linux' },
   ];
 
   // Filter commands for sidebar
   const relevantCommands = COMMAND_GUIDES.filter((item) => {
     if (isMikroTik) {
       if (item.forType !== 'mikrotik') return false;
+    } else if (isGenericLinux) {
+      if (item.forType !== 'linux') return false;
     } else {
-      if (item.forType === 'mikrotik') return false;
+      if (item.forType === 'mikrotik' || item.forType === 'linux') return false;
       if (item.mode !== cliMode) return false;
       if (item.forType === 'switch' && isRouter) return false;
       if (item.forType === 'router' && !isRouter) return false;
@@ -1429,8 +1585,20 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
               <div className="text-[11px] text-slate-400 font-mono mt-0.5 flex items-center gap-1.5">
                 <span>{device.model}</span>
                 <span>•</span>
-                <span className="vendor-badge-cisco px-1.5 py-0.5 rounded text-[10px] font-bold">
-                  {device.firmware || 'Cisco IOS-XE'}
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono ${
+                    isMikroTik
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                      : isGenericLinux
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      : 'vendor-badge-cisco'
+                  }`}
+                >
+                  {isMikroTik
+                    ? (device.firmware || 'MikroTik RouterOS 7.x')
+                    : isGenericLinux
+                    ? (device.firmware || 'Linux 5.15 / POSIX')
+                    : (device.firmware || (device.platform === 'cisco_ios' ? 'Cisco IOS 15.2' : 'Cisco IOS-XE'))}
                 </span>
               </div>
             </div>
@@ -1801,7 +1969,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                   </span>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800 font-bold">
-                      {isMikroTik ? 'RouterOS' : cliMode}
+                      {isMikroTik ? 'RouterOS' : isGenericLinux ? 'Linux Bash' : cliMode}
                     </span>
                     <button
                       onClick={handleToggleSidebar}
@@ -1833,26 +2001,38 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
                 <span className="font-mono text-emerald-600 dark:text-emerald-400">{getPrompt()}</span>
               </div>
               <div className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                {cliMode === 'USER_EXEC' &&
-                  (isEn
-                    ? 'User EXEC mode (>). Basic monitoring and ping commands allowed. Type enable to enter Privileged mode.'
-                    : 'حالت کاربری ابتدایی (User EXEC). فقط دستورات اولیه مانیتورینگ و تست پینگ مجاز هستند. برای دسترسی به تنظیمات دستور enable را اجرا کنید.')}
-                {cliMode === 'PRIVILEGED_EXEC' &&
-                  (isEn
-                    ? 'Privileged EXEC mode (#). Full Show, Write Memory, Debug, and configure terminal available.'
-                    : 'حالت دسترسی ویژه مدیریتی (Privileged EXEC #). می‌توانید دستورات کامل Show، Write Memory، Debug و ورود به configure terminal را اجرا کنید.')}
-                {cliMode === 'GLOBAL_CONFIG' &&
-                  (isEn
-                    ? 'Global Configuration mode. Set hostname, create VLANs, enter interfaces, routing, and services.'
-                    : 'حالت تنظیمات کلی سیستم (Global Config). تنظیم نام هاست، ساخت ویلن، ورود به اینترفیس‌ها، روتینگ و سرویس‌ها در این مد انجام می‌شود.')}
-                {cliMode === 'INTERFACE_CONFIG' &&
-                  (isEn
-                    ? `Interface ${currentInterface || ''} configuration. Set Access/Trunk mode, VLAN, admin status, and STP.`
-                    : `حالت پیکربندی پورت ${currentInterface || ''}. تنظیم مود Access/Trunk، ویلن، وضعیت خاموش/روشن، توضیحات پورت و Spanning-Tree.`)}
-                {cliMode === 'VLAN_CONFIG' &&
-                  (isEn
-                    ? `VLAN ${currentVlanId} database configuration. Name and activate VLAN in switch database.`
-                    : `حالت تنظیمات دیتابیس VLAN ${currentVlanId}. نام‌گذاری و فعال‌سازی ویلن در سوئیچ.`)}
+                {isMikroTik ? (
+                  isEn
+                    ? 'MikroTik RouterOS Interactive Terminal. Hierarchical command syntax with tab-completion. Full root access enabled.'
+                    : 'ترمینال تعاملی سیستم‌عامل میکروتیک (RouterOS). ساختار دستورات سلسله‌مراتبی و اسلش-محور با قابلیت تکمیل خودکار تب.'
+                ) : isGenericLinux ? (
+                  isEn
+                    ? 'Linux POSIX Shell session. Run standard Linux management commands, net-tools, iproute2, or systemd services.'
+                    : 'پوسته استاندارد لینوکس (POSIX / Bash). دستورات مدیریتی شبکه، iproute2، و سرویس‌های سیستمی فعال هستند.'
+                ) : (
+                  <>
+                    {cliMode === 'USER_EXEC' &&
+                      (isEn
+                        ? 'User EXEC mode (>). Basic monitoring and ping commands allowed. Type enable to enter Privileged mode.'
+                        : 'حالت کاربری ابتدایی (User EXEC). فقط دستورات اولیه مانیتورینگ و تست پینگ مجاز هستند. برای دسترسی به تنظیمات دستور enable را اجرا کنید.')}
+                    {cliMode === 'PRIVILEGED_EXEC' &&
+                      (isEn
+                        ? 'Privileged EXEC mode (#). Full Show, Write Memory, Debug, and configure terminal available.'
+                        : 'حالت دسترسی ویژه مدیریتی (Privileged EXEC #). می‌توانید دستورات کامل Show، Write Memory، Debug و ورود به configure terminal را اجرا کنید.')}
+                    {cliMode === 'GLOBAL_CONFIG' &&
+                      (isEn
+                        ? 'Global Configuration mode. Set hostname, create VLANs, enter interfaces, routing, and services.'
+                        : 'حالت تنظیمات کلی سیستم (Global Config). تنظیم نام هاست، ساخت ویلن، ورود به اینترفیس‌ها، روتینگ و سرویس‌ها در این مد انجام می‌شود.')}
+                    {cliMode === 'INTERFACE_CONFIG' &&
+                      (isEn
+                        ? `Interface ${currentInterface || ''} configuration. Set Access/Trunk mode, VLAN, admin status, and STP.`
+                        : `حالت پیکربندی پورت ${currentInterface || ''}. تنظیم مود Access/Trunk، ویلن، وضعیت خاموش/روشن، توضیحات پورت و Spanning-Tree.`)}
+                    {cliMode === 'VLAN_CONFIG' &&
+                      (isEn
+                        ? `VLAN ${currentVlanId} database configuration. Name and activate VLAN in switch database.`
+                        : `حالت تنظیمات دیتابیس VLAN ${currentVlanId}. نام‌گذاری و فعال‌سازی ویلن در سوئیچ.`)}
+                  </>
+                )}
               </div>
             </div>
 
