@@ -2274,5 +2274,236 @@
       "updated_at": "2026-09-08 09:54:35",
       "is_builtin": false
     }
+  ],
+  "device_groups": [
+    {
+      "id": "group-helpdesk",
+      "name": "هلپ دسک (Helpdesk Support)",
+      "description": "تجهیزات و سوئیچ‌های دسترسی کلاینت‌ها، تلفن‌های VoIP و استقرار روزانه تیم پشتیبانی",
+      "color": "amber",
+      "icon": "Headphones",
+      "deviceIds": [
+        "dev-dist-bldg-a",
+        "dev-access-bldg-b"
+      ],
+      "createdAt": "2026-03-01 08:30:00",
+      "updatedAt": "2026-03-09 14:20:00"
+    },
+    {
+      "id": "group-core",
+      "name": "زیرساخت هسته و دیتا سنتر (Core & DC)",
+      "description": "سوئیچ‌های لایه هسته و روتر گیت‌وی اصلی دیتاسنتر و پیوندهای ۱۰ گیگابیت فیبر",
+      "color": "indigo",
+      "icon": "Server",
+      "deviceIds": [
+        "dev-core-01",
+        "dev-router-gw"
+      ],
+      "createdAt": "2026-03-01 08:30:00",
+      "updatedAt": "2026-03-09 14:20:00"
+    },
+    {
+      "id": "group-branch",
+      "name": "شعب و لایه دسترسی بی‌سیم (Branch & Wireless)",
+      "description": "اکسس‌پوینت‌های اداری، تجهیزات وای‌فای و سوئیچ‌های ساختمانی بلوک B",
+      "color": "cyan",
+      "icon": "Wifi",
+      "deviceIds": [
+        "dev-dist-bldg-b",
+        "dev-ap-bldg-a"
+      ],
+      "createdAt": "2026-03-02 11:00:00",
+      "updatedAt": "2026-03-09 15:00:00"
+    }
+  ],
+  "active_directory": {
+    "enabled": true,
+    "server": "192.168.1.10",
+    "port": 389,
+    "useSsl": false,
+    "domain": "corp.internal",
+    "baseDn": "DC=corp,DC=internal",
+    "bindUser": "svc-netops@corp.internal",
+    "bindPassword": "••••••••••••",
+    "userSearchBase": "OU=Staff,DC=corp,DC=internal",
+    "groupSearchBase": "OU=SecurityGroups,DC=corp,DC=internal",
+    "lastSyncStatus": "success",
+    "lastSyncMessage": "همگام‌سازی با موفقیت انجام شد (4 گروه امنیتی و 4 کاربر دامین دریافت گردید)",
+    "lastSyncTime": "2026-09-09 16:30:00",
+    "syncedGroups": [
+      {
+        "dn": "CN=Helpdesk-Admins,OU=SecurityGroups,DC=corp,DC=internal",
+        "cn": "Helpdesk-Admins",
+        "description": "کارشناسان پشتیبانی و تیم هلپ‌دسک سازمان",
+        "memberCount": 8
+      },
+      {
+        "dn": "CN=NetOps-Engineers,OU=SecurityGroups,DC=corp,DC=internal",
+        "cn": "NetOps-Engineers",
+        "description": "مهندسان ارشد شبکه و زیرساخت ارتباطی",
+        "memberCount": 4
+      },
+      {
+        "dn": "CN=NOC-Monitoring,OU=SecurityGroups,DC=corp,DC=internal",
+        "cn": "NOC-Monitoring",
+        "description": "تیم پایش و مانیتورینگ مرکز عملیات شبکه (فقط مشاهده)",
+        "memberCount": 6
+      },
+      {
+        "dn": "CN=Security-Auditors,OU=SecurityGroups,DC=corp,DC=internal",
+        "cn": "Security-Auditors",
+        "description": "حسابرسان امنیتی و ممیزی پورت سکیوریتی و مک آدرس‌ها",
+        "memberCount": 3
+      }
+    ],
+    "syncedUsers": [
+      {
+        "dn": "CN=Masoud Shahbazi,OU=Staff,DC=corp,DC=internal",
+        "samAccountName": "m.shahbazi",
+        "displayName": "مسعود شهبازی (Network Lead)",
+        "email": "m.shahbazi@corp.internal",
+        "department": "زیرساخت و شبکه",
+        "title": "Senior Network Architect",
+        "groups": [
+          "NetOps-Engineers"
+        ],
+        "enabled": true
+      },
+      {
+        "dn": "CN=Ali Rezaei,OU=Staff,DC=corp,DC=internal",
+        "samAccountName": "a.rezaei",
+        "displayName": "علی رضایی (Helpdesk L1)",
+        "email": "a.rezaei@corp.internal",
+        "department": "پشتیبانی فنی (Helpdesk)",
+        "title": "Helpdesk Specialist",
+        "groups": [
+          "Helpdesk-Admins"
+        ],
+        "enabled": true
+      }
+    ]
+  },
+  "access_policies": [
+    {
+      "id": "policy-helpdesk",
+      "name": "سطح دسترسی تیم هلپ‌دسک (Helpdesk Operator Policy)",
+      "description": "دسترسی محدود به سوئیچ‌های گروه هلپ‌دسک جهت تغییر ویلن، دیسکریپشن و پورت سکیوریتی بدون دسترسی به کنسول CLI یا خاموش کردن پورت‌های حساس",
+      "isBuiltin": true,
+      "priority": 10,
+      "subjectType": "ad_group",
+      "subjectId": "CN=Helpdesk-Admins,OU=SecurityGroups,DC=corp,DC=internal",
+      "subjectName": "Helpdesk-Admins (اکتیو دایرکتوری)",
+      "targetScope": "groups",
+      "targetGroupIds": [
+        "group-helpdesk"
+      ],
+      "targetDeviceIds": [],
+      "canViewDashboard": true,
+      "canViewTopology": true,
+      "canViewDevices": true,
+      "canViewPorts": true,
+      "canViewScanner": false,
+      "canViewTemplates": false,
+      "canViewSettings": false,
+      "terminalAccess": "none",
+      "canToggleAdminStatus": false,
+      "canChangeVlan": true,
+      "canEditDescription": true,
+      "canTogglePortSecurity": true,
+      "canWriteMemory": false,
+      "canManageDevices": false,
+      "canApplyTemplates": false,
+      "canBatchOperate": false
+    },
+    {
+      "id": "policy-super-admin",
+      "name": "مدیر ارشد زیرساخت شبکه (Super Administrator)",
+      "description": "دسترسی نامحدود به تمامی تجهیزات، کنسول‌های تعاملی SSH، رایت مموری، اعمال تمپلیت و تنظیمات امنیتی",
+      "isBuiltin": true,
+      "priority": 100,
+      "subjectType": "local_user",
+      "subjectId": "admin",
+      "subjectName": "مدیر اصلی سیستم (Local Admin / NetOps)",
+      "targetScope": "all",
+      "targetGroupIds": [],
+      "targetDeviceIds": [],
+      "canViewDashboard": true,
+      "canViewTopology": true,
+      "canViewDevices": true,
+      "canViewPorts": true,
+      "canViewScanner": true,
+      "canViewTemplates": true,
+      "canViewSettings": true,
+      "terminalAccess": "full",
+      "canToggleAdminStatus": true,
+      "canChangeVlan": true,
+      "canEditDescription": true,
+      "canTogglePortSecurity": true,
+      "canWriteMemory": true,
+      "canManageDevices": true,
+      "canApplyTemplates": true,
+      "canBatchOperate": true
+    }
+  ],
+  "local_users": [
+    {
+      "id": "usr-admin",
+      "username": "admin",
+      "fullName": "مدیر ارشد زیرساخت (Network Super Admin)",
+      "email": "admin@corp.internal",
+      "role": "Super Admin",
+      "status": "active",
+      "groupIds": ["grp-admins"],
+      "createdAt": "2026-03-01 08:00:00",
+      "lastLogin": "2026-09-09 17:15:00"
+    },
+    {
+      "id": "usr-helpdesk-1",
+      "username": "h.karimi",
+      "fullName": "حسین کریمی (اپراتور شیفت روز)",
+      "email": "h.karimi@corp.internal",
+      "role": "Operator",
+      "status": "active",
+      "groupIds": ["grp-helpdesk"],
+      "createdAt": "2026-03-05 09:30:00",
+      "lastLogin": "2026-09-09 14:10:00"
+    },
+    {
+      "id": "usr-noc-1",
+      "username": "s.moradi",
+      "fullName": "سحر مرادی (مانیتورینگ NOC)",
+      "email": "s.moradi@corp.internal",
+      "role": "Viewer",
+      "status": "active",
+      "groupIds": ["grp-noc"],
+      "createdAt": "2026-03-06 11:20:00",
+      "lastLogin": "2026-09-09 11:00:00"
+    }
+  ],
+  "local_groups": [
+    {
+      "id": "grp-admins",
+      "name": "مدیران زیرساخت شبکه (Network Core Admins)",
+      "description": "دسترسی کامل و نامحدود به تمامی تجهیزات، کنسول‌های تعاملی و تنظیمات سیستمی",
+      "color": "indigo",
+      "memberUserIds": ["usr-admin"],
+      "createdAt": "2026-03-01 08:00:00"
+    },
+    {
+      "id": "grp-helpdesk",
+      "name": "تیم هلپ‌دسک و پشتیبانی روزمره (Helpdesk Team)",
+      "description": "امکان جابجایی ویلن‌ها، تغییر دیسکریپشن و مشاهده لاگ پورت‌ها بدون دسترسی به دستورات حساس",
+      "color": "amber",
+      "memberUserIds": ["usr-helpdesk-1"],
+      "createdAt": "2026-03-01 08:00:00"
+    },
+    {
+      "id": "grp-noc",
+      "name": "مرکز مانیتورینگ شبکه (NOC Monitoring)",
+      "description": "فقط مشاهده وضعیت شبکه، مانیتورینگ پورت‌ها و بررسی پینگ بدون اجازه تغییر در کانفیگ",
+      "color": "cyan",
+      "memberUserIds": ["usr-noc-1"],
+      "createdAt": "2026-03-01 08:00:00"
+    }
   ]
 }

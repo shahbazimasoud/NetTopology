@@ -4,6 +4,7 @@ import {
   AccessPolicy,
   ADTestResult,
   LocalUser,
+  LocalGroup,
   ADSecurityGroup,
   ADUser
 } from '../types';
@@ -13,7 +14,109 @@ const STORAGE_KEYS = {
   AD_CONFIG: 'nettopology_ad_config_v1',
   ACCESS_POLICIES: 'nettopology_access_policies_v1',
   ACTIVE_SIMULATED_ROLE: 'nettopology_simulated_role_v1',
+  LOCAL_USERS: 'nettopology_local_users_v1',
+  LOCAL_GROUPS: 'nettopology_local_groups_v1',
 };
+
+// Initial Seed: Local Groups
+export const DEFAULT_LOCAL_GROUPS: LocalGroup[] = [
+  {
+    id: 'group-admin',
+    name: 'مدیران ارشد سیستم (Administrators)',
+    description: 'دسترسی کامل و تام به تمام تجهیزات، رایت مموری و تنظیمات امنیتی',
+    color: 'indigo',
+    memberUserIds: ['admin'],
+    createdAt: '2026-03-01 08:00:00',
+    updatedAt: '2026-03-09 12:00:00',
+    isBuiltin: true,
+  },
+  {
+    id: 'group-helpdesk-ops',
+    name: 'تیم هلپ‌دسک و پشتیبانی کاربر (Helpdesk Operators)',
+    description: 'مدیریت پورت‌های کلاینت، تغییر ویلن‌ها، نام‌گذاری پورت و پورت‌سکیوریتی',
+    color: 'amber',
+    memberUserIds: ['helpdesk_local'],
+    createdAt: '2026-03-01 08:30:00',
+    updatedAt: '2026-03-09 14:00:00',
+    isBuiltin: false,
+  },
+  {
+    id: 'group-noc',
+    name: 'مرکز عملیات شبکه (NOC Monitoring)',
+    description: 'پایش مستمر وضعیت ترافیک، هشدارها، تلمتری و اسکنر همسایگی (Read-Only)',
+    color: 'cyan',
+    memberUserIds: ['noc_local'],
+    createdAt: '2026-03-02 09:15:00',
+    updatedAt: '2026-03-09 14:30:00',
+    isBuiltin: false,
+  },
+  {
+    id: 'group-field',
+    name: 'تکنسین‌های میدانی (Field Technicians)',
+    description: 'کارشناسان اعزام در محل جهت کابل‌کشی، بررسی پورت‌های فیزیکی و ریست سوئیچ',
+    color: 'emerald',
+    memberUserIds: ['field_tech'],
+    createdAt: '2026-03-03 10:00:00',
+    updatedAt: '2026-03-09 15:00:00',
+    isBuiltin: false,
+  },
+];
+
+// Initial Seed: Local Users
+export const DEFAULT_LOCAL_USERS: LocalUser[] = [
+  {
+    id: 'admin',
+    username: 'admin',
+    fullName: 'مدیر ارشد شبکه (Network Administrator)',
+    email: 'admin@nettopology.internal',
+    status: 'active',
+    role: 'Super Administrator',
+    groupIds: ['group-admin'],
+    createdAt: '2026-01-01 00:00:00',
+    lastLogin: '2026-09-09 17:15:00',
+    isBuiltin: true,
+  },
+  {
+    id: 'helpdesk_local',
+    username: 'helpdesk_user',
+    fullName: 'کاربر هلپ‌دسک محلی (Helpdesk Local)',
+    email: 'helpdesk@nettopology.internal',
+    status: 'active',
+    role: 'Helpdesk Specialist',
+    groupIds: ['group-helpdesk-ops'],
+    createdAt: '2026-02-10 11:20:00',
+    lastLogin: '2026-09-09 15:45:00',
+    isBuiltin: false,
+  },
+  {
+    id: 'noc_local',
+    username: 'noc_operator',
+    fullName: 'اپراتور محلی NOC (Local NOC)',
+    email: 'noc@nettopology.internal',
+    status: 'active',
+    role: 'NOC Analyst',
+    groupIds: ['group-noc'],
+    createdAt: '2026-02-15 14:00:00',
+    lastLogin: '2026-09-09 16:30:00',
+    isBuiltin: false,
+  },
+  {
+    id: 'field_tech',
+    username: 'field_tech',
+    fullName: 'تکنسین پشتیبانی سخت‌افزار (Field Tech)',
+    email: 'tech@nettopology.internal',
+    status: 'active',
+    role: 'Hardware Technician',
+    groupIds: ['group-field'],
+    createdAt: '2026-03-01 09:00:00',
+    lastLogin: '2026-09-08 10:10:00',
+    isBuiltin: false,
+  },
+];
+
+// Backward-compatibility export
+export const LOCAL_USERS: LocalUser[] = DEFAULT_LOCAL_USERS;
+
 
 // Initial Seed: Device Groups (Including Helpdesk as explicitly requested)
 export const DEFAULT_DEVICE_GROUPS: DeviceGroup[] = [
@@ -156,13 +259,28 @@ export const DEFAULT_ACCESS_POLICIES: AccessPolicy[] = [
     canViewScanner: false,
     canViewTemplates: false,
     canViewSettings: false,
-    // Device & Port Actions
+    // Device & Port Actions (Cisco)
     terminalAccess: 'none',            // No CLI access
     canToggleAdminStatus: false,        // Cannot shutdown core ports
     canChangeVlan: true,                // CAN assign VLAN
     canEditDescription: true,           // CAN edit port description
     canTogglePortSecurity: true,        // CAN inspect/enable port security
     canWriteMemory: false,              // Cannot write NVRAM
+    // MikroTik RouterOS
+    mikrotikTerminalAccess: 'none',
+    canMikrotikToggleInterface: false,
+    canMikrotikBridgeVlan: true,
+    canMikrotikComment: true,
+    canMikrotikIpPool: false,
+    canMikrotikFirewall: false,
+    canMikrotikBackup: false,
+    canMikrotikSafeMode: true,
+    // Generic & Linux
+    genericTerminalAccess: 'none',
+    canGenericToggleLink: false,
+    canGenericDiagnostics: true,
+    canGenericConfigBackup: false,
+    // Global
     canManageDevices: false,            // Cannot add/delete switch
     canApplyTemplates: false,           // Cannot push CLI templates
     canBatchOperate: false,             // Cannot execute mass bulk edits
@@ -187,13 +305,28 @@ export const DEFAULT_ACCESS_POLICIES: AccessPolicy[] = [
     canViewScanner: true,
     canViewTemplates: true,
     canViewSettings: false,
-    // Device & Port Actions
+    // Device & Port Actions (Cisco)
     terminalAccess: 'view_only',        // View logs only
     canToggleAdminStatus: false,
     canChangeVlan: false,
     canEditDescription: false,
     canTogglePortSecurity: false,
     canWriteMemory: false,
+    // MikroTik RouterOS
+    mikrotikTerminalAccess: 'view_only',
+    canMikrotikToggleInterface: false,
+    canMikrotikBridgeVlan: false,
+    canMikrotikComment: false,
+    canMikrotikIpPool: false,
+    canMikrotikFirewall: false,
+    canMikrotikBackup: false,
+    canMikrotikSafeMode: false,
+    // Generic & Linux
+    genericTerminalAccess: 'view_only',
+    canGenericToggleLink: false,
+    canGenericDiagnostics: true,
+    canGenericConfigBackup: false,
+    // Global
     canManageDevices: false,
     canApplyTemplates: false,
     canBatchOperate: false,
@@ -218,47 +351,81 @@ export const DEFAULT_ACCESS_POLICIES: AccessPolicy[] = [
     canViewScanner: true,
     canViewTemplates: true,
     canViewSettings: true,
-    // Device & Port Actions
+    // Device & Port Actions (Cisco)
     terminalAccess: 'full',
     canToggleAdminStatus: true,
     canChangeVlan: true,
     canEditDescription: true,
     canTogglePortSecurity: true,
     canWriteMemory: true,
+    // MikroTik RouterOS
+    mikrotikTerminalAccess: 'full',
+    canMikrotikToggleInterface: true,
+    canMikrotikBridgeVlan: true,
+    canMikrotikComment: true,
+    canMikrotikIpPool: true,
+    canMikrotikFirewall: true,
+    canMikrotikBackup: true,
+    canMikrotikSafeMode: true,
+    // Generic & Linux
+    genericTerminalAccess: 'full',
+    canGenericToggleLink: true,
+    canGenericDiagnostics: true,
+    canGenericConfigBackup: true,
+    // Global
     canManageDevices: true,
     canApplyTemplates: true,
     canBatchOperate: true,
   },
 ];
 
-// Available local users
-export const LOCAL_USERS: LocalUser[] = [
-  {
-    id: 'admin',
-    username: 'admin',
-    fullName: 'مدیر ارشد شبکه (Network Administrator)',
-    email: 'admin@nettopology.internal',
-    status: 'active',
-  },
-  {
-    id: 'helpdesk_local',
-    username: 'helpdesk_user',
-    fullName: 'کاربر هلپ‌دسک محلی (Helpdesk Local)',
-    email: 'helpdesk@nettopology.internal',
-    status: 'active',
-  },
-  {
-    id: 'noc_local',
-    username: 'noc_operator',
-    fullName: 'اپراتور محلی NOC (Local NOC)',
-    email: 'noc@nettopology.internal',
-    status: 'active',
-  },
-];
-
 // ==========================================
 // Persistence & Data Access Functions
 // ==========================================
+
+export function loadLocalUsers(): LocalUser[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.LOCAL_USERS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to parse local users from localStorage', e);
+  }
+  saveLocalUsers(DEFAULT_LOCAL_USERS);
+  return DEFAULT_LOCAL_USERS;
+}
+
+export function saveLocalUsers(users: LocalUser[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.LOCAL_USERS, JSON.stringify(users));
+  } catch (e) {
+    console.error('Failed to save local users to localStorage', e);
+  }
+}
+
+export function loadLocalGroups(): LocalGroup[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.LOCAL_GROUPS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to parse local groups from localStorage', e);
+  }
+  saveLocalGroups(DEFAULT_LOCAL_GROUPS);
+  return DEFAULT_LOCAL_GROUPS;
+}
+
+export function saveLocalGroups(groups: LocalGroup[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.LOCAL_GROUPS, JSON.stringify(groups));
+  } catch (e) {
+    console.error('Failed to save local groups to localStorage', e);
+  }
+}
 
 export function loadDeviceGroups(): DeviceGroup[] {
   try {

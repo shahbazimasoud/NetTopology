@@ -282,14 +282,31 @@ export interface ADTestResult {
 }
 
 // ==========================================
-// Settings: Role-Based Access Control (RBAC)
+// Settings: Role-Based Access Control (RBAC) & Local Identity
 // ==========================================
+export interface LocalGroup {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  memberUserIds: string[];
+  createdAt: string;
+  updatedAt: string;
+  isBuiltin?: boolean;
+}
+
 export interface LocalUser {
   id: string;
   username: string;
   fullName: string;
   email: string;
   status: 'active' | 'disabled';
+  role?: string;
+  groupIds?: string[];
+  passwordHash?: string;
+  createdAt?: string;
+  lastLogin?: string;
+  isBuiltin?: boolean;
 }
 
 export interface AccessPolicy {
@@ -299,7 +316,7 @@ export interface AccessPolicy {
   isBuiltin?: boolean;
   priority: number;
   // Subject: Who does this policy apply to?
-  subjectType: 'local_user' | 'ad_group' | 'ad_user';
+  subjectType: 'local_user' | 'local_group' | 'ad_group' | 'ad_user';
   subjectId: string;
   subjectName: string;
   // Target: Which devices does this cover?
@@ -314,15 +331,35 @@ export interface AccessPolicy {
   canViewScanner: boolean;
   canViewTemplates: boolean;
   canViewSettings: boolean;
-  // Granular Device / Port Capabilities: What can they execute?
+
+  // 1. Cisco IOS / IOS-XE Granular Capabilities
   terminalAccess: 'none' | 'view_only' | 'full';
   canToggleAdminStatus: boolean;      // shutdown / no shutdown
   canChangeVlan: boolean;             // assign VLAN
   canEditDescription: boolean;        // set port description
   canTogglePortSecurity: boolean;     // port security enable/disable
   canWriteMemory: boolean;            // copy run start / write memory
+
+  // 2. MikroTik RouterOS Granular Capabilities
+  mikrotikTerminalAccess?: 'none' | 'view_only' | 'full';
+  canMikrotikToggleInterface?: boolean; // /interface/set disabled=yes/no
+  canMikrotikBridgeVlan?: boolean;       // /interface/bridge/vlan & PVID
+  canMikrotikComment?: boolean;          // /interface/set comment=...
+  canMikrotikIpPool?: boolean;           // /ip/address & /ip/pool
+  canMikrotikFirewall?: boolean;         // /ip/firewall filter/nat
+  canMikrotikBackup?: boolean;           // /system/backup & /export
+  canMikrotikSafeMode?: boolean;         // RouterOS Safe Mode Protection
+
+  // 3. Generic & Linux Network Appliances
+  genericTerminalAccess?: 'none' | 'view_only' | 'full';
+  canGenericToggleLink?: boolean;        // ip link set dev up/down
+  canGenericDiagnostics?: boolean;       // ping, traceroute, mtr
+  canGenericConfigBackup?: boolean;      // system config snapshot
+
+  // 4. Global Infrastructure Operations
   canManageDevices: boolean;          // add, edit, delete device
   canApplyTemplates: boolean;         // apply config template
   canBatchOperate: boolean;           // batch port configuration
 }
+
 

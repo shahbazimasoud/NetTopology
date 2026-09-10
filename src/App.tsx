@@ -381,8 +381,34 @@ export default function App() {
             <CdpLldpScannerView onNavigateToTopology={() => setActiveTab('schematic')} />
           )}
 
-          {activeTab === 'settings' && (
-            <SettingsView devices={devices} />
+          {(activeTab === 'settings' ||
+            activeTab === 'settings-groups' ||
+            activeTab === 'settings-users' ||
+            activeTab === 'settings-ad' ||
+            activeTab === 'settings-rbac') && (
+            <SettingsView
+              devices={devices}
+              activeSubTab={
+                activeTab === 'settings-users'
+                  ? 'users'
+                  : activeTab === 'settings-ad'
+                  ? 'ad'
+                  : activeTab === 'settings-rbac'
+                  ? 'rbac'
+                  : 'groups'
+              }
+              onSelectSubTab={(sub) => {
+                setActiveTab(
+                  sub === 'users'
+                    ? 'settings-users'
+                    : sub === 'ad'
+                    ? 'settings-ad'
+                    : sub === 'rbac'
+                    ? 'settings-rbac'
+                    : 'settings-groups'
+                );
+              }}
+            />
           )}
         </main>
       </div>

@@ -12,11 +12,25 @@ import {
   Layers,
   Activity,
   Settings,
-  ShieldCheck
+  ShieldCheck,
+  FolderTree,
+  Users,
+  Server
 } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
-export type ActiveTab = 'dashboard' | 'devices' | 'schematic' | 'templates' | 'ports' | 'scanner' | 'settings';
+export type ActiveTab =
+  | 'dashboard'
+  | 'devices'
+  | 'schematic'
+  | 'templates'
+  | 'ports'
+  | 'scanner'
+  | 'settings'
+  | 'settings-groups'
+  | 'settings-users'
+  | 'settings-ad'
+  | 'settings-rbac';
 
 interface SidebarProps {
   activeTab: ActiveTab;
@@ -118,8 +132,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
       colorClass: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
       items: [
         {
-          id: 'settings',
-          labelKey: 'tab_settings',
+          id: 'settings-groups',
+          labelKey: 'tab_settings_groups',
+          icon: FolderTree,
+          badge: null,
+        },
+        {
+          id: 'settings-users',
+          labelKey: 'tab_settings_users',
+          icon: Users,
+          badge: null,
+        },
+        {
+          id: 'settings-ad',
+          labelKey: 'tab_settings_ad',
+          icon: Server,
+          badge: null,
+        },
+        {
+          id: 'settings-rbac',
+          labelKey: 'tab_settings_rbac',
           icon: ShieldCheck,
           badge: null,
         },
@@ -132,7 +164,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Keep expanded parent synced with activeTab so active item is always visible
   useEffect(() => {
-    const parentForActive = navGroups.find((g) => g.items.some((i) => i.id === activeTab));
+    const parentForActive = navGroups.find((g) =>
+      g.items.some((i) => i.id === activeTab || (activeTab === 'settings' && g.id === 'system'))
+    );
     if (parentForActive && parentForActive.id !== expandedParentId) {
       setExpandedParentId(parentForActive.id);
     }
@@ -157,7 +191,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const renderChildItem = (item: NavItem) => {
     const Icon = item.icon;
-    const isActive = activeTab === item.id;
+    const isActive = activeTab === item.id || (activeTab === 'settings' && item.id === 'settings-groups');
     const label = t(item.labelKey as any);
 
     return (

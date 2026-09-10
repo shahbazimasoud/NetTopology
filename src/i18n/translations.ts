@@ -76,6 +76,10 @@ export const translations = {
     tab_ports: 'Ports & VLANs Telemetry',
     tab_scanner: 'CDP/LLDP Discovery Scanner',
     tab_settings: 'Settings & Access Control',
+    tab_settings_groups: 'Device Grouping',
+    tab_settings_users: 'Local Users & Groups',
+    tab_settings_ad: 'Active Directory / LDAP',
+    tab_settings_rbac: 'Access Control (RBAC)',
 
     // Footer
     footer_network_status: 'Network Status:',
@@ -686,6 +690,10 @@ export const translations = {
     tab_ports: 'پایش پورت‌ها و ویلن‌ها',
     tab_scanner: 'اسکن همسایگی CDP/LLDP',
     tab_settings: 'تنظیمات و سطوح دسترسی (RBAC)',
+    tab_settings_groups: 'گروه‌بندی دیوایس‌ها',
+    tab_settings_users: 'کاربران و گروه‌های محلی',
+    tab_settings_ad: 'اتصال به اکتیو دایرکتوری',
+    tab_settings_rbac: 'سطوح دسترسی و اختیارات (RBAC)',
 
     // Footer
     footer_network_status: 'وضعیت شبکه:',

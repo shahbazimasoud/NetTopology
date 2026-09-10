@@ -25,16 +25,28 @@ import {
   Activity,
   Layers,
   Save,
-  Radio
+  Radio,
+  Server,
+  Cpu,
+  Router as RouterIcon,
+  Globe,
+  Wrench,
+  HardDrive
 } from 'lucide-react';
 import {
   AccessPolicy,
   DeviceGroup,
   Device,
   ActiveDirectoryConfig,
-  LocalUser
+  LocalUser,
+  LocalGroup
 } from '../../types';
-import { LOCAL_USERS, loadSimulatedRoleId, saveSimulatedRoleId } from '../../services/settingsStorage';
+import {
+  loadLocalUsers,
+  loadLocalGroups,
+  loadSimulatedRoleId,
+  saveSimulatedRoleId
+} from '../../services/settingsStorage';
 import { useLanguage } from '../../i18n';
 
 interface AccessControlTabProps {
@@ -45,6 +57,8 @@ interface AccessControlTabProps {
   onSavePolicies: (policies: AccessPolicy[]) => void;
   activeSimulatedPolicyId: string;
   onSelectSimulatedPolicy: (id: string) => void;
+  localUsers?: LocalUser[];
+  localGroups?: LocalGroup[];
 }
 
 export const AccessControlTab: React.FC<AccessControlTabProps> = ({
@@ -55,23 +69,27 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
   onSavePolicies,
   activeSimulatedPolicyId,
   onSelectSimulatedPolicy,
+  localUsers = loadLocalUsers(),
+  localGroups = loadLocalGroups(),
 }) => {
   const { isRtl, isEn } = useLanguage();
   const [editingPolicy, setEditingPolicy] = useState<AccessPolicy | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [vendorFilter, setVendorFilter] = useState<'all' | 'cisco' | 'mikrotik' | 'generic'>('all');
 
   // Initial template for new policy
   const getBlankPolicy = (): AccessPolicy => ({
     id: `policy-${Date.now().toString(36)}`,
     name: isEn ? 'New Custom Access Policy' : 'پالیسی جدید سطح دسترسی',
-    description: isEn ? 'Custom access control rule' : 'قانون دسترسی سفارشی سازمانی',
+    description: isEn ? 'Custom multi-vendor access control rule' : 'قانون دسترسی سفارشی برای تجهیزات چند وندوری شبکه',
     priority: 50,
-    subjectType: 'ad_group',
-    subjectId: adConfig.syncedGroups[0]?.dn || 'Helpdesk-Admins',
-    subjectName: adConfig.syncedGroups[0]?.cn || 'Helpdesk-Admins',
+    subjectType: 'local_group',
+    subjectId: localGroups[0]?.id || 'group-helpdesk-ops',
+    subjectName: localGroups[0]?.name || 'تیم هلپ‌دسک و پشتیبانی',
     targetScope: 'groups',
     targetGroupIds: [groups[0]?.id || 'group-helpdesk'],
     targetDeviceIds: [],
+    // Page modules
     canViewDashboard: true,
     canViewTopology: true,
     canViewDevices: true,
@@ -79,12 +97,28 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
     canViewScanner: false,
     canViewTemplates: false,
     canViewSettings: false,
+    // Cisco capabilities
     terminalAccess: 'none',
     canToggleAdminStatus: false,
     canChangeVlan: true,
     canEditDescription: true,
     canTogglePortSecurity: true,
     canWriteMemory: false,
+    // MikroTik capabilities
+    mikrotikTerminalAccess: 'none',
+    canMikrotikToggleInterface: false,
+    canMikrotikBridgeVlan: true,
+    canMikrotikComment: true,
+    canMikrotikIpPool: false,
+    canMikrotikFirewall: false,
+    canMikrotikBackup: false,
+    canMikrotikSafeMode: true,
+    // Generic / Linux capabilities
+    genericTerminalAccess: 'none',
+    canGenericToggleLink: false,
+    canGenericDiagnostics: true,
+    canGenericConfigBackup: false,
+    // Global capabilities
     canManageDevices: false,
     canApplyTemplates: false,
     canBatchOperate: false,
@@ -93,11 +127,13 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
   const handleStartCreate = () => {
     setEditingPolicy(getBlankPolicy());
     setIsCreating(true);
+    setVendorFilter('all');
   };
 
   const handleStartEdit = (policy: AccessPolicy) => {
     setEditingPolicy({ ...policy });
     setIsCreating(false);
+    setVendorFilter('all');
   };
 
   const handleDeletePolicy = (id: string, e: React.MouseEvent) => {
@@ -138,104 +174,81 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
   return (
     <div className="space-y-5 animate-fadeIn">
       {/* Role Simulator Header Banner */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-950/70 via-slate-900/80 to-purple-950/70 border border-indigo-500/30 backdrop-blur-md shadow-xl">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-300">
-              <ShieldCheck className="w-5 h-5 text-cyan-300" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-xs sm:text-sm text-white">
-                  {isEn ? 'Live RBAC Simulator / Active Role Testing:' : 'شبیه‌ساز و تست زنده سطوح دسترسی (RBAC Simulator):'}
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-500/40">
-                  {activePolicyObj?.name}
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 mt-0.5">
-                {isEn
-                  ? 'Switch simulated role to verify how navigation pages, terminal consoles, and port controls adapt.'
-                  : 'با تغییر نقش جاری، بررسی کنید که صفحات و منوهای پورت سکیوریتی، ترمینال و تغییر ویلن چگونه محدود یا مجاز می‌شوند.'}
-              </p>
-            </div>
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-900/40 via-purple-900/30 to-cyan-900/30 border border-indigo-500/30 shadow-lg backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-inner">
+            <Sparkles className="w-5 h-5 text-indigo-400" />
           </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-300 font-semibold">{isEn ? 'Active Test Profile:' : 'نقش فعال:'}</span>
-            <select
-              value={activeSimulatedPolicyId}
-              onChange={(e) => onSelectSimulatedPolicy(e.target.value)}
-              className="px-3 py-1.5 rounded-xl bg-slate-900 border border-indigo-500/40 text-cyan-300 font-bold text-xs focus:outline-none focus:border-cyan-400 cursor-pointer shadow-inner"
-            >
-              {policies.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-sm text-white">
+                {isEn ? 'Multi-Vendor Granular RBAC Engine' : 'موتور کنترل دسترسی مبتنی بر نقش (RBAC چند وندوری)'}
+              </h3>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                {isEn ? 'Cisco • MikroTik • Linux' : 'سیسکو • میکروتیک • لینوکس'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mt-0.5">
+              {isEn
+                ? 'Control exact CLI commands, port states, and modal privileges per vendor across network nodes.'
+                : 'مدیریت تفکیک‌شده اختیارات ترمینال، تغییرات پورت، ویلن و کانفیگ برای تجهیزات سیسکو، میکروتیک و لینوکس'}
+            </p>
           </div>
         </div>
 
-        {/* Quick Capabilities Summary for Active Simulated Profile */}
-        <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-[10px] font-mono">
-          <div className={`p-2 rounded-lg border ${activePolicyObj?.canChangeVlan ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
-            <span>{isEn ? 'Change VLAN' : 'تغییر ویلن'}</span>: {activePolicyObj?.canChangeVlan ? '✓' : '✗'}
-          </div>
-          <div className={`p-2 rounded-lg border ${activePolicyObj?.canEditDescription ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
-            <span>{isEn ? 'Port Desc' : 'توضیحات پورت'}</span>: {activePolicyObj?.canEditDescription ? '✓' : '✗'}
-          </div>
-          <div className={`p-2 rounded-lg border ${activePolicyObj?.canTogglePortSecurity ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
-            <span>{isEn ? 'Port Security' : 'پورت سکیوریتی'}</span>: {activePolicyObj?.canTogglePortSecurity ? '✓' : '✗'}
-          </div>
-          <div className={`p-2 rounded-lg border ${activePolicyObj?.terminalAccess !== 'none' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
-            <span>{isEn ? 'CLI Terminal' : 'کنسول CLI'}</span>: {activePolicyObj?.terminalAccess}
-          </div>
-          <div className={`p-2 rounded-lg border ${activePolicyObj?.canToggleAdminStatus ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
-            <span>{isEn ? 'Port Shutdown' : 'خاموشی پورت'}</span>: {activePolicyObj?.canToggleAdminStatus ? '✓' : '✗'}
-          </div>
-          <div className={`p-2 rounded-lg border ${activePolicyObj?.canWriteMemory ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
-            <span>{isEn ? 'Write Memory' : 'ذخیره کانفیگ'}</span>: {activePolicyObj?.canWriteMemory ? '✓' : '✗'}
-          </div>
-          <div className={`p-2 rounded-lg border ${activePolicyObj?.canManageDevices ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
-            <span>{isEn ? 'Manage Devs' : 'مدیریت تجهیز'}</span>: {activePolicyObj?.canManageDevices ? '✓' : '✗'}
-          </div>
-          <div className={`p-2 rounded-lg border ${activePolicyObj?.canApplyTemplates ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-300'}`}>
-            <span>{isEn ? 'Templates' : 'اعمال الگو'}</span>: {activePolicyObj?.canApplyTemplates ? '✓' : '✗'}
-          </div>
+        {/* Live Simulator Role Selector */}
+        <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-900/80 border border-white/10 self-start md:self-auto">
+          <span className="text-[11px] font-semibold text-amber-300 pl-2 rtl:pr-2 flex items-center gap-1.5">
+            <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+            <span>{isEn ? 'Active Test Role:' : 'نقش تستی فعال:'}</span>
+          </span>
+          <select
+            value={activeSimulatedPolicyId}
+            onChange={(e) => onSelectSimulatedPolicy(e.target.value)}
+            className="px-3 py-1 rounded-lg bg-slate-800 border border-white/15 text-white text-xs font-semibold focus:outline-none focus:border-cyan-400 cursor-pointer"
+          >
+            {policies.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.subjectName})
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Action Bar */}
+      {/* Policies List Header & New Policy Button */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-          <Shield className="w-4 h-4 text-cyan-400" />
-          <span>{isEn ? 'Configured Access Policies' : 'پالیسی‌های تعریف‌شده سطح دسترسی (RBAC Policies)'}</span>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-slate-300">
+        <div className="flex items-center gap-2">
+          <h3 className="font-bold text-sm text-white flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-cyan-400" />
+            <span>{isEn ? 'Configured Access Policies' : 'پالیسی‌های دسترسی تعریف‌شده'}</span>
+          </h3>
+          <span className="px-2 py-0.5 rounded-full text-xs bg-slate-800 border border-white/10 text-slate-300 font-mono">
             {policies.length}
           </span>
-        </h3>
+        </div>
 
         <button
           onClick={handleStartCreate}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold text-xs shadow-md transition active:scale-95 cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs shadow-md transition cursor-pointer"
         >
-          <Plus className="w-4 h-4" />
-          <span>{isEn ? 'Add Access Policy' : 'تعریف پالیسی جدید'}</span>
+          <Plus className="w-3.5 h-3.5" />
+          <span>{isEn ? 'Create Access Policy' : 'تعریف پالیسی جدید'}</span>
         </button>
       </div>
 
-      {/* Policy List Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Grid of Policies */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {policies.map((policy) => {
           const isCurrent = policy.id === activeSimulatedPolicyId;
+
           return (
             <div
               key={policy.id}
-              className={`p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-3 ${
+              className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between ${
                 isCurrent
-                  ? 'bg-indigo-950/40 border-indigo-400 ring-2 ring-indigo-500/30 shadow-lg'
-                  : 'bg-white/[0.02] border-white/10 hover:border-white/20'
+                  ? 'bg-slate-900/90 border-cyan-500/60 shadow-lg shadow-cyan-500/10'
+                  : 'bg-slate-900/60 border-white/10 hover:border-white/20'
               }`}
             >
               <div>
@@ -246,6 +259,8 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
                         <Users className="w-4 h-4 text-cyan-400" />
                       ) : policy.subjectType === 'ad_user' ? (
                         <User className="w-4 h-4 text-emerald-400" />
+                      ) : policy.subjectType === 'local_group' ? (
+                        <FolderTree className="w-4 h-4 text-purple-400" />
                       ) : (
                         <ShieldCheck className="w-4 h-4 text-indigo-400" />
                       )}
@@ -259,7 +274,7 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
                   </div>
 
                   {isCurrent && (
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/30 text-indigo-200 border border-indigo-500/40">
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 font-bold">
                       {isEn ? 'ACTIVE' : 'فعال'}
                     </span>
                   )}
@@ -275,7 +290,7 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
                     <span className="text-emerald-400 font-semibold">{isEn ? 'All Network Devices' : 'تمام تجهیزات شبکه'}</span>
                   )}
                   {policy.targetScope === 'groups' && (
-                    <span className="text-amber-300 font-semibold">
+                    <span className="text-amber-300 font-semibold truncate max-w-[180px]">
                       {policy.targetGroupIds.map((gid) => groups.find((g) => g.id === gid)?.name || gid).join(', ')}
                     </span>
                   )}
@@ -285,10 +300,50 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
                     </span>
                   )}
                 </div>
+
+                {/* Multi-Vendor Badges */}
+                <div className="flex flex-wrap gap-1 mt-2.5 pt-2 border-t border-white/5">
+                  {/* Cisco Badge */}
+                  <span className="px-1.5 py-0.5 rounded text-[9px] bg-blue-500/15 text-blue-300 border border-blue-500/30 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                    <span>Cisco:</span>
+                    <span className="font-mono">
+                      {policy.canChangeVlan ? 'VLAN ' : ''}
+                      {policy.canTogglePortSecurity ? 'Sec ' : ''}
+                      {policy.canToggleAdminStatus ? 'Shut ' : ''}
+                      {policy.terminalAccess !== 'none' ? 'CLI' : ''}
+                      {!policy.canChangeVlan && !policy.canTogglePortSecurity && !policy.canToggleAdminStatus && policy.terminalAccess === 'none' ? 'Restricted' : ''}
+                    </span>
+                  </span>
+
+                  {/* MikroTik Badge */}
+                  <span className="px-1.5 py-0.5 rounded text-[9px] bg-rose-500/15 text-rose-300 border border-rose-500/30 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                    <span>MikroTik:</span>
+                    <span className="font-mono">
+                      {policy.canMikrotikBridgeVlan ? 'Bridge ' : ''}
+                      {policy.canMikrotikToggleInterface ? 'Port ' : ''}
+                      {policy.canMikrotikBackup ? 'Backup ' : ''}
+                      {policy.mikrotikTerminalAccess && policy.mikrotikTerminalAccess !== 'none' ? 'ROS-CLI' : ''}
+                      {!policy.canMikrotikBridgeVlan && !policy.canMikrotikToggleInterface && (!policy.mikrotikTerminalAccess || policy.mikrotikTerminalAccess === 'none') ? 'Restricted' : ''}
+                    </span>
+                  </span>
+
+                  {/* Generic Badge */}
+                  <span className="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span>Linux:</span>
+                    <span className="font-mono">
+                      {policy.canGenericDiagnostics ? 'Diag ' : ''}
+                      {policy.canGenericToggleLink ? 'Link ' : ''}
+                      {policy.genericTerminalAccess && policy.genericTerminalAccess !== 'none' ? 'Shell' : ''}
+                    </span>
+                  </span>
+                </div>
               </div>
 
               {/* Footer Actions */}
-              <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+              <div className="pt-2 mt-3 border-t border-white/10 flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => onSelectSimulatedPolicy(policy.id)}
@@ -301,6 +356,7 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
 
                 <div className="flex items-center gap-1">
                   <button
+                    type="button"
                     onClick={() => handleStartEdit(policy)}
                     className="p-1 rounded text-slate-400 hover:text-cyan-300 hover:bg-white/10 transition cursor-pointer"
                     title={isEn ? 'Edit Policy' : 'ویرایش پالیسی'}
@@ -309,6 +365,7 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
                   </button>
                   {policies.length > 1 && (
                     <button
+                      type="button"
                       onClick={(e) => handleDeletePolicy(policy.id, e)}
                       className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
                       title={isEn ? 'Delete Policy' : 'حذف پالیسی'}
@@ -331,11 +388,19 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
               <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                 <Sliders className="w-4 h-4" />
               </div>
-              <h3 className="font-bold text-sm text-white">
-                {isCreating ? (isEn ? 'Create Access Policy' : 'تعریف پالیسی سطح دسترسی جدید') : (isEn ? 'Edit Access Policy' : 'ویرایش پالیسی سطح دسترسی')}
-              </h3>
+              <div>
+                <h3 className="font-bold text-sm text-white">
+                  {isCreating ? (isEn ? 'Create Access Policy' : 'تعریف پالیسی سطح دسترسی جدید') : (isEn ? 'Edit Access Policy' : 'ویرایش پالیسی سطح دسترسی')}
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  {isEn
+                    ? 'Configure permissions across Cisco, MikroTik RouterOS, and Linux systems.'
+                    : 'تنظیم جامع اختیارات و محدودیت‌های عملیاتی برای تجهیزات سیسکو، میکروتیک و لینوکس'}
+                </p>
+              </div>
             </div>
             <button
+              type="button"
               onClick={() => setEditingPolicy(null)}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
             >
@@ -394,9 +459,12 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
                       } else if (type === 'ad_user') {
                         defaultId = adConfig.syncedUsers[0]?.samAccountName || 'a.rezaei';
                         defaultName = adConfig.syncedUsers[0]?.displayName || 'Ali Rezaei';
+                      } else if (type === 'local_group') {
+                        defaultId = localGroups[0]?.id || 'group-helpdesk-ops';
+                        defaultName = localGroups[0]?.name || 'Helpdesk Operators';
                       } else {
-                        defaultId = LOCAL_USERS[0]?.id || 'admin';
-                        defaultName = LOCAL_USERS[0]?.fullName || 'Admin';
+                        defaultId = localUsers[0]?.id || 'admin';
+                        defaultName = localUsers[0]?.fullName || 'Admin';
                       }
                       setEditingPolicy({
                         ...editingPolicy,
@@ -407,8 +475,9 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
                     }}
                     className="w-full px-3 py-1.5 rounded-xl bg-slate-800 border border-white/15 text-white text-xs focus:outline-none focus:border-cyan-400"
                   >
-                    <option value="ad_group">{isEn ? 'Active Directory Group' : 'گروه امنیتی اکتیو دایرکتوری (AD Group)'}</option>
-                    <option value="ad_user">{isEn ? 'Active Directory User' : 'کاربر خاص اکتیو دایرکتوری (AD User)'}</option>
+                    <option value="ad_group">{isEn ? 'Active Directory Group (AD)' : 'گروه امنیتی اکتیو دایرکتوری (AD Group)'}</option>
+                    <option value="ad_user">{isEn ? 'Active Directory User (AD)' : 'کاربر خاص اکتیو دایرکتوری (AD User)'}</option>
+                    <option value="local_group">{isEn ? 'Local User Group' : 'گروه کاربری محلی سیستم (Local Group)'}</option>
                     <option value="local_user">{isEn ? 'Local User Account' : 'کاربر محلی سیستم (Local User)'}</option>
                   </select>
                 </div>
@@ -457,22 +526,43 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
                     </select>
                   )}
 
-                  {editingPolicy.subjectType === 'local_user' && (
+                  {editingPolicy.subjectType === 'local_group' && (
                     <select
                       value={editingPolicy.subjectId}
                       onChange={(e) => {
-                        const loc = LOCAL_USERS.find((l) => l.id === e.target.value);
+                        const grp = localGroups.find((g) => g.id === e.target.value);
                         setEditingPolicy({
                           ...editingPolicy,
                           subjectId: e.target.value,
-                          subjectName: loc ? loc.fullName : e.target.value,
+                          subjectName: grp ? `${grp.name} (گروه محلی)` : e.target.value,
                         });
                       }}
                       className="w-full px-3 py-1.5 rounded-xl bg-slate-800 border border-white/15 text-white text-xs focus:outline-none focus:border-cyan-400"
                     >
-                      {LOCAL_USERS.map((u) => (
+                      {localGroups.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name} — ({g.memberUserIds?.length || 0} عضو محلی)
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  {editingPolicy.subjectType === 'local_user' && (
+                    <select
+                      value={editingPolicy.subjectId}
+                      onChange={(e) => {
+                        const loc = localUsers.find((l) => l.id === e.target.value);
+                        setEditingPolicy({
+                          ...editingPolicy,
+                          subjectId: e.target.value,
+                          subjectName: loc ? `${loc.fullName} (کاربر محلی)` : e.target.value,
+                        });
+                      }}
+                      className="w-full px-3 py-1.5 rounded-xl bg-slate-800 border border-white/15 text-white text-xs focus:outline-none focus:border-cyan-400"
+                    >
+                      {localUsers.map((u) => (
                         <option key={u.id} value={u.id}>
-                          {u.fullName} ({u.username})
+                          {u.fullName} (@{u.username}) - {u.role || 'User'}
                         </option>
                       ))}
                     </select>
@@ -508,7 +598,7 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
                     onChange={() => setEditingPolicy({ ...editingPolicy, targetScope: 'groups' })}
                     className="accent-amber-400"
                   />
-                  <span>{isEn ? 'Specific Device Groups (e.g. Helpdesk)' : 'گروه‌های تجهیزات خاص (مانند گروه هلپ‌دسک)'}</span>
+                  <span>{isEn ? 'Specific Device Groups' : 'گروه‌های تجهیزات خاص (مانند گروه هلپ‌دسک)'}</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer text-slate-200">
@@ -619,87 +709,443 @@ export const AccessControlTab: React.FC<AccessControlTabProps> = ({
               </div>
             </div>
 
-            {/* Section 4: Granular Device Operations */}
-            <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10 space-y-3">
-              <h4 className="font-bold text-xs text-emerald-300 flex items-center gap-2">
-                <Terminal className="w-4 h-4" />
-                <span>{isEn ? '4. Granular Device Capabilities: What operations can they perform?' : '۴. دسترسی‌های ریز عملیاتی: کاربر چه کارهایی روی مودال‌ها و پورت‌های دیوایس بتواند بکند؟'}</span>
-              </h4>
+            {/* Section 4: Granular Device Operations (Multi-Vendor Aware) */}
+            <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+                <h4 className="font-bold text-xs text-emerald-300 flex items-center gap-2">
+                  <Terminal className="w-4 h-4" />
+                  <span>
+                    {isEn
+                      ? '4. Granular Device Capabilities (Multi-Vendor Operations)'
+                      : '۴. دسترسی‌های ریز عملیاتی: اختیارات تفکیک‌شده بر اساس وندور (سیسکو، میکروتیک، لینوکس)'}
+                  </span>
+                </h4>
 
-              {/* Terminal Mode Selector */}
-              <div className="p-2.5 rounded-xl bg-slate-800 border border-white/10 space-y-2">
-                <label className="block text-xs font-semibold text-slate-300">
-                  {isEn ? 'Cisco Console & Terminal Access:' : 'سطح دسترسی به ترمینال و خط فرمان سیسکو (CLI Terminal):'}
-                </label>
-                <div className="flex flex-wrap gap-4 text-xs">
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-200">
-                    <input
-                      type="radio"
-                      name="term"
-                      checked={editingPolicy.terminalAccess === 'none'}
-                      onChange={() => setEditingPolicy({ ...editingPolicy, terminalAccess: 'none' })}
-                      className="accent-rose-500"
-                    />
-                    <span className="text-rose-300 font-semibold">{isEn ? 'No Access (Hidden)' : 'عدم دسترسی (ترمینال کاملاً مخفی)'}</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-200">
-                    <input
-                      type="radio"
-                      name="term"
-                      checked={editingPolicy.terminalAccess === 'view_only'}
-                      onChange={() => setEditingPolicy({ ...editingPolicy, terminalAccess: 'view_only' })}
-                      className="accent-amber-400"
-                    />
-                    <span className="text-amber-300 font-semibold">{isEn ? 'View-Only (Read Logs)' : 'فقط مشاهده خروجی‌ها و لاگ‌ها (Read-Only)'}</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-200">
-                    <input
-                      type="radio"
-                      name="term"
-                      checked={editingPolicy.terminalAccess === 'full'}
-                      onChange={() => setEditingPolicy({ ...editingPolicy, terminalAccess: 'full' })}
-                      className="accent-emerald-400"
-                    />
-                    <span className="text-emerald-300 font-semibold">{isEn ? 'Full Interactive CLI' : 'ترمینال تعاملی کامل (Full Interactive)'}</span>
-                  </label>
+                {/* Vendor Filter Bar */}
+                <div className="flex items-center gap-1 p-1 bg-slate-950/80 rounded-xl border border-white/10 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setVendorFilter('all')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                      vendorFilter === 'all'
+                        ? 'bg-slate-700 text-white shadow'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {isEn ? 'All Vendors' : 'تمامی وندورها'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVendorFilter('cisco')}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                      vendorFilter === 'cisco'
+                        ? 'bg-blue-600 text-white shadow'
+                        : 'text-blue-400 hover:bg-blue-500/10'
+                    }`}
+                  >
+                    <Server className="w-3 h-3" />
+                    <span>{isEn ? 'Cisco IOS' : 'سیسکو (Cisco)'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVendorFilter('mikrotik')}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                      vendorFilter === 'mikrotik'
+                        ? 'bg-rose-600 text-white shadow'
+                        : 'text-rose-400 hover:bg-rose-500/10'
+                    }`}
+                  >
+                    <RouterIcon className="w-3 h-3" />
+                    <span>{isEn ? 'MikroTik RouterOS' : 'میکروتیک (MikroTik)'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVendorFilter('generic')}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                      vendorFilter === 'generic'
+                        ? 'bg-emerald-600 text-white shadow'
+                        : 'text-emerald-400 hover:bg-emerald-500/10'
+                    }`}
+                  >
+                    <Globe className="w-3 h-3" />
+                    <span>{isEn ? 'Linux / Generic' : 'لینوکس و سرور'}</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Operation Switches */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                {[
-                  { key: 'canChangeVlan', label: isEn ? 'Assign & Change VLAN' : 'تغییر و تخصیص ویلن پورت (Assign VLAN)', desc: isEn ? 'Allow moving port between access VLANs' : 'امکان جابجایی پورت بین ویلن‌های مختلف' },
-                  { key: 'canEditDescription', label: isEn ? 'Set Port Description' : 'تنظیم توضیحات پورت (Port Description)', desc: isEn ? 'Allow updating Cisco interface description' : 'امکان ثبت یا تغییر دیسکریپشن پورت' },
-                  { key: 'canTogglePortSecurity', label: isEn ? 'Port Security Control' : 'کنترل پورت سکیوریتی (Port Security)', desc: isEn ? 'Allow configuring MAC security & sticky violations' : 'امکان فعال/غیرفعال‌سازی پورت‌سکیوریتی و مک' },
-                  { key: 'canToggleAdminStatus', label: isEn ? 'Port Shutdown / No Shutdown' : 'خاموش/روشن کردن پورت (Shutdown)', desc: isEn ? 'Allow disabling physical interface' : 'امکان قطع کامل پورت (برای ادمین‌های ارشد)' },
-                  { key: 'canWriteMemory', label: isEn ? 'Save Configuration (Write Mem)' : 'ذخیره در NVRAM (Write Memory)', desc: isEn ? 'Allow executing copy run start' : 'امکان ذخیره پایدار کانفیگ در حافظه' },
-                  { key: 'canBatchOperate', label: isEn ? 'Batch Multi-Port Operations' : 'عملیات گروهی روی پورت‌ها (Batch Ops)', desc: isEn ? 'Allow mass VLAN and shutdown across multiple ports' : 'امکان اعمال تغییر همزمان روی چندین پورت' },
-                  { key: 'canManageDevices', label: isEn ? 'Add / Edit / Delete Device' : 'مدیریت فیزیکی تجهیزات (CRUD)', desc: isEn ? 'Allow creating, modifying, and deleting switches' : 'امکان تعریف یا حذف فیزیکی دیوایس در سامانه' },
-                  { key: 'canApplyTemplates', label: isEn ? 'Apply CLI Templates' : 'اعمال الگوهای کانفیگ (Templates)', desc: isEn ? 'Allow pushing scripted configurations' : 'امکان اعمال اسکریپت و الگوهای آماده سیسکو' },
-                ].map(({ key, label, desc }) => {
-                  const checked = (editingPolicy as any)[key];
-                  return (
-                    <label
-                      key={key}
-                      className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
-                        checked ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-200' : 'bg-slate-800/60 border-white/10 text-slate-400'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => setEditingPolicy({ ...editingPolicy, [key]: e.target.checked })}
-                        className="w-4 h-4 mt-0.5 accent-emerald-500 rounded"
-                      />
-                      <div>
-                        <div className="font-bold text-xs text-white">{label}</div>
-                        <div className="text-[10px] text-slate-400">{desc}</div>
+              {/* VENDOR 1: CISCO IOS / IOS-XE */}
+              {(vendorFilter === 'all' || vendorFilter === 'cisco') && (
+                <div className="p-3 rounded-xl bg-blue-950/20 border border-blue-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-300">
+                        <Server className="w-4 h-4" />
                       </div>
+                      <span className="font-bold text-xs text-blue-300">
+                        {isEn ? 'Cisco IOS / IOS-XE Operations' : 'عملیات و اختیارات تخصصی سوئیچ و روترهای سیسکو'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                      Catalyst / Nexus
+                    </span>
+                  </div>
+
+                  {/* Cisco Terminal Selector */}
+                  <div className="p-2.5 rounded-xl bg-slate-900/80 border border-white/10 space-y-2">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      {isEn ? 'Cisco CLI & Terminal Access:' : 'سطح دسترسی به کنسول و ترمینال سیسکو (CLI Terminal):'}
                     </label>
-                  );
-                })}
+                    <div className="flex flex-wrap gap-4 text-xs">
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+                        <input
+                          type="radio"
+                          name="term_cisco"
+                          checked={editingPolicy.terminalAccess === 'none'}
+                          onChange={() => setEditingPolicy({ ...editingPolicy, terminalAccess: 'none' })}
+                          className="accent-rose-500"
+                        />
+                        <span className="text-rose-300 font-semibold">{isEn ? 'No Access (Hidden)' : 'عدم دسترسی (ترمینال کاملاً مخفی)'}</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+                        <input
+                          type="radio"
+                          name="term_cisco"
+                          checked={editingPolicy.terminalAccess === 'view_only'}
+                          onChange={() => setEditingPolicy({ ...editingPolicy, terminalAccess: 'view_only' })}
+                          className="accent-amber-400"
+                        />
+                        <span className="text-amber-300 font-semibold">{isEn ? 'View-Only (Read Logs)' : 'فقط مشاهده لاگ‌ها (Read-Only)'}</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+                        <input
+                          type="radio"
+                          name="term_cisco"
+                          checked={editingPolicy.terminalAccess === 'full'}
+                          onChange={() => setEditingPolicy({ ...editingPolicy, terminalAccess: 'full' })}
+                          className="accent-emerald-400"
+                        />
+                        <span className="text-emerald-300 font-semibold">{isEn ? 'Full Interactive CLI' : 'ترمینال تعاملی کامل (Full Interactive)'}</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Cisco Granular Checkboxes */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {[
+                      { key: 'canChangeVlan', label: isEn ? 'Assign & Change VLAN' : 'تغییر و تخصیص ویلن (Assign VLAN)', desc: isEn ? 'switchport access vlan' : 'جابجایی پورت بین ویلن‌های دسترسی' },
+                      { key: 'canEditDescription', label: isEn ? 'Port Description' : 'تنظیم دیسکریپشن پورت (Description)', desc: isEn ? 'description <text>' : 'ثبت برچسب و توضیحات پورت' },
+                      { key: 'canTogglePortSecurity', label: isEn ? 'Port Security & MAC' : 'کنترل پورت‌سکیوریتی (Port Security)', desc: isEn ? 'switchport port-security' : 'تنظیم محدودیت مک و رفتارهای Violation' },
+                      { key: 'canToggleAdminStatus', label: isEn ? 'Shutdown / No Shutdown' : 'خاموش/روشن کردن پورت فیزیکی', desc: isEn ? 'shutdown / no shutdown' : 'قطع فیزیکی سیگنال پورت سوئیچ' },
+                      { key: 'canWriteMemory', label: isEn ? 'Write Memory (NVRAM)' : 'ذخیره پایدار (copy run start)', desc: isEn ? 'write memory / NVRAM' : 'ذخیره کانفیگ در استارتاپ دیوایس' },
+                      { key: 'canBatchOperate', label: isEn ? 'Batch Multi-Port Ops' : 'عملیات دسته‌جمعی پورت‌ها (Batch Range)', desc: isEn ? 'interface range ...' : 'اعمال همزمان تغییر روی چندین پورت' },
+                    ].map(({ key, label, desc }) => {
+                      const checked = (editingPolicy as any)[key];
+                      return (
+                        <label
+                          key={key}
+                          className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
+                            checked
+                              ? 'bg-blue-500/15 border-blue-500/40 text-blue-200'
+                              : 'bg-slate-900/60 border-white/10 text-slate-400'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => setEditingPolicy({ ...editingPolicy, [key]: e.target.checked })}
+                            className="w-4 h-4 mt-0.5 accent-blue-500 rounded"
+                          />
+                          <div>
+                            <div className="font-bold text-xs text-white">{label}</div>
+                            <div className="text-[10px] text-slate-400">{desc}</div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* VENDOR 2: MIKROTIK ROUTEROS */}
+              {(vendorFilter === 'all' || vendorFilter === 'mikrotik') && (
+                <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-rose-500/20 text-rose-300">
+                        <RouterIcon className="w-4 h-4" />
+                      </div>
+                      <span className="font-bold text-xs text-rose-300">
+                        {isEn ? 'MikroTik RouterOS Operations' : 'عملیات و اختیارات تخصصی روتربورد و سوئیچ‌های میکروتیک'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                      CCR / CRS / RouterBOARD
+                    </span>
+                  </div>
+
+                  {/* MikroTik Terminal Selector */}
+                  <div className="p-2.5 rounded-xl bg-slate-900/80 border border-white/10 space-y-2">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      {isEn ? 'MikroTik RouterOS Terminal Access:' : 'سطح دسترسی به کنسول و خط فرمان RouterOS:'}
+                    </label>
+                    <div className="flex flex-wrap gap-4 text-xs">
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+                        <input
+                          type="radio"
+                          name="term_mikrotik"
+                          checked={(editingPolicy.mikrotikTerminalAccess || 'none') === 'none'}
+                          onChange={() => setEditingPolicy({ ...editingPolicy, mikrotikTerminalAccess: 'none' })}
+                          className="accent-rose-500"
+                        />
+                        <span className="text-rose-300 font-semibold">{isEn ? 'No Access' : 'عدم دسترسی (مخفی)'}</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+                        <input
+                          type="radio"
+                          name="term_mikrotik"
+                          checked={editingPolicy.mikrotikTerminalAccess === 'view_only'}
+                          onChange={() => setEditingPolicy({ ...editingPolicy, mikrotikTerminalAccess: 'view_only' })}
+                          className="accent-amber-400"
+                        />
+                        <span className="text-amber-300 font-semibold">{isEn ? 'View-Only (Read Logs)' : 'فقط مشاهده لاگ و وضعیت'}</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+                        <input
+                          type="radio"
+                          name="term_mikrotik"
+                          checked={editingPolicy.mikrotikTerminalAccess === 'full'}
+                          onChange={() => setEditingPolicy({ ...editingPolicy, mikrotikTerminalAccess: 'full' })}
+                          className="accent-rose-400"
+                        />
+                        <span className="text-rose-300 font-semibold">{isEn ? 'Full Interactive RouterOS' : 'ترمینال کامل RouterOS'}</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* MikroTik Granular Checkboxes */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {[
+                      {
+                        key: 'canMikrotikToggleInterface',
+                        label: isEn ? 'Enable / Disable Interface' : 'فعال/غیرفعال کردن اینترفیس میکروتیک',
+                        desc: isEn ? '/interface/set disabled=yes|no' : 'قطع و وصل پورت‌های ether, sfp, bonding',
+                      },
+                      {
+                        key: 'canMikrotikBridgeVlan',
+                        label: isEn ? 'Bridge VLAN & PVID' : 'مدیریت Bridge VLAN Filtering و PVID',
+                        desc: isEn ? '/interface/bridge/vlan' : 'تغییر پورت‌های Tagged / Untagged در بریج',
+                      },
+                      {
+                        key: 'canMikrotikComment',
+                        label: isEn ? 'Interface Comment' : 'تنظیم کامنت روی پورت‌ها و رول‌ها',
+                        desc: isEn ? '/interface/set comment=...' : 'درج توضیحات روی اجزای RouterOS',
+                      },
+                      {
+                        key: 'canMikrotikIpPool',
+                        label: isEn ? 'IP Address & Pools' : 'مدیریت آدرس‌های IP و DHCP Pool',
+                        desc: isEn ? '/ip/address & /ip/pool' : 'تخصیص IP به پورت‌ها و تنظیم رنج‌های کلاینت',
+                      },
+                      {
+                        key: 'canMikrotikFirewall',
+                        label: isEn ? 'Firewall & NAT Rules' : 'بازرسی و تغییر رول‌های Firewall / NAT',
+                        desc: isEn ? '/ip/firewall/filter & nat' : 'مشاهده و ویرایش قوانین امنیت و مسکرید',
+                      },
+                      {
+                        key: 'canMikrotikBackup',
+                        label: isEn ? 'System Backup & Export' : 'تهیه فایل پشتیبان و اکسپورت کانفیگ',
+                        desc: isEn ? '/export & /system/backup' : 'دریافت خروجی اسکریپت .rsc و بکاپ باینری',
+                      },
+                      {
+                        key: 'canMikrotikSafeMode',
+                        label: isEn ? 'Safe Mode Protection' : 'پشتیبانی از Safe-Mode در تغییرات',
+                        desc: isEn ? 'Auto-rollback on disconnect' : 'بازگشت خودکار تنظیمات در صورت قطعی اتصال',
+                      },
+                    ].map(({ key, label, desc }) => {
+                      const checked = (editingPolicy as any)[key] || false;
+                      return (
+                        <label
+                          key={key}
+                          className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
+                            checked
+                              ? 'bg-rose-500/15 border-rose-500/40 text-rose-200'
+                              : 'bg-slate-900/60 border-white/10 text-slate-400'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => setEditingPolicy({ ...editingPolicy, [key]: e.target.checked })}
+                            className="w-4 h-4 mt-0.5 accent-rose-500 rounded"
+                          />
+                          <div>
+                            <div className="font-bold text-xs text-white">{label}</div>
+                            <div className="text-[10px] text-slate-400">{desc}</div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* VENDOR 3: LINUX & GENERIC */}
+              {(vendorFilter === 'all' || vendorFilter === 'generic') && (
+                <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-300">
+                        <Globe className="w-4 h-4" />
+                      </div>
+                      <span className="font-bold text-xs text-emerald-300">
+                        {isEn ? 'Linux Servers & Generic Appliances' : 'اختیارات سرورهای لینوکسی و تجهیزات جنریک'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                      VyOS / Ubuntu / OpenWrt
+                    </span>
+                  </div>
+
+                  {/* Generic Terminal Selector */}
+                  <div className="p-2.5 rounded-xl bg-slate-900/80 border border-white/10 space-y-2">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      {isEn ? 'SSH & Shell Terminal Access:' : 'سطح دسترسی به شل و ترمینال SSH:'}
+                    </label>
+                    <div className="flex flex-wrap gap-4 text-xs">
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+                        <input
+                          type="radio"
+                          name="term_generic"
+                          checked={(editingPolicy.genericTerminalAccess || 'none') === 'none'}
+                          onChange={() => setEditingPolicy({ ...editingPolicy, genericTerminalAccess: 'none' })}
+                          className="accent-rose-500"
+                        />
+                        <span className="text-rose-300 font-semibold">{isEn ? 'No Access' : 'عدم دسترسی'}</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+                        <input
+                          type="radio"
+                          name="term_generic"
+                          checked={editingPolicy.genericTerminalAccess === 'view_only'}
+                          onChange={() => setEditingPolicy({ ...editingPolicy, genericTerminalAccess: 'view_only' })}
+                          className="accent-amber-400"
+                        />
+                        <span className="text-amber-300 font-semibold">{isEn ? 'View-Only (Logs & Status)' : 'مشاهده لاگ‌ها'}</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+                        <input
+                          type="radio"
+                          name="term_generic"
+                          checked={editingPolicy.genericTerminalAccess === 'full'}
+                          onChange={() => setEditingPolicy({ ...editingPolicy, genericTerminalAccess: 'full' })}
+                          className="accent-emerald-400"
+                        />
+                        <span className="text-emerald-300 font-semibold">{isEn ? 'Full Interactive Shell' : 'شل کامل تعاملی'}</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Generic Checkboxes */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {[
+                      {
+                        key: 'canGenericToggleLink',
+                        label: isEn ? 'Toggle Interface State' : 'تغییر وضعیت اینترفیس (Link Up/Down)',
+                        desc: isEn ? 'ip link set dev up/down' : 'فعال یا خاموش کردن کارت‌های شبکه لینوکس',
+                      },
+                      {
+                        key: 'canGenericDiagnostics',
+                        label: isEn ? 'Diagnostics & Packet Probe' : 'ابزارهای عیب‌یابی (Ping / Trace / Capture)',
+                        desc: isEn ? 'ping, traceroute, mtr' : 'تست ارتباط، مسیر و مانیتور بسته‌ها',
+                      },
+                      {
+                        key: 'canGenericConfigBackup',
+                        label: isEn ? 'Config Snapshot & Archive' : 'تهیه اسنپ‌شات و بکاپ از فایل‌های کانفیگ',
+                        desc: isEn ? 'Archive system config files' : 'پشتیبان‌گیری از تنظیمات سرور و سرویس‌ها',
+                      },
+                    ].map(({ key, label, desc }) => {
+                      const checked = (editingPolicy as any)[key] || false;
+                      return (
+                        <label
+                          key={key}
+                          className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
+                            checked
+                              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-200'
+                              : 'bg-slate-900/60 border-white/10 text-slate-400'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => setEditingPolicy({ ...editingPolicy, [key]: e.target.checked })}
+                            className="w-4 h-4 mt-0.5 accent-emerald-500 rounded"
+                          />
+                          <div>
+                            <div className="font-bold text-xs text-white">{label}</div>
+                            <div className="text-[10px] text-slate-400">{desc}</div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* GLOBAL PLATFORM CAPABILITIES */}
+              <div className="p-3 rounded-xl bg-purple-950/20 border border-purple-500/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300">
+                      <Wrench className="w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-xs text-purple-300">
+                      {isEn ? 'Global Platform Management' : 'مدیریت کلان تجهیزات و الگوهای سیستمی'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[
+                    {
+                      key: 'canManageDevices',
+                      label: isEn ? 'Add / Edit / Delete Devices' : 'تعریف، ویرایش و حذف فیزیکی تجهیزات (CRUD)',
+                      desc: isEn ? 'Manage network inventory topology' : 'امکان افزودن یا حذف سوئیچ و روتر در سامانه',
+                    },
+                    {
+                      key: 'canApplyTemplates',
+                      label: isEn ? 'Apply Configuration Templates' : 'اعمال الگوها و اسکریپت‌های کانفیگ (Templates)',
+                      desc: isEn ? 'Push templated CLI batches to devices' : 'امکان اعمال اسکریپت‌های گروهی سیسکو و میکروتیک',
+                    },
+                  ].map(({ key, label, desc }) => {
+                    const checked = (editingPolicy as any)[key];
+                    return (
+                      <label
+                        key={key}
+                        className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
+                          checked
+                            ? 'bg-purple-500/15 border-purple-500/40 text-purple-200'
+                            : 'bg-slate-900/60 border-white/10 text-slate-400'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => setEditingPolicy({ ...editingPolicy, [key]: e.target.checked })}
+                          className="w-4 h-4 mt-0.5 accent-purple-500 rounded"
+                        />
+                        <div>
+                          <div className="font-bold text-xs text-white">{label}</div>
+                          <div className="text-[10px] text-slate-400">{desc}</div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 

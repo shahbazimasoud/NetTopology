@@ -10,9 +10,30 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.11.0';
+export const APP_VERSION = '1.12.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.12.0',
+    releaseDate: '2026-09-09',
+    type: 'minor',
+    title: 'تفکیک منوی تنظیمات به زیرمنوهای سایدبار، ایجاد ماژول مدیریت کاربران و گروه‌های محلی و تعمیم کنترل دسترسی (RBAC) به تجهیزات میکروتیک و لینوکس',
+    title_en: 'Modular Settings Navigation in Sidebar, Local Users & Security Groups Identity Management & Multi-Vendor Granular RBAC (Cisco, MikroTik RouterOS, Linux)',
+    changes: [
+      'تفکیک صفحات منوی تنظیمات از تب‌های فشرده درون‌صفحه‌ای به زیرمنوهای مستقل در سایدبار (گروه‌بندی دیوایس‌ها، کاربران و گروه‌های محلی، اکتیو دایرکتوری، سطوح دسترسی RBAC)',
+      'افزودن کامل بخش مدیریت کاربران و گروه‌های محلی (Local Users & Security Groups) با قابلیت ایجاد کاربر، تخصیص کلمه عبور، فعال/غیرفعال‌سازی، تعریف گروه‌های امنیتی و مدیریت عضویت',
+      'تعمیم جامع ماتریس دسترسی به تجهیزات غیر سیسکو و پشتیبانی از تجهیزات میکروتیک (MikroTik RouterOS) شامل Bridge VLAN، غیرفعال‌سازی اینترفیس، Safe-Mode، بکاپ و کنسول RouterOS',
+      'پشتیبانی از اختیارات تجهیزات جنریک و لینوکسی (ip link toggle، عیب‌یابی پکت و شبکه، بکاپ کانفیگ، شل ترمینال)',
+      'یکپارچه‌سازی کامل شبیه‌ساز نقش‌ها و پالیسی‌های دسترسی با کاربران و گروه‌های محلی در کنار اکتیو دایرکتوری'
+    ],
+    changes_en: [
+      'Refactored Settings into dedicated sidebar submenus (Device Groups, Local Identity, Active Directory / LDAP, Granular RBAC) for clean navigation hierarchy',
+      'Introduced full Local Identity management (Local Users & Security Groups) with account creation, credential management, activation toggles, and group membership sync',
+      'Generalized Granular RBAC to multi-vendor network equipment with native MikroTik RouterOS capabilities (Bridge VLAN, interface toggle, Safe-Mode, IP pool, backup, RouterOS CLI)',
+      'Added Linux & Generic network appliance capabilities (interface link toggle, diagnostics ping/trace/capture, config archive, SSH shell terminal)',
+      'Fully linked the RBAC live role simulator with local identity groups and accounts alongside Active Directory'
+    ]
+  },
   {
     version: '1.11.0',
     releaseDate: '2026-09-09',
