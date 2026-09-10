@@ -859,6 +859,69 @@
   color: #ffffff !important;
 }
 
+/* Gray background role cards & banner badge boxes: High-contrast black and bold text */
+.backup-role-card,
+.theme-light .backup-role-card,
+.theme-light [class*="bg-slate-200"],
+.theme-light [class*="bg-slate-300"] {
+  background-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.backup-role-card,
+.backup-role-card *,
+.backup-role-card span,
+.backup-role-card div,
+.theme-light .backup-role-card,
+.theme-light .backup-role-card * {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+.backup-role-card svg {
+  color: #000000 !important;
+}
+
+/* Ensure badges inside backup-role-card keep distinct readable accents */
+.backup-role-card [class*="bg-emerald"] {
+  background-color: #d1fae5 !important;
+  border-color: #10b981 !important;
+}
+
+.backup-role-card [class*="bg-emerald"] *,
+.backup-role-card [class*="bg-emerald"] span {
+  color: #064e3b !important;
+  font-weight: 800 !important;
+}
+
+.backup-role-card [class*="bg-rose"] {
+  background-color: #ffe4e6 !important;
+  border-color: #f43f5e !important;
+}
+
+.backup-role-card [class*="bg-rose"] *,
+.backup-role-card [class*="bg-rose"] span {
+  color: #881337 !important;
+  font-weight: 800 !important;
+}
+
+/* Light Theme Banner Header Overrides */
+.theme-light .backup-banner-panel {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+.theme-light .backup-banner-title {
+  color: #000000 !important;
+  font-weight: 900 !important;
+}
+
+.theme-light .backup-banner-desc {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
 /* Solid Purple & Indigo Action Buttons in Light Mode */
 .theme-light .bg-indigo-600,
 .theme-light .bg-purple-600,

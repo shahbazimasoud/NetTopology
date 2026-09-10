@@ -420,22 +420,22 @@ export const BackupPortalTab: React.FC<BackupPortalTabProps> = ({
       {/* -------------------------------------------------------------
           Top Header & RBAC Identity Governance Banner
       ------------------------------------------------------------- */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 shadow-xl">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500/30 to-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-inner">
+      <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 shadow-xl backup-banner-panel">
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500/30 to-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-inner shrink-0">
               <Archive className="w-7 h-7" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-bold text-lg text-white">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="font-black text-lg text-white backup-banner-title">
                   {isEn ? 'Backup & Disaster Recovery Portal' : 'پورتال بکاپ و بازیابی اطلاعات شبکه (Disaster Recovery)'}
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono font-bold">
+                <span className="px-2 py-0.5 rounded-full text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono font-bold shrink-0">
                   v{APP_VERSION}
                 </span>
               </div>
-              <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+              <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed backup-banner-desc font-medium">
                 {isEn
                   ? 'Comprehensive enterprise snapshot engine: Export encrypted packages of topology maps, device telemetry, and access policies, with SHA-256 validation and pre-flight restore inspection.'
                   : 'موتور جامع پشتیبان‌گیری و تاب‌آوری سازمانی: تولید بسته‌های رمزنگاری‌شده از نقشه‌های شماتیک، ساختار فیزیکی، تجهیزات و پالیسی‌های امنیتی همراه با احراز اصالت SHA-256 و نقطه بازگشت خودکار.'}
@@ -444,40 +444,51 @@ export const BackupPortalTab: React.FC<BackupPortalTabProps> = ({
           </div>
 
           {/* Active Role & Live Simulation Selector */}
-          <div className="p-3 rounded-xl bg-slate-900/80 border border-white/10 flex flex-col sm:flex-row sm:items-center gap-3 min-w-[310px]">
-            <div className="flex-1">
-              <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5 text-indigo-400" />
-                <span>{isEn ? 'Active Security Role (RBAC):' : 'نقش فعال امنیتی جاری:'}</span>
+          <div className="backup-role-card p-3.5 rounded-xl bg-slate-200 border border-slate-300 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 w-full xl:w-auto xl:max-w-md min-w-0">
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-black text-black flex items-center gap-1.5 mb-1">
+                <Shield className="w-4 h-4 text-indigo-700 shrink-0" />
+                <span className="whitespace-nowrap font-black text-black">
+                  {isEn ? 'Active Security Role (RBAC):' : 'نقش فعال امنیتی جاری:'}
+                </span>
               </div>
-              <div className="font-bold text-xs text-white mt-0.5 truncate">
-                {activePolicy.subjectName} ({activePolicy.name})
+              <div className="font-black text-xs text-black leading-snug break-words">
+                <span>{activePolicy.subjectName}</span>{' '}
+                <span className="font-bold text-black/80 text-[11px]">({activePolicy.name})</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 border-t sm:border-t-0 sm:border-r sm:border-white/10 pt-2 sm:pt-0 sm:pr-3">
+            <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-400/40 ltr:sm:border-l ltr:sm:pl-3 rtl:sm:border-r rtl:sm:pr-3">
               <div
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 border ${
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black flex items-center gap-1.5 border shrink-0 whitespace-nowrap shadow-xs ${
                   canExport
-                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                    : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                    ? 'bg-emerald-200 text-emerald-950 border-emerald-500'
+                    : 'bg-rose-200 text-rose-950 border-rose-500'
                 }`}
                 title={canExport ? 'مجوز استخراج فعال است' : 'مجوز استخراج مسدود است'}
               >
-                {canExport ? <Check className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                <span>Export</span>
+                {canExport ? (
+                  <Check className="w-3.5 h-3.5 text-emerald-800 shrink-0 stroke-[2.5]" />
+                ) : (
+                  <Lock className="w-3.5 h-3.5 text-rose-800 shrink-0 stroke-[2.5]" />
+                )}
+                <span className="font-black text-black">Export</span>
               </div>
 
               <div
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 border ${
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black flex items-center gap-1.5 border shrink-0 whitespace-nowrap shadow-xs ${
                   canImport
-                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                    : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                    ? 'bg-emerald-200 text-emerald-950 border-emerald-500'
+                    : 'bg-rose-200 text-rose-950 border-rose-500'
                 }`}
                 title={canImport ? 'مجوز بازیابی دیتابیس فعال است' : 'مجوز بازیابی مسدود است'}
               >
-                {canImport ? <Check className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                <span>Restore</span>
+                {canImport ? (
+                  <Check className="w-3.5 h-3.5 text-emerald-800 shrink-0 stroke-[2.5]" />
+                ) : (
+                  <Lock className="w-3.5 h-3.5 text-rose-800 shrink-0 stroke-[2.5]" />
+                )}
+                <span className="font-black text-black">Restore</span>
               </div>
             </div>
           </div>
@@ -485,26 +496,26 @@ export const BackupPortalTab: React.FC<BackupPortalTabProps> = ({
 
         {/* Permission Warning if Restricted */}
         {(!canExport || !canImport) && (
-          <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-            <div className="text-xs text-amber-200">
-              <span className="font-bold">
+          <div className="mt-4 p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/40 flex items-start gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+            <div className="text-xs">
+              <span className="font-black text-black dark:text-amber-100">
                 {isEn ? 'RBAC Policy Restriction Active: ' : 'محدودیت سطح دسترسی RBAC: '}
               </span>
-              <span>
+              <span className="font-bold text-slate-900 dark:text-amber-200">
                 {isEn
                   ? 'Your current simulated identity lacks full backup portal privileges. You can switch to Super Administrator in the simulation dropdown below to test administrative operations.'
                   : 'نقش شبیه‌سازی‌شده جاری شما اختیارات کامل پورتال پشتیبان‌گیری را ندارد. جهت آزمایش و مشاهده عملکرد ادمین، می‌توانید نقش خود را به «مدیر ارشد زیرساخت» تغییر دهید.'}
               </span>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-[11px] text-slate-300">{isEn ? 'Switch Role:' : 'تغییر نقش شبیه‌سازی:'}</span>
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-bold text-black dark:text-slate-300">{isEn ? 'Switch Role:' : 'تغییر نقش شبیه‌سازی:'}</span>
                 <select
                   value={activePolicy.id}
                   onChange={(e) => onSelectSimulatedPolicy(e.target.value)}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800 border border-white/20 text-white text-[11px] focus:outline-none focus:border-cyan-400"
+                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-white/20 text-black dark:text-white font-bold text-[11px] focus:outline-none focus:border-cyan-400 cursor-pointer"
                 >
                   {allPolicies.map((p) => (
-                    <option key={p.id} value={p.id}>
+                    <option key={p.id} value={p.id} className="text-black bg-white dark:text-white dark:bg-slate-800 font-bold">
                       {p.name} ({p.canExportBackup ? 'Exp✓' : 'Exp✕'} / {p.canImportBackup ? 'Imp✓' : 'Imp✕'})
                     </option>
                   ))}

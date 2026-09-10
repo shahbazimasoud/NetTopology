@@ -199,11 +199,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
 
         {/* Current Role Simulation Indicator */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs shrink-0 self-start sm:self-auto">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+        <div className="backup-role-card flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-slate-200 border border-slate-300 text-xs shrink-0 self-start sm:self-auto shadow-sm">
+          <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 stroke-[2.5]" />
           <div className="text-left rtl:text-right">
-            <span className="text-[10px] text-slate-400 block">{isEn ? 'Active Simulated Role:' : 'نقش شبیه‌سازی‌شده فعال:'}</span>
-            <span className="font-bold text-white text-xs">{activePolicy?.name}</span>
+            <span className="text-[10px] text-black font-black block leading-none mb-0.5">{isEn ? 'Active Simulated Role:' : 'نقش شبیه‌سازی‌شده فعال:'}</span>
+            <span className="font-black text-black text-xs block">{activePolicy?.name}</span>
           </div>
         </div>
       </div>
