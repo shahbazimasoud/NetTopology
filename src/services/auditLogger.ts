@@ -348,6 +348,60 @@ const SEED_COMMAND_LOGS: DeviceCommandLogEntry[] = [
     outputSummary: '% Permission Denied: Policy "policy-helpdesk-l2" prohibits destructive command "reload" on Core Infrastructure.',
     durationMs: 12,
     notes: 'تلاش غیرمجاز برای ریبوت سوئیچ مرکزی توسط کاربر هلپ‌دسک با موفقیت توسط RBAC مسدود شد.',
+  },
+  {
+    id: 'cmd-log-208',
+    timestamp: new Date(Date.now() - 1000 * 60 * 380).toISOString(),
+    actor: { username: 's.ahmadi', role: 'Network Support Engineer', ipAddress: '192.168.10.72' },
+    deviceId: '2',
+    deviceName: 'SW-ACCESS-01',
+    deviceIp: '192.168.10.2',
+    deviceVendor: 'cisco',
+    deviceModel: 'Cisco Catalyst 2960X-24TD-L',
+    deviceLocation: 'ساختمان شماره ۱ > طبقه ۱ > اتاق سوئیچ B > رک Rack-B01',
+    channel: 'terminal_interactive',
+    command: 'show mac address-table interface FastEthernet0/12\nshow port-security interface FastEthernet0/12',
+    riskLevel: 'low',
+    status: 'success',
+    outputSummary: 'Mac Address Table\n-------------------------------------------\nVlan    Mac Address       Type        Ports\n----    -----------       --------    -----\n  20    0050.56a1.2c34    DYNAMIC     Fa0/12\nPort Security              : Enabled\nPort Status                : Secure-up',
+    durationMs: 35,
+    notes: 'بررسی وضعیت مک‌آدرس و پورت سکیوریتی کاربر واحد اداری',
+  },
+  {
+    id: 'cmd-log-209',
+    timestamp: new Date(Date.now() - 1000 * 60 * 520).toISOString(),
+    actor: { username: 'm.shahbazi', role: 'Senior Network Architect', ipAddress: '192.168.10.50' },
+    deviceId: '1',
+    deviceName: 'SW-CORE-01',
+    deviceIp: '192.168.10.1',
+    deviceVendor: 'cisco',
+    deviceModel: 'Cisco Catalyst 3850-24P',
+    deviceLocation: 'ساختمان شماره ۱ > طبقه ۲ > اتاق سرور مرکزی > رک Rack-A01',
+    channel: 'terminal_interactive',
+    command: 'configure terminal\nvlan 100\nname MANAGEMENT_INFRA\nexit\nwrite memory',
+    riskLevel: 'medium',
+    status: 'success',
+    outputSummary: 'VLAN 100 created and labeled MANAGEMENT_INFRA.\n[OK] Configuration committed to NVRAM.',
+    durationMs: 240,
+    notes: 'تعریف ویلن مدیریتی جدید روی سوئیچ Core',
+  },
+  {
+    id: 'cmd-log-210',
+    timestamp: new Date(Date.now() - 1000 * 60 * 720).toISOString(),
+    actor: { username: 'm.shahbazi', role: 'Senior Network Architect', ipAddress: '192.168.10.50' },
+    deviceId: 'dev-mk-01',
+    deviceName: 'MK-CCR2004-GATEWAY',
+    deviceIp: '192.168.88.1',
+    deviceVendor: 'mikrotik',
+    deviceModel: 'MikroTik CCR2004-16G-2S+',
+    deviceLocation: 'ساختمان شماره ۲ > طبقه ۱ > اتاق دیتا سنتر > رک Rack-M01',
+    channel: 'terminal_interactive',
+    command: '/ip pool add name=dhcp-pool-it ranges=10.100.1.100-10.100.1.200\n/ip dhcp-server add name=dhcp-it interface=bridge1 address-pool=dhcp-pool-it disabled=no',
+    riskLevel: 'medium',
+    status: 'success',
+    outputSummary: 'Pool dhcp-pool-it added successfully.\nDHCP Server dhcp-it bound to bridge1 and activated.',
+    durationMs: 85,
+    notes: 'پیکربندی پول DHCP جهت بخش فناوری اطلاعات روی روتربورد میکروتیک',
   }
 ];
 
@@ -360,7 +414,20 @@ export function loadPortalAuditLogs(): PortalAuditLogEntry[] {
     const raw = localStorage.getItem(STORAGE_KEYS.PORTAL_LOGS);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const existingIds = new Set(parsed.map((p: PortalAuditLogEntry) => p.id));
+        let changed = false;
+        for (const seed of SEED_PORTAL_LOGS) {
+          if (!existingIds.has(seed.id)) {
+            parsed.push(seed);
+            changed = true;
+          }
+        }
+        if (changed) {
+          savePortalAuditLogs(parsed);
+        }
+        return parsed;
+      }
     }
   } catch (e) {
     console.error('Failed to load portal audit logs', e);
@@ -383,7 +450,20 @@ export function loadDeviceCommandLogs(): DeviceCommandLogEntry[] {
     const raw = localStorage.getItem(STORAGE_KEYS.COMMAND_LOGS);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const existingIds = new Set(parsed.map((p: DeviceCommandLogEntry) => p.id));
+        let changed = false;
+        for (const seed of SEED_COMMAND_LOGS) {
+          if (!existingIds.has(seed.id)) {
+            parsed.push(seed);
+            changed = true;
+          }
+        }
+        if (changed) {
+          saveDeviceCommandLogs(parsed);
+        }
+        return parsed;
+      }
     }
   } catch (e) {
     console.error('Failed to load device command logs', e);
