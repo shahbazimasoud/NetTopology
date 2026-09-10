@@ -10,9 +10,34 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.13.0';
+export const APP_VERSION = '1.14.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.14.0',
+    releaseDate: '2026-09-10',
+    type: 'minor',
+    title: 'بازطراحی جامع معماری چندپلتفرمه دیوایس‌ها با الگوی درایور (Multi-Vendor Driver Pattern)، ترمینال چندسیستم‌عاملی (Cisco/MikroTik/Linux) و تفکیک انحنای کابل‌های موازی توپولوژی',
+    title_en: 'Multi-Vendor Driver Architecture (Cisco IOS/IOS-XE, MikroTik RouterOS, Linux), Platform-Aware Interactive Terminal & Parallel Topology Links Curvature',
+    changes: [
+      'پیاده‌سازی الگوی معماری درایور (Driver Pattern) در بک‌اند با ایجاد کلاس انتزاعی BaseDriver و درایورهای مستقل برای Cisco (IOS/IOS-XE)، MikroTik (RouterOS)، Generic Linux و Simulator',
+      'مدیریت هوشمند و بهینه اتصالات SSH با کلاس تخصصی SSHConnectionManager بر پایه پارامیکو، سیاست Lazy Connection و بستن خودکار نشست‌های بلااستفاده',
+      'بازطراحی فرم‌های افزودن و ویرایش دیوایس (Add/Edit Device Modal) با پشتیبانی صریح از انتخاب پلتفرم (Platform & OS Driver)، سوییچ حالت درایور (SSH Live / Simulator) و پنهان‌سازی خودکار فیلدهای غیرمرتبط مانند Enable Secret برای میکروتیک و لینوکس',
+      'یکپارچه‌سازی و استانداردسازی مدل داده‌ای Device با آبجکت ساختاریافته connection شامل پروتکل، هاست، پورت، تایم‌اوت و اعتبارسنجی مستقل',
+      'توسعه ترمینال تعاملی دیوایس با تشخیص بلادرنگ پلتفرم: پشتیبانی از پرامپت‌ها و ساختار شل بومی میکروتیک ([admin@Router] >) و لینوکس (user@host:~$) و خطایابی استاندارد هر سیستم‌عامل',
+      'افزودن سایدبار هوشمند دستورات (Command Guide) اختصاصی برای سیستم‌عامل لینوکس (شامل ip -c a، ss -tulpn، ethtool، systemctl، iptables و...) در کنار دستورات میکروتیک و سیسکو',
+      'بهینه‌سازی محاسبات ریاضی موتور برداری نقشه توپولوژی (Schematic Map) و تفکیک کامل انحنای کابل‌های موازی بین دو دیوایس (Parallel Cables Overlap Fix) با اصلاح تراز جهت برداری'
+    ],
+    changes_en: [
+      'Implemented backend Multi-Vendor Driver Pattern with BaseDriver abstraction and dedicated driver modules for Cisco IOS/IOS-XE, MikroTik RouterOS, Generic Linux, and Simulator',
+      'Added enterprise SSHConnectionManager with Paramiko, lazy session acquisition, keepalive support, and automatic lifecycle cleanup',
+      'Overhauled Add & Edit Device modals with Hardware Platform & OS selection, Driver Mode toggles (SSH Live vs Simulator), and platform-tailored credential inputs',
+      'Standardized device schema with unified connection object supporting explicit protocols, ports, hosts, timeouts, and multi-vendor credentials',
+      'Upgraded Interactive Device Terminal with native platform awareness: dynamic prompts ([admin@Router] >, user@host:~$), banner styling, and OS-authentic command parsing',
+      'Enriched Quick Command Guide sidebar with dedicated Linux POSIX/iproute2 commands (ip -c a, ss -tulpn, ethtool, iptables, systemctl) alongside MikroTik and Cisco catalogs',
+      'Resolved parallel topology link overlaps in Schematic View with vector direction compensation and dynamic curvature separation'
+    ]
+  },
   {
     version: '1.13.0',
     releaseDate: '2026-09-10',
