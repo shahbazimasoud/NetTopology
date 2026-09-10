@@ -378,10 +378,18 @@ export const DeviceGroupingTab: React.FC<DeviceGroupingTabProps> = ({
           const devCount = group.deviceIds.length;
 
           return (
-            <button
+            <div
               key={group.id}
+              role="button"
+              tabIndex={0}
               onClick={() => setSelectedGroupId(group.id)}
-              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl border transition-all duration-200 shrink-0 cursor-pointer text-left rtl:text-right ${
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedGroupId(group.id);
+                }
+              }}
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl border transition-all duration-200 shrink-0 cursor-pointer text-left rtl:text-right select-none ${
                 isSelected
                   ? `${colorStyles.bg} ${colorStyles.border} shadow-lg ring-1 ring-white/20`
                   : 'bg-white/[0.02] border-white/10 hover:bg-white/5 hover:border-white/20'
@@ -404,13 +412,13 @@ export const DeviceGroupingTab: React.FC<DeviceGroupingTabProps> = ({
                 <button
                   type="button"
                   onClick={(e) => handleDeleteGroup(group.id, e)}
-                  className="p-1 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition ml-1"
+                  className="p-1 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition ml-1 cursor-pointer"
                   title={isEn ? 'Delete Group' : 'حذف گروه'}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
