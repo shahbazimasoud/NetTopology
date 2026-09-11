@@ -59,6 +59,8 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
   const [dragStartY, setDragStartY] = useState<number>(0);
   const [dragTargetU, setDragTargetU] = useState<number | null>(null);
   const [dragCollision, setDragCollision] = useState<{ isBlocked: boolean; reason?: string } | null>(null);
+  const rackSvgRef = useRef<SVGSVGElement | null>(null);
+  const dragGrabOffsetURef = useRef<number>(0);
 
   // High-z-index elevated hover overlay state (prevents clipping behind devices below)
   const [hoveredMountedDev, setHoveredMountedDev] = useState<{ dev: MountedHardwareDevice; yPos: number; uNumber: number } | null>(null);
@@ -119,10 +121,22 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
   const handleStartDrag = (e: React.MouseEvent, dev: MountedHardwareDevice) => {
     e.preventDefault();
     e.stopPropagation();
+    setHoveredU(null);
+    setHoveredMountedDev(null);
     setDraggingDevice(dev);
     setDragStartY(e.clientY);
     setDragTargetU(dev.startU);
     setDragCollision(null);
+
+    // Calculate grab offset relative to mouse U inside the rack
+    if (rackSvgRef.current) {
+      const rect = rackSvgRef.current.getBoundingClientRect();
+      const relY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+      const mouseU = Math.max(1, Math.min(rack.units, rack.units - Math.floor(relY * rack.units)));
+      dragGrabOffsetURef.current = mouseU - dev.startU;
+    } else {
+      dragGrabOffsetURef.current = 0;
+    }
   };
 
   // Drag mouse listeners
@@ -130,12 +144,24 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
     if (!draggingDevice) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const deltaY = e.clientY - dragStartY;
-      const deltaUnits = -Math.round(deltaY / U_HEIGHT); // Moving mouse down reduces U, up increases U
-      const candidateU = Math.max(
-        1,
-        Math.min(draggingDevice.startU + deltaUnits, rack.units - draggingDevice.heightU + 1)
-      );
+      let candidateU: number;
+      if (rackSvgRef.current) {
+        const rect = rackSvgRef.current.getBoundingClientRect();
+        const relY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+        // Mouse cursor is directly over this U:
+        const mouseU = rack.units - Math.floor(relY * rack.units);
+        candidateU = Math.max(
+          1,
+          Math.min(mouseU - dragGrabOffsetURef.current, rack.units - draggingDevice.heightU + 1)
+        );
+      } else {
+        const deltaY = e.clientY - dragStartY;
+        const deltaUnits = -Math.round(deltaY / U_HEIGHT);
+        candidateU = Math.max(
+          1,
+          Math.min(draggingDevice.startU + deltaUnits, rack.units - draggingDevice.heightU + 1)
+        );
+      }
 
       setDragTargetU(candidateU);
       const col = checkCollision(draggingDevice, candidateU);
@@ -357,6 +383,7 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
       <div className="relative p-2 bg-slate-950/60 flex justify-center">
         <div className="relative" style={{ width: RACK_WIDTH, height: rack.units * U_HEIGHT + 16 }}>
           <svg
+            ref={rackSvgRef}
             width={RACK_WIDTH}
             height={rack.units * U_HEIGHT + 16}
             viewBox={`0 0 ${RACK_WIDTH} ${rack.units * U_HEIGHT + 16}`}
@@ -472,10 +499,15 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                 {/* Empty Slot Area: dashed boundary and hover action */}
                 {!occupiedDevice && (
                   <g
-                    className="cursor-pointer group"
-                    onMouseEnter={() => setHoveredU(uNumber)}
-                    onMouseLeave={() => setHoveredU(null)}
+                    className={!draggingDevice ? "cursor-pointer group" : "pointer-events-none"}
+                    onMouseEnter={() => {
+                      if (!draggingDevice) setHoveredU(uNumber);
+                    }}
+                    onMouseLeave={() => {
+                      if (!draggingDevice) setHoveredU(null);
+                    }}
                     onClick={(e) => {
+                      if (draggingDevice) return;
                       e.stopPropagation();
                       onOpenAddHardware(rack.id, uNumber);
                     }}
@@ -485,12 +517,12 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                       y="1"
                       width={RACK_WIDTH - 8 - RAIL_WIDTH * 2}
                       height={U_HEIGHT - 2}
-                      fill={isHovered ? '#082f49' : '#040711'}
-                      stroke={isHovered ? '#0ea5e9' : '#1e293b'}
-                      strokeWidth={isHovered ? '1' : '0.5'}
-                      strokeDasharray={isHovered ? undefined : '2 2'}
+                      fill={!draggingDevice && isHovered ? '#082f49' : '#040711'}
+                      stroke={!draggingDevice && isHovered ? '#0ea5e9' : '#1e293b'}
+                      strokeWidth={!draggingDevice && isHovered ? '1' : '0.5'}
+                      strokeDasharray={!draggingDevice && isHovered ? undefined : '2 2'}
                     />
-                    {isHovered && (
+                    {!draggingDevice && isHovered && (
                       <g transform={`translate(${RACK_WIDTH / 2}, ${U_HEIGHT / 2 + 3})`}>
                         <text
                           fill="#38bdf8"

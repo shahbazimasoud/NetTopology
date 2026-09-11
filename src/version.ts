@@ -10,9 +10,24 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.24.1';
+export const APP_VERSION = '1.24.2';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.24.2',
+    releaseDate: '2026-09-11',
+    type: 'patch',
+    title: 'اصلاح رفتار درگ تجهیز در رک و انطباق دقیق پیش‌نمایش با موقعیت موس',
+    title_en: 'Rack Device Drag Experience & Precision Cursor-Aligned Placement Fix',
+    changes: [
+      'حذف و غیرفعال‌سازی نمایش دکمه «+ افزودن تجهیز» (Add Device) و استایل‌های هاور اسلات‌های خالی در حین درگ کردن تجهیز داخل رک.',
+      'اصلاح و بهینه‌سازی سیستم محاسبه یونیت مقصد در هنگام درگ (Drag Target U) بر اساس مختصات واقعی نشانگر موس در اس‌وی‌جی رک، جهت انطباق دقیق کادر راهنمای جای‌گذاری با موس.'
+    ],
+    changes_en: [
+      'Suppressed empty slot "+ Add Device" prompt and hover styling while actively dragging a device within the rack cabinet.',
+      'Enhanced drag placeholder positioning by recalculating target rack units directly from cursor SVG bounds, ensuring the ghost outline perfectly tracks the mouse position.'
+    ]
+  },
   {
     version: '1.24.1',
     releaseDate: '2026-09-11',
