@@ -10,9 +10,28 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.25.0';
+export const APP_VERSION = '1.26.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.26.0',
+    releaseDate: '2026-09-11',
+    type: 'minor',
+    title: 'افزودن انیمیشن زنده پویانمایی انتقال داده (Data Flow Animation) روی کابل‌ها و لینک‌های بین تجهیزات',
+    title_en: 'Live Animated Data Flow & Packet Exchange on Network Links in Card View',
+    changes: [
+      'پیاده‌سازی پویانمایی زنده جریان ترافیک داده (Live Packet Animation) روی لینک‌ها و کابل‌های ارتباطی بین دو دیوایس متصل به یکدیگر در نمای کارتی (Card View).',
+      'نمایش پکت‌های رفت و برگشت (TX و RX) با رنگ‌ها و سرعت‌های متمایز بر اساس نوع کابل (فیبر نوری با سرعت فوق‌سریع و رنگ کهربایی، ترانک با رنگ سرخابی/بنفش، و کابل شبکه مسی با پکت‌های درخشان فیروزه‌ای/آبی).',
+      'افزودن استریم نقطه‌چین روان (Flowing Dash Stream) با شتاب پیوسته روی کابل جهت نمایش فعال بودن تبادل بسته در لینک‌های آنلاین، و توقف خودکار انیمیشن در هنگام قطعی لینک (Link Down).',
+      'افزودن کلید کنترل اختصاصی «جریان داده» (Data Flow) در نوار ابزار بالا با آیکون پالس، جهت فعال/غیرفعال‌سازی سریع این جلوه بصری.'
+    ],
+    changes_en: [
+      'Implemented live animated data traffic flow and packet exchange along connection cables between connected devices in Card View.',
+      'Rendered bidirectional packet beacons (TX and RX) traveling along the cable curve with distinct speeds and color themes tailored to cable types (ultra-fast amber for Fiber, vibrant magenta for Trunk, and electric blue for Copper Ethernet).',
+      'Added a continuous flowing dash stream overlay across cables to visualize active data transmission on healthy links, with automatic suspension when links are down.',
+      'Added a dedicated "Data Flow" toggle control with an active pulse indicator in the top toolbar to effortlessly toggle the live animation.'
+    ]
+  },
   {
     version: '1.25.0',
     releaseDate: '2026-09-11',

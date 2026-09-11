@@ -41,7 +41,8 @@ import {
   MousePointer,
   CreditCard,
   StickyNote,
-  EyeOff
+  EyeOff,
+  Activity
 } from 'lucide-react';
 import {
   TopologyData,
@@ -237,6 +238,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const [filterBuilding, setFilterBuilding] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showPortLabels, setShowPortLabels] = useState(true);
+  const [showTrafficAnimation, setShowTrafficAnimation] = useState(true);
   const [internalFullMode, setInternalFullMode] = useState(false);
   const isFullMode = propIsFullMode !== undefined ? propIsFullMode : internalFullMode;
   const [showToolbarInFullMode, setShowToolbarInFullMode] = useState(false);
@@ -2622,6 +2624,25 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
               />
               <span>{t('topology_show_ports')}</span>
             </label>
+
+            {/* Live Data Traffic Flow Animation Toggle */}
+            <label
+              className="hidden sm:flex items-center gap-1.5 text-slate-300 text-xs cursor-pointer mx-1 select-none px-2 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-white/10 transition"
+              title={isEn ? 'Toggle live animated data flow packets between connected devices' : 'فعال/غیرفعال‌سازی انیمیشن انتقال زنده داده بین تجهیزات متصل'}
+            >
+              <input
+                type="checkbox"
+                checked={showTrafficAnimation}
+                onChange={(e) => setShowTrafficAnimation(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-cyan-500 bg-slate-900 border-white/20 focus:ring-cyan-500 cursor-pointer"
+              />
+              <span className="flex items-center gap-1">
+                <Activity className={`w-3.5 h-3.5 ${showTrafficAnimation ? 'text-cyan-400 animate-pulse' : 'text-slate-500'}`} />
+                <span className={showTrafficAnimation ? 'text-cyan-300 font-medium' : 'text-slate-400'}>
+                  {isEn ? 'Data Flow' : 'جریان داده'}
+                </span>
+              </span>
+            </label>
           </div>
 
           {/* Filters & Actions */}
@@ -3060,6 +3081,15 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                 <filter id="glow-access" x="-30%" y="-30%" width="160%" height="160%">
                   <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#2563eb" floodOpacity="0.25" />
                 </filter>
+
+                {/* Packet Beacon & Flow Pulse Glow Filter */}
+                <filter id="glow-packet" x="-60%" y="-60%" width="220%" height="220%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="2.2" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
               </defs>
 
               {/* Infinite World Canvas Group - Pan & Zoom Coordinate Space */}
@@ -3119,6 +3149,51 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                         filter={isTrunk && !isDown ? 'url(#glow-trunk)' : 'url(#glow-access)'}
                         opacity={isSelected ? 1 : 0.85}
                       />
+
+                      {/* Animated Live Data Flow Effect on Link */}
+                      {!isDown && showTrafficAnimation && (
+                        <g className="pointer-events-none select-none">
+                          {/* Flowing Dash Stream Overlay on Cable */}
+                          <path
+                            d={curve.pathD}
+                            fill="none"
+                            stroke={isTrunk ? '#d8b4fe' : '#93c5fd'}
+                            strokeWidth={isTrunk ? 2 : 1.5}
+                            strokeDasharray="4 12"
+                            strokeLinecap="round"
+                            opacity={0.7}
+                          >
+                            <animate
+                              attributeName="stroke-dashoffset"
+                              from="32"
+                              to="0"
+                              dur={isTrunk ? '0.9s' : '1.3s'}
+                              repeatCount="indefinite"
+                            />
+                          </path>
+
+                          {/* Forward Data Packet: Source -> Target */}
+                          <circle r={isTrunk ? 3.5 : 3} fill={isTrunk ? '#f472b6' : '#38bdf8'} filter="url(#glow-packet)">
+                            <animateMotion
+                              dur={isTrunk ? '1.8s' : '2.4s'}
+                              repeatCount="indefinite"
+                              path={curve.pathD}
+                            />
+                          </circle>
+
+                          {/* Reverse Data Packet: Target -> Source */}
+                          <circle r={isTrunk ? 2.8 : 2.4} fill={isTrunk ? '#c084fc' : '#818cf8'} filter="url(#glow-packet)" opacity={0.85}>
+                            <animateMotion
+                              dur={isTrunk ? '2.2s' : '2.9s'}
+                              repeatCount="indefinite"
+                              path={curve.pathD}
+                              calcMode="linear"
+                              keyPoints="1;0"
+                              keyTimes="0;1"
+                            />
+                          </circle>
+                        </g>
+                      )}
 
                       {/* Port and Protocol Badges on Links */}
                       {showPortLabels && (
@@ -3231,6 +3306,84 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                         className="hover:stroke-cyan-300 transition-colors"
                         onClick={() => handleEditExistingLink(link)}
                       />
+
+                      {/* Animated Live Data Flow Effect on Custom Link */}
+                      {!isDown && showTrafficAnimation && (
+                        <g className="pointer-events-none select-none">
+                          {/* Flowing Dash Stream Overlay on Cable */}
+                          <path
+                            d={curve.pathD}
+                            fill="none"
+                            stroke={
+                              isFiber
+                                ? '#fde047'
+                                : isSerial
+                                ? '#67e8f9'
+                                : isTrunk
+                                ? '#d8b4fe'
+                                : '#93c5fd'
+                            }
+                            strokeWidth={isTrunk || isFiber ? 2.2 : 1.6}
+                            strokeDasharray="5 12"
+                            strokeLinecap="round"
+                            opacity={0.75}
+                          >
+                            <animate
+                              attributeName="stroke-dashoffset"
+                              from="34"
+                              to="0"
+                              dur={isFiber ? '0.7s' : isTrunk ? '1.0s' : '1.4s'}
+                              repeatCount="indefinite"
+                            />
+                          </path>
+
+                          {/* Forward Data Packet: Source -> Target */}
+                          <circle
+                            r={isFiber || isTrunk ? 3.8 : 3.2}
+                            fill={
+                              isFiber
+                                ? '#fbbf24'
+                                : isSerial
+                                ? '#22d3ee'
+                                : isTrunk
+                                ? '#f472b6'
+                                : '#38bdf8'
+                            }
+                            filter="url(#glow-packet)"
+                          >
+                            <animateMotion
+                              dur={isFiber ? '1.4s' : isTrunk ? '1.9s' : '2.5s'}
+                              repeatCount="indefinite"
+                              path={curve.pathD}
+                            />
+                          </circle>
+
+                          {/* Reverse Data/ACK Packet: Target -> Source */}
+                          <circle
+                            r={isFiber || isTrunk ? 2.8 : 2.4}
+                            fill={
+                              isFiber
+                                ? '#f59e0b'
+                                : isSerial
+                                ? '#06b6d4'
+                                : isTrunk
+                                ? '#a855f7'
+                                : '#60a5fa'
+                            }
+                            filter="url(#glow-packet)"
+                            opacity={0.9}
+                          >
+                            <animateMotion
+                              dur={isFiber ? '1.8s' : isTrunk ? '2.4s' : '3.1s'}
+                              repeatCount="indefinite"
+                              path={curve.pathD}
+                              calcMode="linear"
+                              keyPoints="1;0"
+                              keyTimes="0;1"
+                            />
+                          </circle>
+                        </g>
+                      )}
 
                       {/* Midpoint Speed & Type Badge */}
                       <g
