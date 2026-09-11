@@ -41,56 +41,122 @@ export function convertNodeToHardwareDevice(
   startU: number = 1
 ): MountedHardwareDevice {
   const anyNode = node as any;
+  const nameLower = (node.name || '').toLowerCase();
+  const modelLower = (node.model || '').toLowerCase();
+  const vendorLower = (anyNode.vendor || '').toLowerCase();
+  const platformLower = (node.platform || '').toLowerCase();
+  const roleLower = (node.role || '').toLowerCase();
+  const nodeTypeStr = ((node.type as string) || '').toLowerCase();
+
   const isMikrotik =
-    (anyNode.vendor && anyNode.vendor.toLowerCase().includes('mikrotik')) ||
-    (node.name && node.name.toLowerCase().includes('mikrotik')) ||
-    (node.model && node.model.toLowerCase().includes('ccr')) ||
-    (node.model && node.model.toLowerCase().includes('crs'));
+    vendorLower.includes('mikrotik') ||
+    platformLower.includes('mikrotik') ||
+    platformLower.includes('routeros') ||
+    nameLower.includes('mikrotik') ||
+    modelLower.includes('ccr') ||
+    modelLower.includes('crs') ||
+    modelLower.includes('rb');
+
+  const isFortinet =
+    vendorLower.includes('fortinet') ||
+    vendorLower.includes('fortigate') ||
+    platformLower.includes('fortinet') ||
+    nameLower.includes('fortigate') ||
+    modelLower.includes('fortigate') ||
+    modelLower.includes('fg-');
+
+  const isSophos =
+    vendorLower.includes('sophos') ||
+    nameLower.includes('sophos') ||
+    modelLower.includes('xgs');
+
+  const isHpeServer =
+    vendorLower.includes('hpe') ||
+    vendorLower.includes('hp') ||
+    modelLower.includes('dl380') ||
+    modelLower.includes('dl360') ||
+    modelLower.includes('proliant');
+
+  const isAsusServer =
+    vendorLower.includes('asus') ||
+    modelLower.includes('rs720') ||
+    nameLower.includes('asus');
+
+  const isCiscoServer =
+    vendorLower.includes('cisco') &&
+    (roleLower.includes('server') || modelLower.includes('ucs'));
 
   let category: HardwareCategory = 'cisco_switch';
   let heightU = 1;
+  let brand = 'Cisco';
+  let model = node.model || 'Catalyst 9300-24P';
 
-  const nodeTypeStr = (node.type as string) || '';
-  if (nodeTypeStr === 'switch') {
-    category = 'cisco_switch';
+  if (isMikrotik) {
+    category = 'mikrotik_router';
+    brand = 'MikroTik';
+    model = node.model || 'CCR2004-16G-2S+';
     heightU = 1;
-  } else if (nodeTypeStr === 'router') {
-    category = isMikrotik ? 'mikrotik_router' : 'cisco_router';
-    heightU = 1;
-  } else if (nodeTypeStr === 'firewall') {
+  } else if (isFortinet) {
     category = 'firewall_fortigate';
+    brand = 'Fortinet';
+    model = node.model || 'FortiGate 100F';
     heightU = 1;
-  } else if (nodeTypeStr === 'server' || (node.role && node.role.toLowerCase().includes('server'))) {
-    category = 'hpe_server';
+  } else if (isSophos) {
+    category = 'firewall_sophos';
+    brand = 'Sophos';
+    model = node.model || 'XGS 2100';
+    heightU = 1;
+  } else if (isHpeServer || roleLower.includes('server') || nodeTypeStr === 'server') {
+    category = isAsusServer ? 'asus_server' : isCiscoServer ? 'cisco_server' : 'hpe_server';
+    brand = isAsusServer ? 'ASUS' : isCiscoServer ? 'Cisco' : 'HPE';
+    model = node.model || (isAsusServer ? 'RS720-E10' : isCiscoServer ? 'UCS C240 M6' : 'DL380 Gen10');
     heightU = 2;
-  } else if (nodeTypeStr === 'storage') {
+  } else if (nodeTypeStr === 'storage' || roleLower.includes('storage')) {
     category = 'hpe_storage';
+    brand = 'HPE';
+    model = node.model || 'MSA 2060';
     heightU = 2;
+  } else if (nodeTypeStr === 'router' || roleLower.includes('router') || platformLower.includes('cisco_ios_xr') || platformLower.includes('cisco_xe')) {
+    category = 'cisco_router';
+    brand = 'Cisco';
+    model = node.model || 'ISR 4331';
+    heightU = 1;
+  } else if (nodeTypeStr === 'switch' || roleLower.includes('switch')) {
+    category = 'cisco_switch';
+    brand = anyNode.vendor || 'Cisco';
+    model = node.model || 'Catalyst 9300-24P';
+    heightU = 1;
   }
 
-  const portCount = Math.max(8, Math.min(48, node.total_ports || 24));
+  // Preserve user custom hardware overrides if present
+  if (anyNode.category) category = anyNode.category;
+  if (anyNode.heightU) heightU = anyNode.heightU;
+  if (anyNode.brand) brand = anyNode.brand;
+
+  const portCount = Math.max(4, Math.min(52, node.total_ports || 24));
+  const deviceId = node.id.startsWith('hw-') ? node.id : `hw-${node.id}`;
 
   return {
-    id: `hw-${node.id}`,
+    id: deviceId,
     name: node.name,
     category,
-    brand: anyNode.vendor || (isMikrotik ? 'MikroTik' : 'Cisco'),
-    model: node.model || (category === 'hpe_server' ? 'DL380 Gen10' : 'Catalyst 9300-24P'),
+    brand,
+    model,
     heightU,
     startU,
     networkCards: [
       {
         id: 'nic-main',
-        name: 'Integrated Ports',
+        name: isMikrotik ? 'Ethernet Ports' : 'Integrated Ports',
         portType: '1GbE RJ45',
-        portCount,
+        portCount: Math.min(portCount, 48),
         slot: 'onboard',
       },
       {
         id: 'nic-sfp',
-        name: 'Uplink Transceivers',
+        name: isMikrotik ? 'SFP+ 10G Cages' : 'Uplink Transceivers',
         portType: '10G SFP+',
-        portCount: 4,
+        portCount: Math.max(2, Math.min(8, portCount > 24 ? 4 : 2)),
         slot: 'sfp',
       },
     ],

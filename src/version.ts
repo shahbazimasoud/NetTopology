@@ -10,9 +10,30 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.22.0';
+export const APP_VERSION = '1.23.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.23.0',
+    releaseDate: '2026-09-11',
+    type: 'minor',
+    title: 'یکپارچه‌سازی کامل تجهیزات انبار شبکه در نمای فیزیکی نقشه، نصب در رک با فیس‌پلیت واقعی و باز شدن منوی راست‌کلیک پورت در محل نشانگر ماوس',
+    title_en: 'Full Network Equipment Inventory Integration in Physical Map View, Photorealistic Rack Mounting, & Accurate Mouse-Positioned Port Context Menu',
+    changes: [
+      'نمایش لیست و پنل تجهیزات ثبت‌شده در انبار (Network Equipment Inventory) در نمای فیزیکی نقشه با قابلیت فیلتر، جستجو و جانمایی مستقیم در رک.',
+      'افزودن امکان انتخاب تجهیزات انبار در مودال نصب سخت‌افزار (AddHardwareModal) همراه با پیش‌نمایش زنده و واقع‌گرایانه فیس‌پلیت فیزیکی (شامل سیسکو، میکروتیک، فورتی‌نت، سوفوس و اچ‌پی).',
+      'تشخیص هوشمند ابعاد (1U/2U)، توان مصرفی، تعداد و نوع پورت‌ها بر اساس مدل و برند تجهیز و محاسبه خودکار اولین اسلات آزاد در رک برای جلوگیری از تداخل (Collision Detection).',
+      'اصلاح و بهینه‌سازی موقعیت منوی راست‌کلیک روی پورت‌های سیسکو با استفاده از React Portal در بدنه صفحه (document.body) و باز شدن دقیق منو در مختصات نوک نشانگر ماوس با تشخیص هوشمند لبه‌های صفحه.',
+      'همگام‌سازی اطلاعات تجهیزات انبار در رک‌ها شامل آی‌پی، نام اختصاصی، لاگ‌های پورت و دسترسی مستقیم به ترمینال و عیب‌یابی.'
+    ],
+    changes_en: [
+      'Directly integrated Network Equipment Inventory devices into the Physical Map View with dedicated search, filtering, and 1-click or drag-and-drop mounting into racks.',
+      'Added an Inventory Equipment selection mode in the AddHardwareModal with live photorealistic SVG faceplate rendering for Cisco, MikroTik, Fortinet, Sophos, HPE, and ASUS hardware.',
+      'Automated rack collision detection and slot calculation based on hardware unit height (1U/2U) and preconfigured manufacturer specifications.',
+      'Fixed Cisco port context menu positioning by rendering through React Portal to document.body, ensuring the menu opens precisely at mouse cursor coordinates with smart edge collision avoidance.',
+      'Synchronized inventory attributes (IP address, vendor, model, port counts) across physical rack chassis with direct CLI and inspection integration.'
+    ]
+  },
   {
     version: '1.22.0',
     releaseDate: '2026-09-11',

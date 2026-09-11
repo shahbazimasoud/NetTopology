@@ -5341,6 +5341,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
           defaultTargetU={targetUForHardware}
           editingDevice={editingHardwareDevice}
           onSaveHardware={handleSaveHardware}
+          inventoryDevices={allAvailableDevices}
         />
       )}
 

@@ -400,6 +400,7 @@ export default function App() {
           {activeTab === 'schematic' && (
             <SchematicTopologyView
               topology={topology}
+              inventoryDevices={devices}
               loading={loading}
               onRefresh={loadData}
               onScanCdpLldp={handleRunScan}

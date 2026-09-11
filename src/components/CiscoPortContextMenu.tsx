@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Power,
   PowerOff,
@@ -40,18 +41,36 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
 }) => {
   const { t, isEn } = useLanguage();
   const menuRef = useRef<HTMLDivElement>(null);
-  const [copiedCmd, setCopiedCmd] = React.useState<string | null>(null);
-  const [showVlanSubmenu, setShowVlanSubmenu] = React.useState(false);
+  const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
+  const [showVlanSubmenu, setShowVlanSubmenu] = useState(false);
 
   const isUp = port.status === 'up' && port.admin_status !== 'disabled';
   const isTrunk = port.mode === 'trunk';
   const isPortSec = !!port.port_security_enabled;
 
-  // Smart screen boundary positioning
-  const menuWidth = 280;
-  const menuHeight = 500;
-  const safeX = Math.min(Math.max(10, x), window.innerWidth - menuWidth - 16);
-  const safeY = Math.min(Math.max(10, y), window.innerHeight - menuHeight - 16);
+  // Accurate mouse position alignment with automatic viewport flip
+  const [coords, setCoords] = useState<{ top: number; left: number }>({ top: y, left: x });
+
+  useLayoutEffect(() => {
+    if (!menuRef.current) return;
+    const rect = menuRef.current.getBoundingClientRect();
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+
+    let targetLeft = x;
+    let targetTop = y;
+
+    // Flip horizontally if menu overflows right side of viewport
+    if (targetLeft + rect.width > screenW - 12) {
+      targetLeft = Math.max(12, x - rect.width);
+    }
+    // Flip vertically if menu overflows bottom of viewport
+    if (targetTop + rect.height > screenH - 12) {
+      targetTop = Math.max(12, y - rect.height);
+    }
+
+    setCoords({ top: targetTop, left: targetLeft });
+  }, [x, y]);
 
   // Close on click outside or Escape
   useEffect(() => {
@@ -102,11 +121,11 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
     return `configure terminal\ninterface ${port.port_id}\n description ${desc}\nexit`;
   };
 
-  return (
+  return createPortal(
     <div
       ref={menuRef}
-      style={{ top: `${safeY}px`, left: `${safeX}px` }}
-      className="cisco-port-context-menu fixed z-[9999] w-[280px] bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl overflow-hidden font-sans text-xs select-none backdrop-blur-md"
+      style={{ top: `${coords.top}px`, left: `${coords.left}px` }}
+      className="cisco-port-context-menu fixed z-[999999] w-[280px] bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl overflow-hidden font-sans text-xs select-none backdrop-blur-md animate-in fade-in zoom-in-95 duration-100"
       dir={isEn ? 'ltr' : 'rtl'}
       onClick={(e) => e.stopPropagation()}
     >
@@ -406,6 +425,7 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
           <span>{isEn ? 'Cisco IOS CLI snippet copied!' : 'دستورات Cisco IOS در کلیپ‌بورد کپی شد!'}</span>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };

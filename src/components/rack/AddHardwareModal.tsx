@@ -5,9 +5,12 @@ import {
   MountedHardwareDevice,
   NetworkCardConfig,
   NetworkPortType,
+  Device,
+  TopologyNode,
 } from '../../types';
 import { HARDWARE_CATEGORIES, HARDWARE_CATALOG, HardwareCatalogTemplate } from '../../data/hardwareCatalog';
 import { HardwareSvgRenderer } from './HardwareSvgRenderer';
+import { convertNodeToHardwareDevice } from './PhysicalNodeOnCanvas';
 import {
   X,
   Check,
@@ -22,6 +25,12 @@ import {
   Sparkles,
   Zap,
   BatteryCharging,
+  Boxes,
+  Search,
+  Router as RouterIcon,
+  Wifi,
+  Shield,
+  Building2,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 
@@ -33,6 +42,7 @@ interface AddHardwareModalProps {
   defaultTargetU?: number;
   editingDevice?: MountedHardwareDevice | null;
   onSaveHardware: (rackId: string, device: MountedHardwareDevice) => void;
+  inventoryDevices?: Device[];
 }
 
 const PORT_TYPES: NetworkPortType[] = [
@@ -55,8 +65,15 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
   defaultTargetU,
   editingDevice,
   onSaveHardware,
+  inventoryDevices = [],
 }) => {
-  const { isEn, isRtl } = useLanguage();
+  const { t, isEn, isRtl } = useLanguage();
+
+  const [sourceMode, setSourceMode] = useState<'inventory' | 'catalog'>(() => {
+    return inventoryDevices.length > 0 && !editingDevice ? 'inventory' : 'catalog';
+  });
+  const [selectedInventoryDeviceId, setSelectedInventoryDeviceId] = useState<string | null>(null);
+  const [inventorySearch, setInventorySearch] = useState('');
 
   const [activeCategory, setActiveCategory] = useState<HardwareCategory>('hpe_server');
   const [selectedTemplate, setSelectedTemplate] = useState<HardwareCatalogTemplate>(HARDWARE_CATALOG[0]);
@@ -127,6 +144,68 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
     return getCollision(currentRack, targetU, selectedTemplate.heightU, editingDevice?.id);
   }, [currentRack, targetU, selectedTemplate.heightU, editingDevice]);
 
+  // Filtered inventory devices
+  const filteredInventoryDevices = useMemo(() => {
+    const q = inventorySearch.toLowerCase().trim();
+    if (!q) return inventoryDevices;
+    return inventoryDevices.filter((d) => {
+      return (
+        d.name.toLowerCase().includes(q) ||
+        d.ip.toLowerCase().includes(q) ||
+        (d.model && d.model.toLowerCase().includes(q)) ||
+        (d.vendor && d.vendor.toLowerCase().includes(q)) ||
+        (d.building && d.building.toLowerCase().includes(q)) ||
+        (d.type && d.type.toLowerCase().includes(q))
+      );
+    });
+  }, [inventoryDevices, inventorySearch]);
+
+  const selectedInventoryDevice = useMemo(() => {
+    if (!selectedInventoryDeviceId) return null;
+    return inventoryDevices.find((d) => d.id === selectedInventoryDeviceId) || null;
+  }, [inventoryDevices, selectedInventoryDeviceId]);
+
+  // Select an inventory device and automatically configure its physical profile
+  const handleSelectInventoryDevice = (dev: Device) => {
+    setSelectedInventoryDeviceId(dev.id);
+    const hw = convertNodeToHardwareDevice(dev as unknown as TopologyNode);
+    setActiveCategory(hw.category);
+
+    const matchingTemplate: HardwareCatalogTemplate = {
+      id: `inv-tpl-${dev.id}`,
+      brand: hw.brand,
+      model: hw.model,
+      category: hw.category,
+      heightU: hw.heightU,
+      defaultGeneration: 'Standard',
+      generations: ['Standard'],
+      description_fa: `${dev.name} (${dev.ip}) - تجهیز انبار شبکه`,
+      description_en: `${dev.name} (${dev.ip}) - Network Equipment Inventory`,
+      defaultPowerWatts: hw.category.includes('server') ? 550 : hw.category.includes('router') ? 120 : 220,
+      defaultPowerSupplyCount: hw.category.includes('server') ? 2 : 1,
+      defaultNetworkCards: hw.networkCards.map((c) => ({
+        name: c.name,
+        portCount: c.portCount,
+        portType: c.portType,
+        slot: c.slot,
+      })),
+    };
+
+    setSelectedTemplate(matchingTemplate);
+    setSelectedGeneration('Standard');
+    setCustomName(dev.name);
+    setNetworkCards(hw.networkCards);
+    setPowerSupplyCount(matchingTemplate.defaultPowerSupplyCount || 1);
+    setPowerWatts(matchingTemplate.defaultPowerWatts);
+
+    // Pick first free slot in target rack for this device height
+    const chosenRack = racks.find((r) => r.id === targetRackId) || racks[0];
+    const freeSlot = findFirstFreeSlot(chosenRack, hw.heightU);
+    if (freeSlot !== null) {
+      setTargetU(freeSlot);
+    }
+  };
+
   // Initialize form state
   useEffect(() => {
     if (editingDevice) {
@@ -146,38 +225,40 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
       setPduAmperage(editingDevice.pduAmperage ?? (tpl.defaultPduAmperage ?? 16));
       if (defaultRackId) setTargetRackId(defaultRackId);
     } else {
-      const tpl = HARDWARE_CATALOG.find((t) => t.category === activeCategory) || HARDWARE_CATALOG[0];
-      setSelectedTemplate(tpl);
-      setSelectedGeneration(tpl.defaultGeneration || tpl.generations?.[0] || '');
-      setCustomName(`${tpl.brand} ${tpl.model}`);
-      setPowerWatts(tpl.defaultPowerWatts);
-      setPowerSupplyCount(tpl.defaultPowerSupplyCount ?? (tpl.category.includes('server') || tpl.category.includes('storage') ? 2 : tpl.category.includes('panel') || tpl.category.includes('cable') || tpl.category === 'blank_panel' ? 0 : 1));
-      setPduOutletsCount(tpl.defaultPduOutlets ?? 8);
-      setPduOutletType(tpl.defaultPduOutletType ?? 'IEC C13');
-      setPduAmperage(tpl.defaultPduAmperage ?? 16);
+      if (inventoryDevices.length > 0 && !selectedInventoryDeviceId) {
+        handleSelectInventoryDevice(inventoryDevices[0]);
+      } else {
+        const tpl = HARDWARE_CATALOG.find((t) => t.category === activeCategory) || HARDWARE_CATALOG[0];
+        setSelectedTemplate(tpl);
+        setSelectedGeneration(tpl.defaultGeneration || tpl.generations?.[0] || '');
+        setCustomName(`${tpl.brand} ${tpl.model}`);
+        setPowerWatts(tpl.defaultPowerWatts);
+        setPowerSupplyCount(tpl.defaultPowerSupplyCount ?? (tpl.category.includes('server') || tpl.category.includes('storage') ? 2 : tpl.category.includes('panel') || tpl.category.includes('cable') || tpl.category === 'blank_panel' ? 0 : 1));
+        setPduOutletsCount(tpl.defaultPduOutlets ?? 8);
+        setPduOutletType(tpl.defaultPduOutletType ?? 'IEC C13');
+        setPduAmperage(tpl.defaultPduAmperage ?? 16);
 
-      const chosenRack = racks.find((r) => r.id === (defaultRackId || racks[0]?.id)) || racks[0];
-      if (defaultRackId) setTargetRackId(defaultRackId);
+        const chosenRack = racks.find((r) => r.id === (defaultRackId || racks[0]?.id)) || racks[0];
+        if (defaultRackId) setTargetRackId(defaultRackId);
 
-      // Pick preferred U or find first free
-      let initialU = defaultTargetU || 1;
-      const collisionCheck = getCollision(chosenRack, initialU, tpl.heightU);
-      if (collisionCheck) {
-        const freeSlot = findFirstFreeSlot(chosenRack, tpl.heightU);
-        if (freeSlot !== null) initialU = freeSlot;
+        let initialU = defaultTargetU || 1;
+        const collisionCheck = getCollision(chosenRack, initialU, tpl.heightU);
+        if (collisionCheck) {
+          const freeSlot = findFirstFreeSlot(chosenRack, tpl.heightU);
+          if (freeSlot !== null) initialU = freeSlot;
+        }
+        setTargetU(initialU);
+
+        setNetworkCards(
+          tpl.defaultNetworkCards.map((c, i) => ({
+            id: `nic-${Date.now()}-${i}`,
+            name: c.name,
+            portCount: c.portCount,
+            portType: c.portType,
+            slot: c.slot,
+          }))
+        );
       }
-      setTargetU(initialU);
-
-      // Load default NICs
-      setNetworkCards(
-        tpl.defaultNetworkCards.map((c, i) => ({
-          id: `nic-${Date.now()}-${i}`,
-          name: c.name,
-          portCount: c.portCount,
-          portType: c.portType,
-          slot: c.slot,
-        }))
-      );
     }
   }, [editingDevice, defaultRackId, defaultTargetU, isOpen]);
 
@@ -298,8 +379,14 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
     e.preventDefault();
     if (!targetRackId || currentCollision) return;
 
+    const chosenDevId = editingDevice
+      ? editingDevice.id
+      : selectedInventoryDevice
+      ? selectedInventoryDevice.id
+      : `dev-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+
     const deviceToSave: MountedHardwareDevice = {
-      id: editingDevice ? editingDevice.id : `dev-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      id: chosenDevId,
       name: customName.trim() || `${selectedTemplate.brand} ${selectedTemplate.model}`,
       category: selectedTemplate.category,
       brand: selectedTemplate.brand,
@@ -310,6 +397,7 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
       networkCards,
       powerWatts,
       powerSupplyCount,
+      ip: selectedInventoryDevice?.ip || editingDevice?.ip,
       pduOutletsCount: selectedTemplate.category === 'pdu' ? pduOutletsCount : undefined,
       pduOutletType: selectedTemplate.category === 'pdu' ? pduOutletType : undefined,
       pduAmperage: selectedTemplate.category === 'pdu' ? pduAmperage : undefined,
@@ -346,8 +434,8 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
               </h3>
               <p className="text-xs text-slate-400">
                 {isEn
-                  ? 'Select server/switch/storage model, generation, and configure network ports and NICs'
-                  : 'انتخاب مدل، نسل سرور/سوییچ/استوریج و تعریف دقیق کارت‌های شبکه و پورت‌ها'}
+                  ? 'Select from inventory equipment or catalog templates to mount into rack'
+                  : 'انتخاب از تجهیزات انبار شبکه یا کاتالوگ استاندارد جهت جانمایی و نصب در رک'}
               </p>
             </div>
           </div>
@@ -362,67 +450,208 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
 
         {/* Scrollable Modal Body */}
         <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Step 1: Category Selector Tabs */}
+          {/* Hardware Source Toggle (Inventory vs Catalog) */}
           {!editingDevice && (
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-300 block">
-                {isEn ? 'Hardware Category:' : 'دسته‌بندی سخت‌افزار:'}
-              </label>
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
-                {HARDWARE_CATEGORIES.map((cat) => {
-                  const isSelected = activeCategory === cat.id;
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => handleCategoryChange(cat.id)}
-                      className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 shrink-0 border ${
-                        isSelected
-                          ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white border-cyan-400 shadow-md shadow-cyan-600/20'
-                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                      }`}
-                    >
-                      <span>{isEn ? cat.label_en : cat.label_fa}</span>
-                    </button>
-                  );
-                })}
+            <div className="p-3 bg-slate-950/80 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Boxes className="w-4 h-4 text-cyan-400" />
+                <span className="text-xs font-bold text-slate-200">
+                  {isEn ? 'Hardware Source Selection:' : 'منبع انتخاب تجهیز سخت‌افزاری:'}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setSourceMode('inventory')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    sourceMode === 'inventory'
+                      ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Server className="w-3.5 h-3.5" />
+                  <span>
+                    {isEn
+                      ? `Inventory Equipment (${inventoryDevices.length})`
+                      : `تجهیزات انبار شبکه (${inventoryDevices.length})`}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSourceMode('catalog')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    sourceMode === 'catalog'
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>{isEn ? 'Hardware Catalog' : 'کاتالوگ مدل‌های استاندارد'}</span>
+                </button>
               </div>
             </div>
           )}
 
-          {/* Step 2: Model & Generation Grid */}
-          {!editingDevice && (
+          {/* Source Mode 1: Network Equipment Inventory Selection */}
+          {!editingDevice && sourceMode === 'inventory' && (
             <div className="space-y-3">
-              <label className="text-xs font-bold text-slate-300 block">
-                {isEn ? 'Select Hardware Model:' : 'انتخاب مدل تجهیز:'}
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-48 overflow-y-auto p-1 scrollbar-thin">
-                {HARDWARE_CATALOG.filter((t) => t.category === activeCategory).map((tpl) => {
-                  const isSelected = selectedTemplate.id === tpl.id;
-                  return (
-                    <div
-                      key={tpl.id}
-                      onClick={() => handleTemplateChange(tpl)}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                        isSelected
-                          ? 'bg-cyan-950/40 border-cyan-400 ring-1 ring-cyan-500/40 shadow-md'
-                          : 'bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-white">{tpl.model}</span>
-                        <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400">
-                          {tpl.heightU}U
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                        {isEn ? tpl.description_en : tpl.description_fa}
-                      </p>
-                    </div>
-                  );
-                })}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <Boxes className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>
+                    {isEn
+                      ? 'Select Equipment from Inventory to Mount in Rack:'
+                      : 'انتخاب تجهیز از انبار جهت جانمایی و نصب در رک:'}
+                  </span>
+                </label>
+                <div className="relative min-w-[200px]">
+                  <input
+                    type="text"
+                    value={inventorySearch}
+                    onChange={(e) => setInventorySearch(e.target.value)}
+                    placeholder={isEn ? 'Filter by name, IP, model...' : 'فیلتر نام، آی‌پی، مدل...'}
+                    className="w-full px-3 py-1.5 pl-8 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-500"
+                  />
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                </div>
               </div>
+
+              {filteredInventoryDevices.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-xs bg-slate-950/40 rounded-2xl border border-slate-800">
+                  {isEn
+                    ? 'No inventory equipment found matching filter.'
+                    : 'هیچ تجهیزی مطابق با جستجو در انبار یافت نشد.'}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-1 scrollbar-thin">
+                  {filteredInventoryDevices.map((dev) => {
+                    const isSelected = selectedInventoryDeviceId === dev.id;
+                    const hw = convertNodeToHardwareDevice(dev as unknown as TopologyNode);
+
+                    return (
+                      <div
+                        key={dev.id}
+                        onClick={() => handleSelectInventoryDevice(dev)}
+                        className={`p-3 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between gap-2.5 ${
+                          isSelected
+                            ? 'bg-cyan-950/40 border-cyan-400 ring-2 ring-cyan-500/40 shadow-lg shadow-cyan-950/50'
+                            : 'bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="font-mono font-bold text-xs text-white truncate max-w-[150px]">
+                              {dev.name}
+                            </span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/50">
+                              {hw.heightU}U
+                            </span>
+                          </div>
+
+                          <div className="text-[11px] font-mono text-indigo-300 font-semibold">
+                            {dev.ip}
+                          </div>
+
+                          <div className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">
+                            {hw.brand} • {hw.model}
+                          </div>
+
+                          {dev.building && (
+                            <div className="flex items-center gap-1 text-[9px] text-slate-400 mt-1">
+                              <Building2 className="w-2.5 h-2.5 text-slate-400" />
+                              <span>{dev.building} {dev.floor ? `(${dev.floor})` : ''}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Mini preview */}
+                        <div className="p-1 rounded-lg bg-slate-900 border border-slate-800 overflow-hidden">
+                          <HardwareSvgRenderer
+                            device={hw}
+                            viewMode="front"
+                            width={220}
+                            height={hw.heightU * 18}
+                          />
+                        </div>
+
+                        {isSelected && (
+                          <div className="flex items-center gap-1 text-[10px] text-cyan-300 font-bold justify-end">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{isEn ? 'Selected for Rack' : 'انتخاب شده جهت نصب'}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+          )}
+
+          {/* Source Mode 2: Catalog Categories & Templates */}
+          {!editingDevice && sourceMode === 'catalog' && (
+            <>
+              {/* Category Selector Tabs */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-300 block">
+                  {isEn ? 'Hardware Category:' : 'دسته‌بندی سخت‌افزار:'}
+                </label>
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
+                  {HARDWARE_CATEGORIES.map((cat) => {
+                    const isSelected = activeCategory === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => handleCategoryChange(cat.id)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 shrink-0 border cursor-pointer ${
+                          isSelected
+                            ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white border-cyan-400 shadow-md shadow-cyan-600/20'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                        }`}
+                      >
+                        <span>{isEn ? cat.label_en : cat.label_fa}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Model & Generation Grid */}
+              <div className="space-y-3">
+                <label className="text-xs font-bold text-slate-300 block">
+                  {isEn ? 'Select Hardware Model:' : 'انتخاب مدل تجهیز:'}
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-48 overflow-y-auto p-1 scrollbar-thin">
+                  {HARDWARE_CATALOG.filter((t) => t.category === activeCategory).map((tpl) => {
+                    const isSelected = selectedTemplate.id === tpl.id;
+                    return (
+                      <div
+                        key={tpl.id}
+                        onClick={() => handleTemplateChange(tpl)}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-cyan-950/40 border-cyan-400 ring-1 ring-cyan-500/40 shadow-md'
+                            : 'bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-sm text-white">{tpl.model}</span>
+                          <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400">
+                            {tpl.heightU}U
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                          {isEn ? tpl.description_en : tpl.description_fa}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
           )}
 
           {/* Model Generations Dropdown (if available) & Custom Device Label */}
