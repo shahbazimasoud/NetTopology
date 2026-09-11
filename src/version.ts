@@ -10,9 +10,32 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.20.0';
+export const APP_VERSION = '1.21.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.21.0',
+    releaseDate: '2026-09-11',
+    type: 'minor',
+    title: 'کنسول مدیریت اختصاصی پورت‌ها و شاسی روترهای میکروتیک (MikroTik RouterOS)، منوی راست‌کلیک و ارسال بلادرنگ دستورات RouterOS',
+    title_en: 'Dedicated MikroTik RouterOS Port Management Console, Realistic Faceplate, Context Menu, & Instant RouterOS CLI Command Dispatch',
+    changes: [
+      'پیاده‌سازی مودال اختصاصی مدیریت و تنظیمات پورت‌های میکروتیک (MikroTik Port Management Console) با شبیه‌سازی دقیق فیس‌پلیت سخت‌افزاری روتربوردها (CCR/CRS).',
+      'طراحی پورت‌های واقع‌گرایانه میکروتیک (MikroTikPortSvg) شامل پورت‌های اترنت محافظت‌شده RJ45، پورت‌های فیبر نوری SFP+ 10G، چراغ‌های وضعیت Link/Act، نشانگر PoE-IN و پرچم‌های روتر او اس (R: Running, X: Disabled).',
+      'افزودن منوی راست‌کلیک هوشمند روی پورت‌های میکروتیک: فعال/غیرفعال‌سازی پورت، عضویت در بریج (Bridge Membership)، تنظیم PVID/VLAN، تغییر سرعت و دوبلکس، یادداشت پورت (Comment) و تست عیب‌یابی کابل (TDR Cable Test).',
+      'پیاده‌سازی مودال پیش‌نمایش و تایید دستورات RouterOS پیش از ارسال به دستگاه، با امکان کپی اسکریپت و ارسال امن به روتر.',
+      'افزودن ترمینال تعاملی خط فرمان میکروتیک (MikroTikTerminalModal) با پشتیبانی از دستورات اسلش روتر او اس، راهنمای سریع دستورات و انتخاب تم رنگی کنسول.',
+      'رفع خطای ماژول ترجمه‌ها و بازسازی کامل کامپوننت‌های پایدار سیستم.'
+    ],
+    changes_en: [
+      'Engineered dedicated MikroTik RouterOS Port Management Modal featuring photorealistic RouterBOARD (CCR/CRS) physical faceplate rendering.',
+      'Created realistic MikroTik port components (MikroTikPortSvg) including shielded RJ45 interfaces, 10G SFP+ optical cages, dual Link/Act LEDs, PoE-IN badges, and RouterOS flags (R for Running, X for Disabled).',
+      'Implemented intelligent right-click context menu for MikroTik ports: interface enable/disable, bridge membership, PVID/VLAN assignment, speed/duplex modes, port comment annotations, and TDR cable diagnostics.',
+      'Designed a RouterOS command review and confirmation modal (MikroTikPortConfigConfirmModal) displaying live RouterOS syntax before safe dispatch to the target device.',
+      'Integrated interactive MikroTik CLI Terminal (MikroTikTerminalModal) with slash syntax support, command quick-guide, and customizable terminal palettes.',
+      'Resolved translation export syntax errors and restored clean builds across all driver modules.'
+    ]
+  },
   {
     version: '1.20.0',
     releaseDate: '2026-09-11',

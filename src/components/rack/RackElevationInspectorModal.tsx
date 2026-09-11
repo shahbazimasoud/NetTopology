@@ -16,6 +16,7 @@ import {
   ChevronUp,
   ChevronDown,
   Sliders,
+  Zap,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 
