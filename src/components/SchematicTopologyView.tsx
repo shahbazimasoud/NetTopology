@@ -68,6 +68,8 @@ import { CustomMapLinkConfigModal } from './CustomMapLinkConfigModal';
 import { CustomMapAddDeviceModal } from './CustomMapAddDeviceModal';
 import { CustomMapManageModal } from './CustomMapManageModal';
 import { AddRackModal } from './rack/AddRackModal';
+import { EditRackModal } from './rack/EditRackModal';
+import { TransferDeviceModal } from './rack/TransferDeviceModal';
 import { AddHardwareModal } from './rack/AddHardwareModal';
 import { RackElevationInspectorModal } from './rack/RackElevationInspectorModal';
 import { RackCabinetSvg } from './rack/RackCabinetSvg';
@@ -305,6 +307,11 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
   // Rack & Hardware Studio States
   const [isAddRackOpen, setIsAddRackOpen] = useState(false);
+  const [editingRack, setEditingRack] = useState<CustomTopologyRack | null>(null);
+  const [transferDeviceTarget, setTransferDeviceTarget] = useState<{
+    device: MountedHardwareDevice;
+    sourceRack: CustomTopologyRack;
+  } | null>(null);
   const [isAddHardwareOpen, setIsAddHardwareOpen] = useState(false);
   const [selectedRackForHardware, setSelectedRackForHardware] = useState<string | undefined>(undefined);
   const [targetUForHardware, setTargetUForHardware] = useState<number | undefined>(undefined);
@@ -483,6 +490,19 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const handleCreateCustomMapRack = useCallback((rackData: Omit<CustomTopologyRack, 'id' | 'devices' | 'x' | 'y'>) => {
     if (!currentCustomMap) return;
     const existingRacks = currentCustomMap.racks || [];
+
+    // Check duplicate rack name
+    if (existingRacks.some((r) => r.name.trim().toLowerCase() === rackData.name.trim().toLowerCase())) {
+      setFeedbackToast({
+        type: 'error',
+        message: isEn
+          ? `A rack named "${rackData.name}" already exists`
+          : `رکی با نام «${rackData.name}» از قبل وجود دارد`,
+      });
+      setTimeout(() => setFeedbackToast(null), 3000);
+      return;
+    }
+
     const startX = Math.round((-pan.x + 350 + existingRacks.length * 420) / zoom);
     const startY = Math.round((-pan.y + 150) / zoom);
 
@@ -500,7 +520,96 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       updatedAt: new Date().toISOString(),
     };
     saveCustomMaps(customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m)));
-  }, [currentCustomMap, customMaps, pan.x, pan.y, zoom, saveCustomMaps]);
+    setFeedbackToast({
+      type: 'success',
+      message: isEn ? `Rack "${newRack.name}" added` : `رک «${newRack.name}» افزوده شد`,
+    });
+    setTimeout(() => setFeedbackToast(null), 3000);
+  }, [currentCustomMap, customMaps, pan.x, pan.y, zoom, isEn, saveCustomMaps]);
+
+  const handleSaveRack = useCallback(
+    (updatedRack: CustomTopologyRack) => {
+      if (!currentCustomMap) return;
+      const updatedRacks = (currentCustomMap.racks || []).map((r) =>
+        r.id === updatedRack.id ? updatedRack : r
+      );
+
+      const updatedMap: CustomTopologyMap = {
+        ...currentCustomMap,
+        racks: updatedRacks,
+        updatedAt: new Date().toISOString(),
+      };
+      saveCustomMaps(customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m)));
+
+      if (inspectingRack && inspectingRack.id === updatedRack.id) {
+        setInspectingRack(updatedRack);
+      }
+
+      setFeedbackToast({
+        type: 'success',
+        message: isEn
+          ? `Rack "${updatedRack.name}" updated successfully`
+          : `مشخصات رک «${updatedRack.name}» با موفقیت به‌روزرسانی شد`,
+      });
+      setTimeout(() => setFeedbackToast(null), 3000);
+    },
+    [currentCustomMap, customMaps, inspectingRack, isEn, saveCustomMaps]
+  );
+
+  const handleTransferDevice = useCallback(
+    (sourceRackId: string, targetRackId: string, deviceId: string, targetStartU: number) => {
+      if (!currentCustomMap) return;
+      const racks = currentCustomMap.racks || [];
+      const sourceRack = racks.find((r) => r.id === sourceRackId);
+      const targetRack = racks.find((r) => r.id === targetRackId);
+      if (!sourceRack || !targetRack) return;
+
+      const device = sourceRack.devices.find((d) => d.id === deviceId);
+      if (!device) return;
+
+      const transferredDevice: MountedHardwareDevice = {
+        ...device,
+        startU: targetStartU,
+      };
+
+      const updatedRacks = racks.map((r) => {
+        if (r.id === sourceRackId) {
+          return {
+            ...r,
+            devices: r.devices.filter((d) => d.id !== deviceId),
+          };
+        }
+        if (r.id === targetRackId) {
+          return {
+            ...r,
+            devices: [...r.devices, transferredDevice],
+          };
+        }
+        return r;
+      });
+
+      const updatedMap: CustomTopologyMap = {
+        ...currentCustomMap,
+        racks: updatedRacks,
+        updatedAt: new Date().toISOString(),
+      };
+      saveCustomMaps(customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m)));
+
+      if (inspectingRack) {
+        const found = updatedRacks.find((r) => r.id === inspectingRack.id);
+        if (found) setInspectingRack(found);
+      }
+
+      setFeedbackToast({
+        type: 'success',
+        message: isEn
+          ? `Device "${device.name}" transferred to ${targetRack.name} (U${targetStartU})`
+          : `تجهیز «${device.name}» با موفقیت به رک «${targetRack.name}» (یونیت U${targetStartU}) منتقل شد`,
+      });
+      setTimeout(() => setFeedbackToast(null), 3500);
+    },
+    [currentCustomMap, customMaps, inspectingRack, isEn, saveCustomMaps]
+  );
 
   const handleToggleRackViewMode = useCallback((rackId: string, newMode: RackViewMode) => {
     if (!currentCustomMap) return;
@@ -627,15 +736,22 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const handleSaveHardware = useCallback((rackId: string, device: MountedHardwareDevice) => {
     if (!currentCustomMap) return;
     const updatedRacks = (currentCustomMap.racks || []).map((r) => {
-      if (r.id !== rackId) return r;
-      const existingIdx = r.devices.findIndex((d) => d.id === device.id);
-      let newDevices = [...r.devices];
-      if (existingIdx >= 0) {
-        newDevices[existingIdx] = device;
+      if (r.id === rackId) {
+        const existingIdx = r.devices.findIndex((d) => d.id === device.id);
+        let newDevices = [...r.devices];
+        if (existingIdx >= 0) {
+          newDevices[existingIdx] = device;
+        } else {
+          newDevices.push(device);
+        }
+        return { ...r, devices: newDevices };
       } else {
-        newDevices.push(device);
+        // Ensure device is not duplicated in other racks
+        return {
+          ...r,
+          devices: r.devices.filter((d) => d.id !== device.id),
+        };
       }
-      return { ...r, devices: newDevices };
     });
 
     const updatedMap: CustomTopologyMap = {
@@ -644,8 +760,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       updatedAt: new Date().toISOString(),
     };
     saveCustomMaps(customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m)));
-    if (inspectingRack && inspectingRack.id === rackId) {
-      const found = updatedRacks.find((r) => r.id === rackId);
+    if (inspectingRack) {
+      const found = updatedRacks.find((r) => r.id === inspectingRack.id);
       if (found) setInspectingRack(found);
     }
   }, [currentCustomMap, customMaps, inspectingRack, saveCustomMaps]);
@@ -1538,9 +1654,20 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     const rackName = (customInput !== undefined ? customInput : newRackInput).trim();
     if (!rackName) return;
     const key = `${building}:::${floor}`;
+    const existingForFloor = customRacks[key] || [];
+    if (existingForFloor.some((r) => r.trim().toLowerCase() === rackName.toLowerCase())) {
+      setFeedbackToast({
+        type: 'error',
+        message: isEn
+          ? `A rack named "${rackName}" already exists on this floor`
+          : `رکی با نام «${rackName}» از قبل در این طبقه وجود دارد`,
+      });
+      setTimeout(() => setFeedbackToast(null), 3000);
+      return;
+    }
     const updatedRacks = {
       ...customRacks,
-      [key]: Array.from(new Set([...(customRacks[key] || []), rackName])),
+      [key]: [...existingForFloor, rackName],
     };
     setCustomRacks(updatedRacks);
     saveHierarchyState(customBuildings, customFloors, customUnits, updatedRacks);
@@ -3609,6 +3736,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                         onToggleViewMode={handleToggleRackViewMode}
                         onOpenAddHardware={handleOpenAddHardware}
                         onInspectRack={(r) => setInspectingRack(r)}
+                        onEditRack={(r) => setEditingRack(r)}
+                        onTransferDevice={(dev, r) => setTransferDeviceTarget({ device: dev, sourceRack: r })}
                         onDeleteRack={handlePromptDeleteRack}
                         onEditDeviceNic={handleEditDeviceNic}
                         onEditSpecs={handleEditDeviceSpecs}
@@ -5308,19 +5437,42 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                 <label className="block text-xs font-medium text-slate-300 mb-1.5">
                   {t('topology_physical_new_rack_name')}
                 </label>
-                <input
-                  type="text"
-                  value={newRackInput}
-                  onChange={(e) => setNewRackInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newRackInput.trim()) {
-                      handleAddRack(addRackModal.building, addRackModal.floor, newRackInput);
-                    }
-                  }}
-                  placeholder={isEn ? 'e.g. Rack-A1, 42U-Core-Rack, Distribution-B' : 'مانند رک اصلی سرور، Rack-A1، رک توزیع طبقه'}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
-                  autoFocus
-                />
+                {(() => {
+                  const isDuplicate = (customRacks[`${addRackModal.building}:::${addRackModal.floor}`] || []).some(
+                    (r) => r.trim().toLowerCase() === newRackInput.trim().toLowerCase()
+                  );
+                  return (
+                    <>
+                      <input
+                        type="text"
+                        value={newRackInput}
+                        onChange={(e) => setNewRackInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newRackInput.trim() && !isDuplicate) {
+                            handleAddRack(addRackModal.building, addRackModal.floor, newRackInput);
+                          }
+                        }}
+                        placeholder={isEn ? 'e.g. Rack-A1, 42U-Core-Rack, Distribution-B' : 'مانند رک اصلی سرور، Rack-A1، رک توزیع طبقه'}
+                        className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border text-white text-xs placeholder:text-slate-500 focus:outline-none focus:ring-1 ${
+                          isDuplicate
+                            ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500'
+                            : 'border-white/15 focus:border-cyan-400 focus:ring-cyan-400'
+                        }`}
+                        autoFocus
+                      />
+                      {isDuplicate && (
+                        <p className="mt-1.5 text-xs text-red-400 font-medium flex items-center gap-1">
+                          <span>⚠️</span>
+                          <span>
+                            {isEn
+                              ? `A rack named "${newRackInput.trim()}" already exists on this floor`
+                              : `رکی با این نام از قبل در این طبقه ثبت شده است`}
+                          </span>
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
@@ -5332,14 +5484,21 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
               >
                 {t('topology_physical_cancel_btn')}
               </button>
-              <button
-                type="button"
-                onClick={() => handleAddRack(addRackModal.building, addRackModal.floor, newRackInput)}
-                disabled={!newRackInput.trim()}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-40 transition shadow-lg cursor-pointer"
-              >
-                {t('topology_physical_create_btn')}
-              </button>
+              {(() => {
+                const isDuplicate = (customRacks[`${addRackModal.building}:::${addRackModal.floor}`] || []).some(
+                  (r) => r.trim().toLowerCase() === newRackInput.trim().toLowerCase()
+                );
+                return (
+                  <button
+                    type="button"
+                    onClick={() => handleAddRack(addRackModal.building, addRackModal.floor, newRackInput)}
+                    disabled={!newRackInput.trim() || isDuplicate}
+                    className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-40 transition shadow-lg cursor-pointer"
+                  >
+                    {t('topology_physical_create_btn')}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -5654,6 +5813,28 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
           isOpen={isAddRackOpen}
           onClose={() => setIsAddRackOpen(false)}
           onAddRack={handleCreateCustomMapRack}
+          existingRacks={currentCustomMap.racks || []}
+        />
+      )}
+
+      {editingRack && currentCustomMap && (
+        <EditRackModal
+          isOpen={!!editingRack}
+          onClose={() => setEditingRack(null)}
+          rack={editingRack}
+          existingRacks={currentCustomMap.racks || []}
+          onSaveRack={handleSaveRack}
+        />
+      )}
+
+      {transferDeviceTarget && currentCustomMap && (
+        <TransferDeviceModal
+          isOpen={!!transferDeviceTarget}
+          onClose={() => setTransferDeviceTarget(null)}
+          device={transferDeviceTarget.device}
+          sourceRack={transferDeviceTarget.sourceRack}
+          allRacks={currentCustomMap.racks || []}
+          onTransferDevice={handleTransferDevice}
         />
       )}
 
@@ -5680,6 +5861,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
           rack={inspectingRack}
           onToggleViewMode={handleToggleRackViewMode}
           onOpenAddHardware={handleOpenAddHardware}
+          onEditRack={(r) => setEditingRack(r)}
+          onTransferDevice={(dev, r) => setTransferDeviceTarget({ device: dev, sourceRack: r })}
           onEditDeviceNic={handleEditDeviceNic}
           onEditSpecs={handleEditDeviceSpecs}
           onEditDeviceProperties={handleEditDeviceProperties}

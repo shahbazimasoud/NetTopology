@@ -17,6 +17,7 @@ import {
   Sliders,
   Terminal,
   Layers,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 
@@ -25,6 +26,7 @@ interface RackCabinetSvgProps {
   onToggleViewMode: (rackId: string, newMode: RackViewMode) => void;
   onOpenAddHardware: (rackId: string, targetU?: number) => void;
   onInspectRack: (rack: CustomTopologyRack) => void;
+  onEditRack?: (rack: CustomTopologyRack) => void;
   onDeleteRack: (rackId: string) => void;
   onSelectDevice?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditDeviceNic?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
@@ -33,6 +35,7 @@ interface RackCabinetSvgProps {
   onConnectTerminal?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onInspectPorts?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onPromptRemoveDevice?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
+  onTransferDevice?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onMoveDevice?: (rackId: string, deviceId: string, newStartU: number) => void;
   onRemoveDevice?: (rackId: string, deviceId: string) => void;
   selectedDeviceId?: string | null;
@@ -44,6 +47,7 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
   onToggleViewMode,
   onOpenAddHardware,
   onInspectRack,
+  onEditRack,
   onDeleteRack,
   onSelectDevice,
   onEditDeviceNic,
@@ -52,6 +56,7 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
   onConnectTerminal,
   onInspectPorts,
   onPromptRemoveDevice,
+  onTransferDevice,
   onMoveDevice,
   onRemoveDevice,
   selectedDeviceId,
@@ -276,6 +281,21 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
           >
             <Maximize2 className="w-3.5 h-3.5" />
           </button>
+
+          {/* Edit Rack Properties & Units */}
+          {onEditRack && (
+            <button
+              type="button"
+              title={isEn ? 'Edit Rack Properties & Units' : 'ویرایش مشخصات و تعداد یونیت‌های رک'}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditRack(rack);
+              }}
+              className="p-1 rounded-lg bg-slate-800 text-slate-300 hover:text-amber-300 hover:bg-slate-700 transition cursor-pointer"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+            </button>
+          )}
 
           {/* Add Hardware Button */}
           <button
@@ -785,7 +805,23 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                   </button>
                 )}
 
-                {/* 5. Delete */}
+                {/* 5. Transfer Device to another Rack */}
+                {onTransferDevice && (
+                  <button
+                    type="button"
+                    title={isEn ? 'Transfer to another Rack' : 'انتقال دیوایس به رک دیگر'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTransferDevice(hoveredMountedDev.dev, rack);
+                    }}
+                    className="px-1.5 py-0.5 rounded hover:bg-sky-950 text-sky-300 hover:text-sky-100 border border-sky-800/60 flex items-center gap-0.5 text-[9.5px] font-medium transition cursor-pointer"
+                  >
+                    <ArrowRightLeft className="w-2.5 h-2.5" />
+                    <span>{isEn ? 'Move' : 'انتقال'}</span>
+                  </button>
+                )}
+
+                {/* 6. Delete */}
                 {(onPromptRemoveDevice || onRemoveDevice) && (
                   <button
                     type="button"

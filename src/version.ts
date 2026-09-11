@@ -10,9 +10,28 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.26.0';
+export const APP_VERSION = '1.27.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.27.0',
+    releaseDate: '2026-09-11',
+    type: 'minor',
+    title: 'امکان ویرایش مشخصات و ابعاد رک، انتقال تجهیزات بین رک‌ها، و جلوگیری از ثبت نام تکراری برای رک',
+    title_en: 'Rack Editing & Unit Resizing, Inter-Rack Device Transfer, and Duplicate Rack Name Prevention',
+    changes: [
+      'افزودن امکان ویرایش کامل مشخصات رک (Edit Rack Modal) شامل تغییر نام رک، تنظیم تعداد یونیت‌ها (از ۱۲U تا ۴۸U یا یونیت سفارشی)، و تغییر عمق رک (۶۰۰ تا ۱۲۰۰ میلی‌متر) با بررسی خودکار عدم تداخل با تجهیزات موجود.',
+      'پیاده‌سازی ماژول اختصاصی انتقال دیوایس بین رک‌ها (Transfer Device Modal) با قابلیت انتخاب رک مقصد، تشخیص هوشمند اولین اسلات خالی، و اعتبارسنجی زنده تداخل با اسلات‌های اشغال‌شده.',
+      'افزودن دکمه‌های انتقال سریع دیوایس (Transfer) در منوی شناور تجهیز، نمای تفصیلی اینسپکتور، و لیست اقلام منصوب در رک.',
+      'جلوگیری از ایجاد یا ویرایش رک با نام تکراری در کل نقشه توپولوژی و همچنین در سلسله‌مراتب فیزیکی با هشدارهای آنی و غیرفعال‌سازی هوشمند کلید ذخیره.'
+    ],
+    changes_en: [
+      'Introduced comprehensive Rack Editing modal allowing users to rename racks, resize rack units (from 12U to 48U or custom), and adjust cabinet depth (600mm to 1200mm) with automatic collision checks against installed hardware.',
+      'Built a dedicated Inter-Rack Device Transfer modal enabling seamless relocation of hardware devices between cabinets, with smart first-available slot selection and live slot occupancy validation.',
+      'Added quick-action Transfer buttons in the device hover menu, the elevation inspector device details panel, and the mounted hardware inventory list.',
+      'Enforced duplicate rack name prevention across custom topology maps and physical building/floor hierarchy with real-time UI validation alerts and disabled submit states.'
+    ]
+  },
   {
     version: '1.26.0',
     releaseDate: '2026-09-11',

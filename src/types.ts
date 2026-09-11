@@ -179,7 +179,7 @@ export interface CustomTopologyLink {
   status: 'active' | 'down' | 'testing';
 }
 
-export type RackUnitSize = 16 | 21 | 28 | 36 | 40 | 44;
+export type RackUnitSize = 12 | 16 | 21 | 24 | 28 | 32 | 36 | 40 | 42 | 44 | 48 | number;
 export type RackDepth = 60 | 80 | 100 | 120;
 export type RackViewMode = 'front' | 'rear';
 

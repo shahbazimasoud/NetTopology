@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Sliders,
   Zap,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 
@@ -27,6 +28,8 @@ interface RackElevationInspectorModalProps {
   rack: CustomTopologyRack | null;
   onToggleViewMode: (rackId: string, newMode: RackViewMode) => void;
   onOpenAddHardware: (rackId: string, targetU?: number) => void;
+  onEditRack?: (rack: CustomTopologyRack) => void;
+  onTransferDevice?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditDeviceNic: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditSpecs?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditDeviceProperties?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
@@ -44,6 +47,8 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
   rack,
   onToggleViewMode,
   onOpenAddHardware,
+  onEditRack,
+  onTransferDevice,
   onEditDeviceNic,
   onEditSpecs,
   onEditDeviceProperties,
@@ -153,11 +158,24 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
             <button
               type="button"
               onClick={() => onOpenAddHardware(rack.id)}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg transition"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>{isEn ? 'Install Hardware' : 'نصب تجهیز جدید'}</span>
             </button>
+
+            {/* Edit Rack Button */}
+            {onEditRack && (
+              <button
+                type="button"
+                onClick={() => onEditRack(rack)}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 shadow-md transition cursor-pointer"
+                title={isEn ? 'Edit Rack Properties & Units' : 'ویرایش مشخصات و تعداد یونیت‌های رک'}
+              >
+                <Sliders className="w-4 h-4" />
+                <span>{isEn ? 'Edit Rack' : 'ویرایش رک'}</span>
+              </button>
+            )}
 
             {/* Close Modal */}
             <button
@@ -197,6 +215,8 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                 onToggleViewMode={onToggleViewMode}
                 onOpenAddHardware={onOpenAddHardware}
                 onInspectRack={() => {}}
+                onEditRack={onEditRack}
+                onTransferDevice={onTransferDevice}
                 onDeleteRack={onDeleteRack}
                 onSelectDevice={(dev) => setSelectedDevice(dev)}
                 onEditDeviceNic={(dev) => onEditDeviceNic(dev, rack)}
@@ -344,6 +364,19 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                       <Network className="w-3 h-3" />
                       <span>{isEn ? 'Cards & Ports' : 'کارت‌ها و پورت‌ها'}</span>
                     </button>
+
+                    {/* Transfer to another Rack */}
+                    {onTransferDevice && (
+                      <button
+                        type="button"
+                        title={isEn ? 'Transfer to another Rack' : 'انتقال دیوایس به رک دیگر'}
+                        onClick={() => onTransferDevice(currentSelectedDevice, rack)}
+                        className="px-2.5 py-1 rounded-lg bg-sky-600/80 text-white hover:bg-sky-500 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
+                      >
+                        <ArrowRightLeft className="w-3 h-3" />
+                        <span>{isEn ? 'Transfer' : 'انتقال'}</span>
+                      </button>
+                    )}
 
                     {/* Safe Remove with Confirmation */}
                     <button
@@ -506,6 +539,19 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                           >
                             <Network className="w-3.5 h-3.5" />
                           </button>
+                          {onTransferDevice && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onTransferDevice(dev, rack);
+                              }}
+                              className="p-1 rounded hover:bg-slate-800 text-sky-400 hover:text-sky-200 transition cursor-pointer"
+                              title={isEn ? 'Transfer to another Rack' : 'انتقال دیوایس به رک دیگر'}
+                            >
+                              <ArrowRightLeft className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={(e) => {
