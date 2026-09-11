@@ -30,6 +30,8 @@ interface RackElevationInspectorModalProps {
   onEditDeviceNic: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditSpecs?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditDeviceProperties?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
+  onConnectTerminal?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
+  onInspectPorts?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onPromptRemoveDevice?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onMoveDevice?: (rackId: string, deviceId: string, newStartU: number) => void;
   onRemoveDevice: (rackId: string, deviceId: string) => void;
@@ -45,6 +47,8 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
   onEditDeviceNic,
   onEditSpecs,
   onEditDeviceProperties,
+  onConnectTerminal,
+  onInspectPorts,
   onPromptRemoveDevice,
   onMoveDevice,
   onRemoveDevice,
@@ -201,6 +205,8 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                   if (onEditDeviceProperties) onEditDeviceProperties(dev, rack);
                   else if (onEditSpecs) onEditSpecs(dev, rack);
                 }}
+                onConnectTerminal={(dev) => onConnectTerminal && onConnectTerminal(dev, rack)}
+                onInspectPorts={(dev) => onInspectPorts && onInspectPorts(dev, rack)}
                 onPromptRemoveDevice={(dev) => {
                   if (onPromptRemoveDevice) {
                     onPromptRemoveDevice(dev, rack);

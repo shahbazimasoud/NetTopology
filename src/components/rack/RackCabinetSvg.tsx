@@ -15,6 +15,8 @@ import {
   ChevronDown,
   AlertCircle,
   Sliders,
+  Terminal,
+  Layers,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 
@@ -28,6 +30,8 @@ interface RackCabinetSvgProps {
   onEditDeviceNic?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditSpecs?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditDeviceProperties?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
+  onConnectTerminal?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
+  onInspectPorts?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onPromptRemoveDevice?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onMoveDevice?: (rackId: string, deviceId: string, newStartU: number) => void;
   onRemoveDevice?: (rackId: string, deviceId: string) => void;
@@ -45,6 +49,8 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
   onEditDeviceNic,
   onEditSpecs,
   onEditDeviceProperties,
+  onConnectTerminal,
+  onInspectPorts,
   onPromptRemoveDevice,
   onMoveDevice,
   onRemoveDevice,
@@ -131,9 +137,12 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
     // Calculate grab offset relative to mouse U inside the rack
     if (rackSvgRef.current) {
       const rect = rackSvgRef.current.getBoundingClientRect();
-      const relY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-      const mouseU = Math.max(1, Math.min(rack.units, rack.units - Math.floor(relY * rack.units)));
-      dragGrabOffsetURef.current = mouseU - dev.startU;
+      const scaleY = rect.height / (rack.units * U_HEIGHT + 16);
+      const yInSvg = (e.clientY - rect.top) / scaleY;
+      const unitIndex = Math.floor((yInSvg - 8) / U_HEIGHT);
+      const clampedIndex = Math.max(0, Math.min(rack.units - 1, unitIndex));
+      const mouseU = rack.units - clampedIndex;
+      dragGrabOffsetURef.current = Math.max(0, Math.min(dev.heightU - 1, mouseU - dev.startU));
     } else {
       dragGrabOffsetURef.current = 0;
     }
@@ -147,9 +156,11 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
       let candidateU: number;
       if (rackSvgRef.current) {
         const rect = rackSvgRef.current.getBoundingClientRect();
-        const relY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-        // Mouse cursor is directly over this U:
-        const mouseU = rack.units - Math.floor(relY * rack.units);
+        const scaleY = rect.height / (rack.units * U_HEIGHT + 16);
+        const yInSvg = (e.clientY - rect.top) / scaleY;
+        const unitIndex = Math.floor((yInSvg - 8) / U_HEIGHT);
+        const clampedIndex = Math.max(0, Math.min(rack.units - 1, unitIndex));
+        const mouseU = rack.units - clampedIndex;
         candidateU = Math.max(
           1,
           Math.min(mouseU - dragGrabOffsetURef.current, rack.units - draggingDevice.heightU + 1)
@@ -623,17 +634,34 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
           )}
         </svg>
 
-        {/* Elevated Floating Quick Actions Overlay with high z-index (renders ABOVE all units, never clipped) */}
+        {/* Exact-size Device Highlight Outline directly on the device */}
+        {hoveredMountedDev && !draggingDevice && (
+          <div
+            style={{
+              position: 'absolute',
+              top: `${hoveredMountedDev.yPos}px`,
+              left: `${4 + RAIL_WIDTH - 12}px`,
+              width: `${RACK_WIDTH - 8 - RAIL_WIDTH * 2 + 24}px`,
+              height: `${hoveredMountedDev.dev.heightU * U_HEIGHT}px`,
+              pointerEvents: 'none',
+              zIndex: 45,
+            }}
+            className="rounded border-2 border-cyan-400 bg-cyan-500/10 shadow-[0_0_15px_rgba(34,211,238,0.45)] transition-all"
+          />
+        )}
+
+        {/* Elevated Floating Quick Actions Menu with high z-index (renders ABOVE all units, never clipped) */}
         {hoveredMountedDev && !draggingDevice && (
           <div
             style={{
               position: 'absolute',
               top: `${
                 hoveredMountedDev.dev.heightU === 1 && hoveredMountedDev.uNumber <= 2
-                  ? Math.max(0, hoveredMountedDev.yPos - 32)
+                  ? Math.max(2, hoveredMountedDev.yPos - 32)
                   : hoveredMountedDev.yPos + 2
               }px`,
-              left: `${4 + RAIL_WIDTH - 8}px`,
+              left: `${4 + RAIL_WIDTH - 10}px`,
+              maxWidth: `${RACK_WIDTH - 8 - RAIL_WIDTH * 2 + 20}px`,
               zIndex: 50,
             }}
             onMouseEnter={() => {
@@ -647,14 +675,14 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
             }}
             className="pointer-events-auto animate-fade-in"
           >
-            <div className="bg-slate-900/95 border border-cyan-500/70 rounded-lg px-2.5 py-1 flex items-center gap-1.5 shadow-2xl backdrop-blur-md ring-1 ring-cyan-500/30">
+            <div className="bg-slate-900/95 border border-cyan-500/70 rounded-lg px-2 py-1 flex items-center gap-1 shadow-2xl backdrop-blur-md ring-1 ring-cyan-500/30 text-xs">
               {/* In-Rack Drag Handle */}
               <div
                 onMouseDown={(e) => handleStartDrag(e, hoveredMountedDev.dev)}
                 className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-slate-800 text-cyan-400 hover:text-cyan-200 transition"
                 title={isEn ? 'Drag to move up/down in rack' : 'درگ کنید تا در رک جابه‌جا شود'}
               >
-                <GripVertical className="w-3.5 h-3.5" />
+                <GripVertical className="w-3 h-3" />
               </div>
 
               {/* Move Up 1U button */}
@@ -662,7 +690,7 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                 type="button"
                 onClick={(e) => handleQuickMove(e, hoveredMountedDev.dev, 'up')}
                 disabled={!checkCollision(hoveredMountedDev.dev, hoveredMountedDev.dev.startU + 1) || checkCollision(hoveredMountedDev.dev, hoveredMountedDev.dev.startU + 1).isBlocked}
-                className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-cyan-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                className="p-0.5 rounded hover:bg-slate-800 text-slate-300 hover:text-cyan-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
                 title={isEn ? 'Move Up 1U' : 'انتقال ۱ یونیت به بالا'}
               >
                 <ChevronUp className="w-3 h-3" />
@@ -673,71 +701,109 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                 type="button"
                 onClick={(e) => handleQuickMove(e, hoveredMountedDev.dev, 'down')}
                 disabled={!checkCollision(hoveredMountedDev.dev, hoveredMountedDev.dev.startU - 1) || checkCollision(hoveredMountedDev.dev, hoveredMountedDev.dev.startU - 1).isBlocked}
-                className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-cyan-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                className="p-0.5 rounded hover:bg-slate-800 text-slate-300 hover:text-cyan-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
                 title={isEn ? 'Move Down 1U' : 'انتقال ۱ یونیت به پایین'}
               >
                 <ChevronDown className="w-3 h-3" />
               </button>
 
-              <span className="text-[10px] font-bold text-cyan-300 px-1 border-r border-slate-700">
-                {hoveredMountedDev.dev.brand} {hoveredMountedDev.dev.model}
+              {/* Model Tag */}
+              <span
+                className="text-[10px] font-bold text-cyan-300 px-1 border-r border-slate-700 truncate max-w-[70px]"
+                title={`${hoveredMountedDev.dev.brand} ${hoveredMountedDev.dev.model}`}
+              >
+                {hoveredMountedDev.dev.model}
               </span>
-              <span className="text-[9px] text-slate-400 font-mono">
-                (U{hoveredMountedDev.dev.startU}-U{hoveredMountedDev.dev.startU + hoveredMountedDev.dev.heightU - 1})
-              </span>
 
-              {/* Edit Device Properties Modal Button */}
-              {(onEditDeviceProperties || onEditSpecs) && (
-                <button
-                  type="button"
-                  title={isEn ? 'Edit Device Properties' : 'ویرایش مشخصات دستگاه (Edit Device Properties)'}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onEditDeviceProperties) {
-                      onEditDeviceProperties(hoveredMountedDev.dev, rack);
-                    } else if (onEditSpecs) {
-                      onEditSpecs(hoveredMountedDev.dev, rack);
-                    }
-                  }}
-                  className="p-1 rounded hover:bg-slate-800 text-cyan-400 hover:text-cyan-200 transition cursor-pointer"
-                >
-                  <Edit3 className="w-3 h-3" />
-                </button>
-              )}
+              {/* Context Menu Actions: Properties, Config, CLI, Port, Delete */}
+              <div className="flex items-center gap-1">
+                {/* 1. Properties */}
+                {(onEditDeviceProperties || onEditSpecs) && (
+                  <button
+                    type="button"
+                    title={isEn ? 'Edit Device Properties' : 'مشخصات دستگاه (Properties)'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onEditDeviceProperties) {
+                        onEditDeviceProperties(hoveredMountedDev.dev, rack);
+                      } else if (onEditSpecs) {
+                        onEditSpecs(hoveredMountedDev.dev, rack);
+                      }
+                    }}
+                    className="px-1.5 py-0.5 rounded hover:bg-cyan-950 text-cyan-300 hover:text-cyan-100 border border-cyan-800/60 flex items-center gap-0.5 text-[9.5px] font-medium transition cursor-pointer"
+                  >
+                    <Edit3 className="w-2.5 h-2.5" />
+                    <span>{isEn ? 'Props' : 'مشخصات'}</span>
+                  </button>
+                )}
 
-              {/* Configure Network Cards & Ports Modal Button */}
-              {onEditDeviceNic && (
-                <button
-                  type="button"
-                  title={isEn ? 'Configure Network Cards & Ports' : 'تنظیم پورت‌ها و کارت‌های شبکه (Configure Network Cards & Ports)'}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEditDeviceNic(hoveredMountedDev.dev, rack);
-                  }}
-                  className="p-1 rounded hover:bg-slate-800 text-emerald-400 hover:text-emerald-200 transition cursor-pointer"
-                >
-                  <Network className="w-3 h-3" />
-                </button>
-              )}
+                {/* 2. Config */}
+                {onEditDeviceNic && (
+                  <button
+                    type="button"
+                    title={isEn ? 'Configure Network Cards & Ports' : 'کانفیگ کارت‌های شبکه و پورت‌ها (Config)'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditDeviceNic(hoveredMountedDev.dev, rack);
+                    }}
+                    className="px-1.5 py-0.5 rounded hover:bg-emerald-950 text-emerald-300 hover:text-emerald-100 border border-emerald-800/60 flex items-center gap-0.5 text-[9.5px] font-medium transition cursor-pointer"
+                  >
+                    <Network className="w-2.5 h-2.5" />
+                    <span>{isEn ? 'Config' : 'کانفیگ'}</span>
+                  </button>
+                )}
 
-              {/* Remove from Rack Button with confirmation */}
-              {(onPromptRemoveDevice || onRemoveDevice) && (
-                <button
-                  type="button"
-                  title={isEn ? 'Remove from Rack' : 'حذف از رک (Remove from Rack)'}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onPromptRemoveDevice) {
-                      onPromptRemoveDevice(hoveredMountedDev.dev, rack);
-                    } else if (onRemoveDevice) {
-                      setLocalConfirmDeleteDev(hoveredMountedDev.dev);
-                    }
-                  }}
-                  className="p-1 rounded hover:bg-red-900/80 text-red-400 hover:text-red-200 transition cursor-pointer"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              )}
+                {/* 3. CLI */}
+                {onConnectTerminal && (
+                  <button
+                    type="button"
+                    title={isEn ? 'Open CLI Terminal' : 'ترمینال و خط فرمان (CLI)'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onConnectTerminal(hoveredMountedDev.dev, rack);
+                    }}
+                    className="px-1.5 py-0.5 rounded hover:bg-purple-950 text-purple-300 hover:text-purple-100 border border-purple-800/60 flex items-center gap-0.5 text-[9.5px] font-medium transition cursor-pointer"
+                  >
+                    <Terminal className="w-2.5 h-2.5" />
+                    <span>CLI</span>
+                  </button>
+                )}
+
+                {/* 4. Port */}
+                {onInspectPorts && (
+                  <button
+                    type="button"
+                    title={isEn ? 'Inspect Physical Ports' : 'مشاهده و بررسی پورت‌ها (Port)'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onInspectPorts(hoveredMountedDev.dev, rack);
+                    }}
+                    className="px-1.5 py-0.5 rounded hover:bg-amber-950 text-amber-300 hover:text-amber-100 border border-amber-800/60 flex items-center gap-0.5 text-[9.5px] font-medium transition cursor-pointer"
+                  >
+                    <Layers className="w-2.5 h-2.5" />
+                    <span>Port</span>
+                  </button>
+                )}
+
+                {/* 5. Delete */}
+                {(onPromptRemoveDevice || onRemoveDevice) && (
+                  <button
+                    type="button"
+                    title={isEn ? 'Remove from Rack' : 'حذف از رک (Delete)'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onPromptRemoveDevice) {
+                        onPromptRemoveDevice(hoveredMountedDev.dev, rack);
+                      } else if (onRemoveDevice) {
+                        setLocalConfirmDeleteDev(hoveredMountedDev.dev);
+                      }
+                    }}
+                    className="p-1 rounded hover:bg-red-900/80 text-red-400 hover:text-red-200 transition cursor-pointer"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}

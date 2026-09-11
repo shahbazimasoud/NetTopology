@@ -10,9 +10,26 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.24.2';
+export const APP_VERSION = '1.25.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.25.0',
+    releaseDate: '2026-09-11',
+    type: 'minor',
+    title: 'اتصال کامل منوی هاور تجهیزات رک به مودال مشخصات انبار، ترمینال CLI، بررسی پورت‌ها و حذف ایمن',
+    title_en: 'Direct Rack Hover Actions: Inventory Edit Device Properties Modal, CLI Terminal, Port Inspector & Safe Removal',
+    changes: [
+      'اتصال مستقیم دکمه Edit Device Properties (مشخصات دستگاه) در منوی شناور هاور تجهیزات رک به مودال ویرایش مشخصات انبار تجهیزات شبکه (Network Equipment Inventory & Management).',
+      'افزودن امکان باز کردن ترمینال خط فرمان (CLI) و صفحه بررسی پورت‌ها (Port Inspector) مستقیماً از روی تجهیز در رک با دسترسی سریع.',
+      'یکپارچه‌سازی فرآیند حذف تجهیز از رک با مودال تایید حذف ایمن (Delete Confirmation Modal) و به‌روزرسانی هماهنگ استیت‌ها و نقشه.'
+    ],
+    changes_en: [
+      'Connected the Edit Device Properties button in the rack device hover menu directly to the Network Equipment Inventory & Management modal with full two-way state and configuration synchronization.',
+      'Enabled quick-launch access for CLI Terminal and Port Inspector directly from the mounted hardware device hover menu in rack cabinets.',
+      'Integrated safe deletion confirmation workflow for mounted rack devices, ensuring synchronized map and hardware updates.'
+    ]
+  },
   {
     version: '1.24.2',
     releaseDate: '2026-09-11',

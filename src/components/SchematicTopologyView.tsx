@@ -46,6 +46,8 @@ import {
 import {
   TopologyData,
   Device,
+  DeviceType,
+  DevicePlatform,
   TopologyLink,
   TopologyNode,
   CustomTopologyMap,
@@ -71,9 +73,11 @@ import { RackCabinetSvg } from './rack/RackCabinetSvg';
 import { TopologyStickyNote } from './rack/TopologyStickyNote';
 import { PhysicalNodeOnCanvas, convertNodeToHardwareDevice } from './rack/PhysicalNodeOnCanvas';
 import { DeleteConfirmModal, DeleteTarget } from './DeleteConfirmModal';
+import { EditDeviceModal } from './EditDeviceModal';
 
 interface SchematicTopologyViewProps {
   topology: TopologyData | null;
+  inventoryDevices?: Device[];
   loading: boolean;
   onRefresh: () => void;
   onScanCdpLldp: () => void;
@@ -160,6 +164,7 @@ function getLinkCurve(
 
 export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   topology,
+  inventoryDevices = [],
   loading,
   onRefresh,
   onScanCdpLldp,
@@ -302,6 +307,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const [selectedRackForHardware, setSelectedRackForHardware] = useState<string | undefined>(undefined);
   const [targetUForHardware, setTargetUForHardware] = useState<number | undefined>(undefined);
   const [editingHardwareDevice, setEditingHardwareDevice] = useState<MountedHardwareDevice | null>(null);
+  const [editingInventoryDevice, setEditingInventoryDevice] = useState<Device | null>(null);
   const [inspectingRack, setInspectingRack] = useState<CustomTopologyRack | null>(null);
   const [draggingRackId, setDraggingRackId] = useState<string | null>(null);
   const dragRackOffset = useRef({ offsetX: 0, offsetY: 0, startClientX: 0, startClientY: 0, moved: false });
@@ -616,11 +622,6 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     saveCustomMaps(newMaps);
   }, [currentCustomMap, customMaps, saveCustomMaps]);
 
-  const handleConfirmDeleteDevice = useCallback((deviceId: string) => {
-    handleRemoveDeviceFromCustomMap(deviceId);
-    setDeleteModalTarget(null);
-  }, [handleRemoveDeviceFromCustomMap]);
-
   const handleSaveHardware = useCallback((rackId: string, device: MountedHardwareDevice) => {
     if (!currentCustomMap) return;
     const updatedRacks = (currentCustomMap.racks || []).map((r) => {
@@ -768,13 +769,178 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   }, [topology?.nodes]);
 
   const allAvailableDevices: Device[] = useMemo(() => {
-    return topology?.nodes || localNodes || [];
-  }, [topology?.nodes, localNodes]);
+    const list: Device[] = [];
+    const seen = new Set<string>();
+
+    const add = (d: Device) => {
+      if (d && !seen.has(d.id)) {
+        seen.add(d.id);
+        list.push(d);
+      }
+    };
+
+    (topology?.nodes || []).forEach(add);
+    (localNodes || []).forEach(add);
+    (inventoryDevices || []).forEach(add);
+
+    return list;
+  }, [topology?.nodes, localNodes, inventoryDevices]);
 
   const getDeviceNameById = useCallback((id: string) => {
     const found = allAvailableDevices.find((d) => d.id === id);
     return found ? found.name : id;
   }, [allAvailableDevices]);
+
+  const handleConfirmDeleteDevice = useCallback(
+    (deviceId: string) => {
+      handleRemoveDeviceFromCustomMap(deviceId);
+      if (currentCustomMap && currentCustomMap.racks) {
+        currentCustomMap.racks.forEach((r) => {
+          if (r.devices?.some((d) => d.id === deviceId)) {
+            handleRemoveDeviceFromRack(r.id, deviceId);
+          }
+        });
+      }
+      setDeleteModalTarget(null);
+    },
+    [currentCustomMap, handleRemoveDeviceFromCustomMap, handleRemoveDeviceFromRack]
+  );
+
+  // Helper to find or synthesize a Device instance from a MountedHardwareDevice for inventory modal & operations
+  const resolveDeviceFromMounted = useCallback(
+    (mountedDev: MountedHardwareDevice, rack?: CustomTopologyRack): Device => {
+      const cleanId = mountedDev.id.replace(/^hw-/, '');
+      const found = allAvailableDevices.find(
+        (d) =>
+          d.id === mountedDev.id ||
+          d.id === cleanId ||
+          d.name.toLowerCase() === mountedDev.name.toLowerCase() ||
+          (mountedDev.ip && d.ip === mountedDev.ip)
+      );
+      if (found) return found;
+
+      // Synthesize fallback Device object matching Network Equipment Inventory format
+      const catStr = (mountedDev.category || '').toLowerCase();
+      const devType: DeviceType = catStr.includes('router')
+        ? 'router'
+        : catStr.includes('ap') || catStr.includes('access_point') || catStr.includes('wireless')
+        ? 'access_point'
+        : 'switch';
+
+      const brandLower = (mountedDev.brand || '').toLowerCase();
+      const devPlatform: DevicePlatform = brandLower.includes('cisco')
+        ? 'cisco_ios'
+        : brandLower.includes('mikrotik')
+        ? 'mikrotik_routeros'
+        : 'generic_linux';
+
+      const totalPorts = (mountedDev.networkCards || []).reduce((acc, card) => acc + (card.portCount || 0), 0) || 24;
+
+      return {
+        id: cleanId,
+        name: mountedDev.name,
+        ip: mountedDev.ip || '192.168.1.1',
+        platform: devPlatform,
+        connection_mode: 'ssh',
+        type: devType,
+        role: `${mountedDev.brand || ''} ${mountedDev.model || ''}`.trim() || 'Network Device',
+        model: mountedDev.model || '',
+        mac: '00:00:00:00:00:00',
+        building: '',
+        floor: '',
+        unit: '',
+        rack: rack?.name || '',
+        total_ports: totalPorts,
+        is_online: true,
+        cdp_enabled: true,
+        lldp_enabled: true,
+        snmp_community: 'public',
+      };
+    },
+    [allAvailableDevices]
+  );
+
+  const handleEditDeviceProperties = useCallback(
+    (device: MountedHardwareDevice, rack: CustomTopologyRack) => {
+      const resolved = resolveDeviceFromMounted(device, rack);
+      setEditingInventoryDevice(resolved);
+    },
+    [resolveDeviceFromMounted]
+  );
+
+  const handleSaveInventoryDevice = useCallback(
+    async (deviceId: string, updates: Partial<Device>) => {
+      try {
+        await updateDevice(deviceId, updates);
+      } catch (err) {
+        console.warn('Backend update failed, applying local state update', err);
+      }
+
+      // 1. Update in localNodes
+      setLocalNodes((prev) =>
+        prev.map((n) => (n.id === deviceId || n.id === `hw-${deviceId}` ? { ...n, ...updates } : n))
+      );
+
+      // 2. Update within any rack in currentCustomMap
+      if (currentCustomMap && currentCustomMap.racks) {
+        const updatedRacks = currentCustomMap.racks.map((r) => {
+          const updatedDevices = (r.devices || []).map((d) => {
+            if (d.id === deviceId || d.id === `hw-${deviceId}` || d.name === editingInventoryDevice?.name) {
+              return {
+                ...d,
+                name: updates.name || d.name,
+                model: updates.model || d.model,
+                ip: updates.ip || d.ip,
+              };
+            }
+            return d;
+          });
+          return { ...r, devices: updatedDevices };
+        });
+
+        const updatedMap: CustomTopologyMap = {
+          ...currentCustomMap,
+          racks: updatedRacks,
+          updatedAt: new Date().toISOString(),
+        };
+        saveCustomMaps(customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m)));
+      }
+
+      setEditingInventoryDevice(null);
+      if (onRefresh) onRefresh();
+    },
+    [currentCustomMap, customMaps, editingInventoryDevice, onRefresh, saveCustomMaps]
+  );
+
+  const handleConnectTerminalFromRack = useCallback(
+    (dev: MountedHardwareDevice, rack: CustomTopologyRack) => {
+      if (onConnectTerminal) {
+        const resolved = resolveDeviceFromMounted(dev, rack);
+        onConnectTerminal(resolved);
+      }
+    },
+    [onConnectTerminal, resolveDeviceFromMounted]
+  );
+
+  const handleInspectPortsFromRack = useCallback(
+    (dev: MountedHardwareDevice, rack: CustomTopologyRack) => {
+      if (onInspectPorts) {
+        const resolved = resolveDeviceFromMounted(dev, rack);
+        onInspectPorts(resolved);
+      }
+    },
+    [onInspectPorts, resolveDeviceFromMounted]
+  );
+
+  const handlePromptRemoveHardwareDevice = useCallback((device: MountedHardwareDevice) => {
+    setDeleteModalTarget({
+      type: 'device',
+      id: device.id,
+      name: device.name,
+      ip: device.ip,
+      model: device.model,
+    });
+  }, []);
 
   // Group links by pair of connected devices to separate overlapping cables
   const defaultLinkGroups = useMemo(() => {
@@ -3293,6 +3459,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                         onDeleteRack={handlePromptDeleteRack}
                         onEditDeviceNic={handleEditDeviceNic}
                         onEditSpecs={handleEditDeviceSpecs}
+                        onEditDeviceProperties={handleEditDeviceProperties}
+                        onConnectTerminal={handleConnectTerminalFromRack}
+                        onInspectPorts={handleInspectPortsFromRack}
+                        onPromptRemoveDevice={handlePromptRemoveHardwareDevice}
                         onMoveDevice={handleMoveDeviceInRack}
                         onRemoveDevice={handleRemoveDeviceFromRack}
                       />
@@ -5359,9 +5529,23 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
           onOpenAddHardware={handleOpenAddHardware}
           onEditDeviceNic={handleEditDeviceNic}
           onEditSpecs={handleEditDeviceSpecs}
+          onEditDeviceProperties={handleEditDeviceProperties}
+          onConnectTerminal={handleConnectTerminalFromRack}
+          onInspectPorts={handleInspectPortsFromRack}
+          onPromptRemoveDevice={handlePromptRemoveHardwareDevice}
           onMoveDevice={handleMoveDeviceInRack}
           onRemoveDevice={handleRemoveDeviceFromRack}
           onDeleteRack={handleDeleteRack}
+        />
+      )}
+
+      {/* Network Equipment Inventory - Edit Device Properties Modal */}
+      {editingInventoryDevice && (
+        <EditDeviceModal
+          isOpen={!!editingInventoryDevice}
+          device={editingInventoryDevice}
+          onClose={() => setEditingInventoryDevice(null)}
+          onSave={handleSaveInventoryDevice}
         />
       )}
 

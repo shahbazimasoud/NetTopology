@@ -27,6 +27,11 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
   // Unique ID prefix for gradients and patterns
   const devUid = `dev-${device.id.replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
+  const truncate = (str?: string, max: number = 16) => {
+    if (!str) return '';
+    return str.length > max ? `${str.slice(0, max - 1)}…` : str;
+  };
+
   // ===================== VECTOR HELPERS =====================
 
   // Realistic RJ45 Jack with metallic shielding, 8 gold pins, and upper/lower dual status LEDs
@@ -376,10 +381,10 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
               </text>
               {/* Model & Generation Typography */}
               <text x="24" y="9.5" fill="#f8fafc" fontSize="5.8" fontWeight="bold" fontFamily="sans-serif">
-                {device.model}
+                {truncate(device.model, 16)}
               </text>
               <text x="24" y="16.5" fill="#01a982" fontSize="5" fontWeight="bold" fontFamily="monospace">
-                {device.generation || 'Gen10 Plus'}
+                {truncate(device.generation || 'Gen10 Plus', 14)}
               </text>
             </g>
           </g>
@@ -413,10 +418,10 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
                 ASUS
               </text>
               <text x="36" y="10" fill="#f8fafc" fontSize="5.5" fontWeight="bold" fontFamily="sans-serif">
-                {device.model}
+                {truncate(device.model, 14)}
               </text>
               <text x="8" y="17" fill="#94a3b8" fontSize="4.5" fontFamily="monospace">
-                {device.generation || 'Rack Server'}
+                {truncate(device.generation || 'Rack Server', 14)}
               </text>
             </g>
           </g>
@@ -452,10 +457,10 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
                 CISCO
               </text>
               <text x="32" y="9.5" fill="#ffffff" fontSize="5.5" fontWeight="bold" fontFamily="sans-serif">
-                UCS {device.model}
+                UCS {truncate(device.model, 11)}
               </text>
               <text x="6" y="16.5" fill="#38bdf8" fontSize="4.5" fontFamily="monospace">
-                {device.generation || 'M5 SmartFabric'}
+                {truncate(device.generation || 'M5 SmartFabric', 14)}
               </text>
             </g>
           </g>
@@ -533,7 +538,7 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
             <g transform={`translate(${mainW - 70}, 3)`}>
               <rect x="0" y="0" width="66" height={h - 6} rx="1" fill="#090d16" stroke="#475569" strokeWidth="0.6" />
               <text x="5" y="8" fill="#f8fafc" fontSize="5.5" fontWeight="bold" fontFamily="sans-serif">
-                {device.model}
+                {truncate(device.model, 14)}
               </text>
               <text x="5" y="16" fill="#38bdf8" fontSize="4.5" fontFamily="monospace">
                 Gigabit PoE+
@@ -576,7 +581,7 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
             </g>
             <g transform={`translate(${mainW - 80}, 4)`}>
               <text x="0" y="8" fill="#ffffff" fontSize="6" fontWeight="bold" fontFamily="sans-serif">
-                {device.model}
+                {truncate(device.model, 14)}
               </text>
               <text x="0" y="16" fill="#38bdf8" fontSize="4.5" fontFamily="monospace">
                 Integrated Services
@@ -632,7 +637,7 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
             {/* Model Badge */}
             <g transform={`translate(${mainW - 70}, 4)`}>
               <text x="0" y="8" fill="#0f172a" fontSize="6" fontWeight="bold" fontFamily="sans-serif">
-                {device.model}
+                {truncate(device.model, 14)}
               </text>
               <text x="0" y="16" fill="#0284c7" fontSize="4.5" fontFamily="monospace">
                 Cloud Core Router
@@ -686,7 +691,7 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
             {/* FortiGate Model Badge */}
             <g transform={`translate(${mainW - 80}, 4)`}>
               <text x="0" y="9" fill="#0f172a" fontSize="6.5" fontWeight="bold" fontFamily="sans-serif">
-                {device.model}
+                {truncate(device.model, 14)}
               </text>
               <text x="0" y="17" fill="#e11d48" fontSize="4.5" fontWeight="bold" fontFamily="monospace">
                 Security Fabric
@@ -722,7 +727,7 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
             </g>
             <g transform={`translate(${mainW - 80}, 5)`}>
               <text x="0" y="8" fill="#ffffff" fontSize="6" fontWeight="bold" fontFamily="sans-serif">
-                {device.model}
+                {truncate(device.model, 14)}
               </text>
             </g>
           </g>
@@ -756,7 +761,7 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
                     EMC
                   </text>
                   <text x="24" y={(h - 8) / 2 - 1} fill="#ffffff" fontSize="5.5" fontWeight="bold" fontFamily="sans-serif">
-                    {device.model}
+                    {truncate(device.model, 14)}
                   </text>
                   <text x="24" y={(h - 8) / 2 + 6} fill="#38bdf8" fontSize="4" fontFamily="monospace">
                     All-Flash SAN
@@ -769,7 +774,7 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
                     HPE
                   </text>
                   <text x="22" y="9" fill="#ffffff" fontSize="5.5" fontWeight="bold" fontFamily="sans-serif">
-                    {device.model}
+                    {truncate(device.model, 14)}
                   </text>
                   <text x="22" y="16" fill="#01a982" fontSize="4.5" fontFamily="monospace">
                     MSA Storage
@@ -814,7 +819,7 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
             </g>
             <g transform={`translate(${mainW - 65}, 4)`}>
               <text x="0" y="8" fill="#f8fafc" fontSize="5.5" fontWeight="bold" fontFamily="sans-serif">
-                {device.model}
+                {truncate(device.model, 14)}
               </text>
               <text x="0" y="16" fill="#38bdf8" fontSize="4.5" fontFamily="monospace">
                 QuTS Enterprise
@@ -1127,7 +1132,7 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
             {/* Shelf Badge */}
             <g transform={`translate(${mainW - 75}, 3)`}>
               <text x="0" y={h / 2 + 1} fill="#94a3b8" fontSize="4.2" fontWeight="bold" fontFamily="monospace">
-                {device.name}
+                {truncate(device.name, 16)}
               </text>
             </g>
           </g>
@@ -1142,7 +1147,7 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
             <g transform="translate(10, 4)">
               <circle cx="5" cy="5" r="2.5" fill="#22c55e" />
               <text x="12" y="7" fill="#ffffff" fontSize="5.5" fontWeight="bold" fontFamily="sans-serif">
-                {device.brand} {device.model}
+                {truncate(`${device.brand} ${device.model}`, 24)}
               </text>
             </g>
           </g>
@@ -1156,7 +1161,7 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
       width={w}
       height={h}
       viewBox={`0 0 ${w} ${h}`}
-      className={`select-none overflow-visible transition-all ${
+      className={`select-none overflow-hidden transition-all ${
         isHighlighted ? 'ring-2 ring-cyan-400 filter drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]' : ''
       }`}
       onClick={onSelect}
