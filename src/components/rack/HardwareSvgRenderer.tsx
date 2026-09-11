@@ -1059,6 +1059,81 @@ export const HardwareSvgRenderer: React.FC<HardwareSvgRendererProps> = ({
         );
       }
 
+      // 18. Fiber Optic ODF Patch Panel (پچ پنل فیبر نوری)
+      case 'fiber_odf': {
+        return (
+          <g transform="translate(12, 0)">
+            <rect x="0" y="0" width={mainW} height={h} fill="#0d1520" stroke="#334155" strokeWidth="1" />
+            {/* Cable Tray & Splice cassette area */}
+            <rect x="6" y="3" width={mainW * 0.28} height={h - 6} rx="2" fill="#090d16" stroke="#1e293b" strokeWidth="0.8" />
+            <text x={12} y={11} fill="#38bdf8" fontSize="4.5" fontWeight="bold" fontFamily="monospace">
+              OPTICAL FIBER ODF
+            </text>
+            <text x={12} y={h - 6} fill="#64748b" fontSize="3.5" fontFamily="monospace">
+              {device.generation || 'LC / SC DUPLEX'}
+            </text>
+
+            {/* Fiber Optic Adapters Grid */}
+            <g transform={`translate(${mainW * 0.32}, 3)`}>
+              {Array.from({ length: 12 }).map((_, idx) => (
+                <g key={idx} transform={`translate(${idx * 16}, 0)`}>
+                  <rect x="0" y="1" width="13" height={h - 8} rx="1" fill="#0284c7" stroke="#38bdf8" strokeWidth="0.6" />
+                  <rect x="2.5" y="4" width="3.5" height={h - 14} rx="0.5" fill="#020617" />
+                  <rect x="7" y="4" width="3.5" height={h - 14} rx="0.5" fill="#020617" />
+                  <text x="6.5" y={h - 3} fill="#94a3b8" fontSize="2.8" textAnchor="middle" fontFamily="monospace">
+                    {idx * 2 + 1}-{idx * 2 + 2}
+                  </text>
+                </g>
+              ))}
+            </g>
+
+            {/* Brand & Danger Laser Warning */}
+            <g transform={`translate(${mainW - 55}, 4)`}>
+              <rect x="0" y="0" width="48" height={h - 8} rx="1.5" fill="#451a03" stroke="#f59e0b" strokeWidth="0.7" />
+              <text x="24" y={8} fill="#fbbf24" fontSize="3.8" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">
+                CLASS 1 LASER
+              </text>
+              <text x="24" y={h - 6} fill="#fef3c7" fontSize="3.2" textAnchor="middle" fontFamily="monospace">
+                {device.brand}
+              </text>
+            </g>
+          </g>
+        );
+      }
+
+      // 19. Rack Shelf (سینی ثابت و متحرک رک)
+      case 'rack_shelf': {
+        const isSliding = device.model.toLowerCase().includes('sliding');
+        return (
+          <g transform="translate(12, 0)">
+            <rect x="0" y="0" width={mainW} height={h} fill="#111827" stroke="#475569" strokeWidth="1" />
+            {/* Perforated Ventilation Holes Pattern */}
+            <g transform="translate(10, 4)">
+              {Array.from({ length: 18 }).map((_, col) => (
+                <g key={col} transform={`translate(${col * 15}, 0)`}>
+                  <rect x="0" y="2" width="10" height={h - 12} rx="1" fill="#030712" stroke="#1f2937" strokeWidth="0.5" />
+                  <circle cx="5" cy={h / 2 - 2} r="1.5" fill="#374151" />
+                </g>
+              ))}
+            </g>
+
+            {/* Handle if Sliding Shelf */}
+            {isSliding && (
+              <g transform={`translate(${mainW / 2 - 25}, ${h - 7})`}>
+                <rect x="0" y="0" width="50" height="4" rx="2" fill="#cbd5e1" stroke="#64748b" strokeWidth="0.8" />
+              </g>
+            )}
+
+            {/* Shelf Badge */}
+            <g transform={`translate(${mainW - 75}, 3)`}>
+              <text x="0" y={h / 2 + 1} fill="#94a3b8" fontSize="4.2" fontWeight="bold" fontFamily="monospace">
+                {device.name}
+              </text>
+            </g>
+          </g>
+        );
+      }
+
       // 18. Default / Industrial IPC Rackmount Chassis
       default: {
         return (

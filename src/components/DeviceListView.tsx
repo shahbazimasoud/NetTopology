@@ -26,6 +26,7 @@ import { Device, DeviceType } from '../types';
 import { useLanguage } from '../i18n';
 import { updateDevice } from '../services/api';
 import { EditDeviceModal } from './EditDeviceModal';
+import { DeleteConfirmModal } from './DeleteConfirmModal';
 
 interface DeviceListViewProps {
   devices: Device[];
@@ -62,6 +63,7 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
   const [pingingId, setPingingId] = useState<string | null>(null);
   const [writingId, setWritingId] = useState<string | null>(null);
   const [internalEditingDevice, setInternalEditingDevice] = useState<Device | null>(null);
+  const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<{
     id: string;
     top?: number;
@@ -697,12 +699,7 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
                   onClick={() => {
                     const dev = menuAnchor.device;
                     setMenuAnchor(null);
-                    const confirmMsg = isEn
-                      ? `Are you sure you want to remove device "${dev.name}" from the inventory?`
-                      : `آیا از حذف تجهیز «${dev.name}» از لیست اطمینان دارید؟`;
-                    if (window.confirm(confirmMsg)) {
-                      onDeleteDevice(dev.id);
-                    }
+                    setDeviceToDelete(dev);
                   }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition ${
                     isRtl ? 'text-right' : 'text-left'
@@ -730,6 +727,28 @@ export const DeviceListView: React.FC<DeviceListViewProps> = ({
           }}
         />
       )}
+
+      {/* Safe Deletion Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={!!deviceToDelete}
+        onClose={() => setDeviceToDelete(null)}
+        target={
+          deviceToDelete
+            ? {
+                type: 'device',
+                id: deviceToDelete.id,
+                name: deviceToDelete.name,
+                ip: deviceToDelete.ip,
+                role: deviceToDelete.role,
+                model: deviceToDelete.model,
+              }
+            : null
+        }
+        onConfirmDeleteDevice={async (id) => {
+          await onDeleteDevice(id);
+          setDeviceToDelete(null);
+        }}
+      />
     </div>
   );
 };

@@ -10,9 +10,36 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.21.0';
+export const APP_VERSION = '1.22.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.22.0',
+    releaseDate: '2026-09-11',
+    type: 'minor',
+    title: 'مودال تایید حذف هوشمند رک و تجهیزات، تفکیک کامل نمای کارتی و فیزیکی، رفع تداخل لایه‌ها (Z-Index) و محاسبه توان مصرفی رک',
+    title_en: 'Smart Deletion Confirmation Modal, Strict Global Card vs Physical Mode Separation, Z-Index Layering Fix, & Rack Power Wattage Metrics',
+    changes: [
+      'پیاده‌سازی مودال تایید حذف امن (DeleteConfirmModal) برای رک‌ها و تجهیزات با حذف فوری window.confirm پیشین.',
+      'افزودن امکان انتخاب سرنوشت تجهیزات مستقر در رک هنگام حذف رک: حذف کامل همراه رک یا حفظ تجهیزات و انتقال آنها به بوم نقشه.',
+      'یکپارچه‌سازی سیستم حذف امن در تمام بخش‌های برنامه از جمله لیست موجودی تجهیزات (DeviceListView) و کارت‌های روی نقشه.',
+      'تفکیک منطقی و ساختاری کامل بین نمای کارتی (Card Mode) و نمای فیزیکی (Physical Mode): در نمای کارتی رک‌ها و شاسی‌های فیزیکی مخفی و کابل‌ها و پورت‌ها نمایش داده می‌شوند؛ در نمای فیزیکی کارت‌ها و کابل‌ها مخفی شده، تجهیزات داخل رک قرار گرفته و تنها قطعات نصب‌نشده روی بوم جهت مانت نمایش داده می‌شوند.',
+      'سازگاری هوشمند نوار ابزار بالا با نمای فعال: نمایش دکمه‌های «افزودن دیوایس» و «کابل‌کشی» در نمای کارتی، و دکمه‌های «افزودن رک» و «نصب سخت‌افزار» در نمای فیزیکی.',
+      'حل کامل مشکل لایه‌بندی و اولویت بصری (Z-Index): هاور و درگ کردن هر دیوایس آن را در بالاترین لایه بصری SVG (z-index 9999) قرار داده و مانع از افتادن تول‌تیپ یا کادر زیر رک یا سایر کارت‌ها می‌شود.',
+      'محاسبه و نمایش لحظه‌ای توان مصرفی مجموع تجهیزات رک (بر حسب وات و کیلووات) به همراه تعداد پاور سرورها در بنر بالای هر کابینت رک.',
+      'حفظ دسترسی و نمایش پایدار یادداشت‌های چسبان (Sticky Notes) در هر دو حالت نمای کارتی و فیزیکی.'
+    ],
+    changes_en: [
+      'Implemented dedicated DeleteConfirmModal for racks and devices, completely eliminating abrupt window.confirm prompts.',
+      'Added smart handling for mounted rack devices during rack deletion: choose to cascade delete or preserve devices by releasing them to the canvas.',
+      'Unified safe deletion workflow across both the canvas topology view and the inventory list view (DeviceListView).',
+      'Engineered strict global mode separation: Card Mode displays cards, ports, and inter-device cabling while hiding racks; Physical Mode hides cards and cables, places mounted hardware inside racks, and only leaves unmounted hardware on canvas for rack elevation.',
+      'Context-aware toolbar controls: "Add Device" and "Cable" are displayed exclusively in Card Mode, while "Add Rack" and "Install Hardware" appear in Physical Mode.',
+      'Completely resolved SVG stacking and Z-index layering: hovering or dragging any device hoists it to the top of the SVG stack (z-index 9999), preventing it from clipping behind racks or adjacent cards.',
+      'Real-time power consumption aggregation (Watts and kW) with redundant PSU counters in the rack cabinet top status header.',
+      'Maintained persistent visibility and positioning for draggable Sticky Notes across both Card and Physical view modes.'
+    ]
+  },
   {
     version: '1.21.0',
     releaseDate: '2026-09-11',

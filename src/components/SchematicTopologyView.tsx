@@ -70,6 +70,7 @@ import { RackElevationInspectorModal } from './rack/RackElevationInspectorModal'
 import { RackCabinetSvg } from './rack/RackCabinetSvg';
 import { TopologyStickyNote } from './rack/TopologyStickyNote';
 import { PhysicalNodeOnCanvas, convertNodeToHardwareDevice } from './rack/PhysicalNodeOnCanvas';
+import { DeleteConfirmModal, DeleteTarget } from './DeleteConfirmModal';
 
 interface SchematicTopologyViewProps {
   topology: TopologyData | null;
@@ -305,10 +306,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const [draggingRackId, setDraggingRackId] = useState<string | null>(null);
   const dragRackOffset = useRef({ offsetX: 0, offsetY: 0, startClientX: 0, startClientY: 0, moved: false });
 
-  // Deletion Confirmation Modal States (Rack, Canvas Device, Hardware Device)
-  const [rackToDelete, setRackToDelete] = useState<CustomTopologyRack | null>(null);
-  const [deviceToDelete, setDeviceToDelete] = useState<{ id: string; name: string; ip?: string } | null>(null);
-  const [hardwareDeviceToDelete, setHardwareDeviceToDelete] = useState<{ rackId: string; device: MountedHardwareDevice } | null>(null);
+  // Deletion Confirmation Modal State
+  const [deleteModalTarget, setDeleteModalTarget] = useState<DeleteTarget | null>(null);
 
   // Active hover tracking for topmost z-index layering on canvas
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -512,17 +511,114 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
   const handleDeleteRack = useCallback((rackId: string) => {
     if (!currentCustomMap) return;
+    const targetRack = currentCustomMap.racks?.find((r) => r.id === rackId);
+    if (!targetRack) return;
+
+    // Open safe delete confirmation modal
+    setDeleteModalTarget({
+      type: 'rack',
+      id: targetRack.id,
+      name: targetRack.name,
+      units: targetRack.units,
+      devices: targetRack.devices || [],
+    });
+  }, [currentCustomMap]);
+
+  const handlePromptDeleteRack = useCallback((rackId: string) => {
+    handleDeleteRack(rackId);
+  }, [handleDeleteRack]);
+
+  const handlePromptDeleteDevice = useCallback((node: TopologyNode) => {
+    setDeleteModalTarget({
+      type: 'device',
+      id: node.id,
+      name: node.name,
+      ip: node.ip,
+      role: node.role,
+      model: node.model,
+    });
+  }, []);
+
+  const handleConfirmDeleteRack = useCallback((rackId: string, deleteMountedDevices: boolean) => {
+    if (!currentCustomMap) return;
+    const targetRack = currentCustomMap.racks?.find((r) => r.id === rackId);
+    if (!targetRack) return;
+
+    let updatedDeviceIds = [...(currentCustomMap.deviceIds || [])];
+    let updatedPositions = { ...(currentCustomMap.devicePositions || {}) };
+    let updatedLinks = [...(currentCustomMap.links || [])];
+
+    if (deleteMountedDevices) {
+      const rackDeviceIds = new Set<string>();
+      (targetRack.devices || []).forEach((d) => {
+        rackDeviceIds.add(d.id);
+        rackDeviceIds.add(d.id.replace(/^hw-/, ''));
+      });
+
+      updatedDeviceIds = updatedDeviceIds.filter((id) => !rackDeviceIds.has(id));
+      updatedLinks = updatedLinks.filter(
+        (l) => !rackDeviceIds.has(l.sourceDeviceId) && !rackDeviceIds.has(l.targetDeviceId)
+      );
+      rackDeviceIds.forEach((id) => {
+        delete updatedPositions[id];
+      });
+    } else {
+      // Keep devices in map as canvas devices
+      (targetRack.devices || []).forEach((dev, idx) => {
+        const origId = dev.id.replace(/^hw-/, '');
+        if (!updatedDeviceIds.includes(origId)) {
+          updatedDeviceIds.push(origId);
+        }
+        if (!updatedPositions[origId]) {
+          updatedPositions[origId] = {
+            x: targetRack.x + 460 + (idx % 2) * 260,
+            y: targetRack.y + Math.floor(idx / 2) * 160,
+          };
+        }
+      });
+    }
+
     const updatedRacks = (currentCustomMap.racks || []).filter((r) => r.id !== rackId);
     const updatedMap: CustomTopologyMap = {
       ...currentCustomMap,
       racks: updatedRacks,
+      deviceIds: updatedDeviceIds,
+      devicePositions: updatedPositions,
+      links: updatedLinks,
       updatedAt: new Date().toISOString(),
     };
     saveCustomMaps(customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m)));
     if (inspectingRack && inspectingRack.id === rackId) {
       setInspectingRack(null);
     }
+    setDeleteModalTarget(null);
   }, [currentCustomMap, customMaps, inspectingRack, saveCustomMaps]);
+
+  const handleRemoveDeviceFromCustomMap = useCallback((deviceId: string) => {
+    if (!currentCustomMap) return;
+    const updatedDeviceIds = currentCustomMap.deviceIds.filter((id) => id !== deviceId);
+    const updatedLinks = (currentCustomMap.links || []).filter(
+      (l) => l.sourceDeviceId !== deviceId && l.targetDeviceId !== deviceId
+    );
+    const updatedPositions = { ...currentCustomMap.devicePositions };
+    delete updatedPositions[deviceId];
+
+    const updatedMap: CustomTopologyMap = {
+      ...currentCustomMap,
+      deviceIds: updatedDeviceIds,
+      links: updatedLinks,
+      devicePositions: updatedPositions,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const newMaps = customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m));
+    saveCustomMaps(newMaps);
+  }, [currentCustomMap, customMaps, saveCustomMaps]);
+
+  const handleConfirmDeleteDevice = useCallback((deviceId: string) => {
+    handleRemoveDeviceFromCustomMap(deviceId);
+    setDeleteModalTarget(null);
+  }, [handleRemoveDeviceFromCustomMap]);
 
   const handleSaveHardware = useCallback((rackId: string, device: MountedHardwareDevice) => {
     if (!currentCustomMap) return;
@@ -788,27 +884,6 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
         [device.id]: mode,
       },
       racks: updatedRacks,
-      updatedAt: new Date().toISOString(),
-    };
-
-    const newMaps = customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m));
-    saveCustomMaps(newMaps);
-  };
-
-  const handleRemoveDeviceFromCustomMap = (deviceId: string) => {
-    if (!currentCustomMap) return;
-    const updatedDeviceIds = currentCustomMap.deviceIds.filter((id) => id !== deviceId);
-    const updatedLinks = (currentCustomMap.links || []).filter(
-      (l) => l.sourceDeviceId !== deviceId && l.targetDeviceId !== deviceId
-    );
-    const updatedPositions = { ...currentCustomMap.devicePositions };
-    delete updatedPositions[deviceId];
-
-    const updatedMap: CustomTopologyMap = {
-      ...currentCustomMap,
-      deviceIds: updatedDeviceIds,
-      links: updatedLinks,
-      devicePositions: updatedPositions,
       updatedAt: new Date().toISOString(),
     };
 
@@ -2573,52 +2648,62 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     <MousePointer className="w-3.5 h-3.5 text-white" />
                     <span className="text-white font-medium" style={{ color: '#ffffff' }}>{t('topology_tool_select')}</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTool('cable');
-                      setCableWorkflow({ step: 'idle', sourceDevice: null, sourcePort: null, targetDevice: null, targetPort: null });
-                    }}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
-                      activeTool === 'cable'
-                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs font-bold animate-pulse'
-                        : 'text-white hover:text-white hover:bg-white/15'
-                    }`}
-                  >
-                    <Cable className="w-3.5 h-3.5 text-white" />
-                    <span className="text-white font-medium" style={{ color: '#ffffff' }}>{t('topology_tool_cable')}</span>
-                  </button>
+                  {globalDeviceViewMode === 'card' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTool('cable');
+                        setCableWorkflow({ step: 'idle', sourceDevice: null, sourcePort: null, targetDevice: null, targetPort: null });
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
+                        activeTool === 'cable'
+                          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs font-bold animate-pulse'
+                          : 'text-white hover:text-white hover:bg-white/15'
+                      }`}
+                    >
+                      <Cable className="w-3.5 h-3.5 text-white" />
+                      <span className="text-white font-medium" style={{ color: '#ffffff' }}>{t('topology_tool_cable')}</span>
+                    </button>
+                  )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsAddDeviceOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-medium shadow-xs transition active:scale-95 text-xs"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{t('topology_tool_add_device')}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsAddRackOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium shadow-xs transition active:scale-95 text-xs"
-                  title={isEn ? "Add standard datacenter rack (16U to 44U)" : "افزودن رک استاندارد دیتا سنتر (16U تا 44U)"}
-                >
-                  <Box className="w-3.5 h-3.5" />
-                  <span>{isEn ? 'Add Rack' : 'افزودن رک (Rack)'}</span>
-                </button>
-
-                {(currentCustomMap.racks?.length || 0) > 0 && (
+                {/* Add Device Button - shown in Card view mode */}
+                {globalDeviceViewMode === 'card' && (
                   <button
                     type="button"
-                    onClick={() => handleOpenAddHardware()}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium shadow-xs transition active:scale-95 text-xs"
-                    title={isEn ? "Install HPE/Asus/Cisco server, switch, router, storage, patch panel in rack" : "نصب سرور HPE/Asus/Cisco، سوییچ، روتر، استوریج، پچ پنل و کیبل منیجمنت در رک"}
+                    onClick={() => setIsAddDeviceOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-medium shadow-xs transition active:scale-95 text-xs"
                   >
-                    <Server className="w-3.5 h-3.5" />
-                    <span>{isEn ? 'Install Hardware' : 'نصب سخت‌افزار'}</span>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{t('topology_tool_add_device')}</span>
                   </button>
+                )}
+
+                {/* Add Rack & Install Hardware - shown strictly in Physical view mode */}
+                {globalDeviceViewMode === 'physical' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddRackOpen(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium shadow-xs transition active:scale-95 text-xs"
+                      title={isEn ? "Add standard datacenter rack (16U to 44U)" : "افزودن رک استاندارد دیتا سنتر (16U تا 44U)"}
+                    >
+                      <Box className="w-3.5 h-3.5" />
+                      <span>{isEn ? 'Add Rack' : 'افزودن رک (Rack)'}</span>
+                    </button>
+
+                    {(currentCustomMap.racks?.length || 0) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenAddHardware()}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium shadow-xs transition active:scale-95 text-xs"
+                        title={isEn ? "Install HPE/Asus/Cisco server, switch, router, storage, patch panel in rack" : "نصب سرور HPE/Asus/Cisco، سوییچ، روتر، استوریج، پچ پنل و کیبل منیجمنت در رک"}
+                      >
+                        <Server className="w-3.5 h-3.5" />
+                        <span>{isEn ? 'Install Hardware' : 'نصب سخت‌افزار'}</span>
+                      </button>
+                    )}
+                  </>
                 )}
 
                 {/* Global Device Display Mode: Card (Cabling) vs Physical (Chassis/Rackmount) */}
@@ -2638,7 +2723,12 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setGlobalDeviceViewMode('physical')}
+                    onClick={() => {
+                      setGlobalDeviceViewMode('physical');
+                      if (activeTool === 'cable') {
+                        setActiveTool('select');
+                      }
+                    }}
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
                       globalDeviceViewMode === 'physical'
                         ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs font-semibold'
@@ -2814,9 +2904,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                   transition: isPanning || draggingNodeId ? 'none' : 'transform 0.12s ease-out',
                 }}
               >
-              {/* Draw Topology Connection Links */}
-              {activeMapId === 'default' ? (
-                topology?.links.map((link) => {
+              {/* Draw Topology Connection Links - only visible in Card view mode */}
+              {globalDeviceViewMode === 'card' && (
+                activeMapId === 'default' ? (
+                  topology?.links.map((link) => {
                   const sourcePos = nodePositions.get(link.source);
                   const targetPos = nodePositions.get(link.target);
                   if (!sourcePos || !targetPos) return null;
@@ -3134,7 +3225,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     </g>
                   );
                 })
-              )}
+              ))}
 
               {/* Custom Map Empty State within Canvas */}
               {activeMapId !== 'default' && filteredNodes.length === 0 && (currentCustomMap?.racks?.length || 0) === 0 && (
@@ -3173,8 +3264,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                 </foreignObject>
               )}
 
-              {/* Draw Custom Map Racks on Canvas */}
-              {activeMapId !== 'default' && currentCustomMap?.racks && currentCustomMap.racks.map((rack) => {
+              {/* Draw Custom Map Racks on Canvas - strictly visible in Physical view mode */}
+              {activeMapId !== 'default' && globalDeviceViewMode === 'physical' && currentCustomMap?.racks && currentCustomMap.racks.map((rack) => {
                 const isBeingDragged = draggingRackId === rack.id;
                 const rackHeight = 52 + rack.units * 28 + 40;
                 return (
@@ -3198,7 +3289,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                         onToggleViewMode={handleToggleRackViewMode}
                         onOpenAddHardware={handleOpenAddHardware}
                         onInspectRack={(r) => setInspectingRack(r)}
-                        onDeleteRack={handleDeleteRack}
+                        onDeleteRack={handlePromptDeleteRack}
                         onEditDeviceNic={handleEditDeviceNic}
                         onEditSpecs={handleEditDeviceSpecs}
                         onMoveDevice={handleMoveDeviceInRack}
@@ -3210,54 +3301,88 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
               })}
 
               {/* Draw Nodes on Canvas */}
-              {filteredNodes.map((node) => {
-                const pos = nodePositions.get(node.id) || { x: 100, y: 100 };
-                const isSelected = selectedNodeId === node.id;
-                const isBeingDragged = draggingNodeId === node.id;
-                const isOnline = node.is_online;
-                const isCablingSource = activeTool === 'cable' && cableWorkflow.sourceDevice?.id === node.id;
-                const isNodeMikroTik = isMikroTikDevice(node);
-                const displayMode = getDeviceDisplayMode(node.id);
+              {(() => {
+                const racks = currentCustomMap?.racks || [];
+                const nodesToRender = globalDeviceViewMode === 'physical'
+                  ? filteredNodes.filter((node) => {
+                      // In physical mode, devices mounted inside any rack are displayed inside that rack cabinet!
+                      const isMounted = racks.some((r) =>
+                        (r.devices || []).some(
+                          (d) => d.id === node.id || d.id === `hw-${node.id}` || d.name === node.name
+                        )
+                      );
+                      return !isMounted;
+                    })
+                  : filteredNodes;
 
-                if (displayMode === 'physical') {
+                // Sort nodes so hovered, dragged, or selected nodes are rendered LAST (top of SVG stack)
+                const sortedNodes = [...nodesToRender].sort((a, b) => {
+                  if (a.id === hoveredNodeId || a.id === draggingNodeId) return 1;
+                  if (b.id === hoveredNodeId || b.id === draggingNodeId) return -1;
+                  if (a.id === selectedNodeId) return 1;
+                  if (b.id === selectedNodeId) return -1;
+                  return 0;
+                });
+
+                return sortedNodes.map((node) => {
+                  const pos = nodePositions.get(node.id) || { x: 100, y: 100 };
+                  const isSelected = selectedNodeId === node.id;
+                  const isBeingDragged = draggingNodeId === node.id;
+                  const isHovered = hoveredNodeId === node.id;
+                  const isOnline = node.is_online;
+                  const isCablingSource = activeTool === 'cable' && cableWorkflow.sourceDevice?.id === node.id;
+                  const isNodeMikroTik = isMikroTikDevice(node);
+                  const displayMode = globalDeviceViewMode;
+
+                  if (displayMode === 'physical') {
+                    return (
+                      <foreignObject
+                        key={node.id}
+                        x={pos.x}
+                        y={pos.y}
+                        width="380"
+                        height="240"
+                        className={`overflow-visible interactive-node ${isHovered || isBeingDragged ? 'z-50' : 'z-20'}`}
+                        style={{
+                          overflow: 'visible',
+                          zIndex: isHovered || isBeingDragged ? 9999 : isSelected ? 80 : 20,
+                        }}
+                        onMouseEnter={() => setHoveredNodeId(node.id)}
+                        onMouseLeave={() => setHoveredNodeId((curr) => (curr === node.id ? null : curr))}
+                      >
+                        <PhysicalNodeOnCanvas
+                          node={node}
+                          isEn={isEn}
+                          isRtl={isRtl}
+                          isBeingDragged={isBeingDragged}
+                          isSelected={isSelected}
+                          racks={currentCustomMap?.racks || []}
+                          onToggleToCardView={() => setGlobalDeviceViewMode('card')}
+                          onMountToRack={(rackId, startU) => handleMountCanvasNodeToRack(node, rackId, startU)}
+                          onUnmountFromRack={handleRemoveDeviceFromRack}
+                          onInspectRack={(rack) => setInspectingRack(rack)}
+                          onRemoveFromMap={activeMapId !== 'default' ? () => handlePromptDeleteDevice(node) : undefined}
+                          onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
+                        />
+                      </foreignObject>
+                    );
+                  }
+
                   return (
                     <foreignObject
                       key={node.id}
                       x={pos.x}
                       y={pos.y}
-                      width="380"
-                      height="240"
-                      className="overflow-visible interactive-node"
-                      style={{ overflow: 'visible' }}
+                      width="240"
+                      height="150"
+                      className={`overflow-visible interactive-node ${isHovered || isBeingDragged ? 'z-50' : 'z-20'}`}
+                      style={{
+                        overflow: 'visible',
+                        zIndex: isHovered || isBeingDragged ? 9999 : isSelected ? 80 : 20,
+                      }}
+                      onMouseEnter={() => setHoveredNodeId(node.id)}
+                      onMouseLeave={() => setHoveredNodeId((curr) => (curr === node.id ? null : curr))}
                     >
-                      <PhysicalNodeOnCanvas
-                        node={node}
-                        isEn={isEn}
-                        isRtl={isRtl}
-                        isBeingDragged={isBeingDragged}
-                        isSelected={isSelected}
-                        racks={currentCustomMap?.racks || []}
-                        onToggleToCardView={() => handleToggleDeviceDisplayMode(node.id)}
-                        onMountToRack={(rackId, startU) => handleMountCanvasNodeToRack(node, rackId, startU)}
-                        onUnmountFromRack={handleRemoveDeviceFromRack}
-                        onInspectRack={(rack) => setInspectingRack(rack)}
-                        onRemoveFromMap={activeMapId !== 'default' ? () => handleRemoveDeviceFromCustomMap(node.id) : undefined}
-                        onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
-                      />
-                    </foreignObject>
-                  );
-                }
-
-                return (
-                  <foreignObject
-                    key={node.id}
-                    x={pos.x}
-                    y={pos.y}
-                    width="240"
-                    height="150"
-                    className="overflow-visible interactive-node"
-                    style={{ overflow: 'visible' }}
-                  >
                     <div
                       onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
                       className={`w-[226px] p-3 rounded-xl border transition-shadow select-none text-right backdrop-blur-xl group relative ${
@@ -3330,27 +3455,14 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                             {isOnline ? `${node.latency_ms || 1.2}ms` : 'OFF'}
                           </span>
 
-                          {/* Toggle to Physical Display Mode */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleDeviceDisplayMode(node.id);
-                            }}
-                            className="text-slate-400 hover:text-indigo-300 p-0.5 rounded transition hover:bg-white/10"
-                            title={isEn ? 'Switch to Physical Hardware / Rack View' : 'تغییر به نمای سخت‌افزار فیزیکی جهت نصب در رک'}
-                          >
-                            <Server className="w-3.5 h-3.5" />
-                          </button>
-
                           {activeMapId !== 'default' && (
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleRemoveDeviceFromCustomMap(node.id);
+                                handlePromptDeleteDevice(node);
                               }}
-                              className="text-slate-400 hover:text-rose-400 p-0.5 rounded transition ml-1"
+                              className="text-slate-400 hover:text-rose-400 p-0.5 rounded transition ml-1 cursor-pointer"
                               title={t('topology_device_remove_from_map')}
                             >
                               <X className="w-3.5 h-3.5" />
@@ -3424,7 +3536,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     </div>
                   </foreignObject>
                 );
-              })}
+              });
+            })()}
 
               {/* Sticky Notes Connector Lines to Linked Devices (rendered only if showStickyNotes) */}
               {showStickyNotes && currentCustomMap?.stickyNotes && currentCustomMap.stickyNotes.map((note) => {
@@ -5245,6 +5358,15 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
           onDeleteRack={handleDeleteRack}
         />
       )}
+
+      {/* Safe Deletion Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={!!deleteModalTarget}
+        onClose={() => setDeleteModalTarget(null)}
+        target={deleteModalTarget}
+        onConfirmDeleteDevice={handleConfirmDeleteDevice}
+        onConfirmDeleteRack={handleConfirmDeleteRack}
+      />
       </div>
     </div>
   );

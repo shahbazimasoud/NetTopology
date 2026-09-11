@@ -105,6 +105,8 @@ export interface Device {
   enable_password?: string;
   ssh_status?: 'connected' | 'authenticated' | 'disconnected' | 'failed';
   ssh_connected?: boolean;
+  power_supplies?: number;
+  power_watts?: number;
 }
 
 export interface SwitchPort {
@@ -219,7 +221,9 @@ export type HardwareCategory =
   | 'ups_rackmount'
   | 'kvm_console'
   | 'fan_unit'
-  | 'blank_panel';
+  | 'blank_panel'
+  | 'rack_shelf'
+  | 'fiber_odf';
 
 export interface MountedHardwareDevice {
   id: string;

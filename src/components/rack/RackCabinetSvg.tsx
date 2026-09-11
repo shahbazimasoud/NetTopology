@@ -253,32 +253,60 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
         </div>
       </div>
 
-      {/* Rack Stats Micro Banner */}
+      {/* Rack Power & Capacity Header Banner */}
       <div
-        className="px-3 py-1.5 bg-slate-900/80 border-b border-slate-800 text-[10px] text-slate-300 flex items-center justify-between font-mono gap-1"
+        className="px-3 py-2 bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border-b border-slate-800/90 text-xs flex flex-col gap-1 select-none"
         title={
           isEn
-            ? `Total Active Load: ${totalWatts}W (${totalKw} kW)\nApparent Power: ${totalKva} kVA (Power Factor 0.85)\nEstimated Current: ~${totalAmps}A @ 230V AC\nRecommended Circuit Breaker: ${
+            ? `Total Active Load: ${totalWatts}W (${totalKw} kW)\nApparent Power: ${totalKva} kVA (Power Factor: 0.85)\nEstimated Current: ~${totalAmps}A @ 230V AC\nRecommended Circuit Breaker: ${
                 Number(totalAmps) > 16 ? '32A (C32)' : '16A/20A (C16/C20)'
-              }`
-            : `بار اکتیو کل رک: ${totalWatts} وات (${totalKw} کیلووات)\nتوان ظاهری کل: ${totalKva} کیلوولت‌آمپر (ضریب توان ۰.۸۵)\nجریان تقریبی خط تغذیه: ~${totalAmps} آمپر در ولتاژ ۲۳۰ ولت\nکلید مدار پیشنهادی: ${
+              }\nInstalled Hardware: ${rack.devices.length} devices occupying ${usedUnits} of ${rack.units}U`
+            : `مجموع توان مصرفی اکتیو: ${totalWatts} وات (${totalKw} کیلووات)\nتوان ظاهری کل رک: ${totalKva} کیلوولت‌آمپر (کاوا - ضریب توان ۰.۸۵)\nجریان مصرفی تقریبی: ~${totalAmps} آمپر در ولتاژ ۲۳۰ ولت\nفیوز و کلید مینیاتوری پیشنهادی: ${
                 Number(totalAmps) > 16 ? 'فیوز ۳۲ آمپر (C32)' : 'فیوز ۱۶ یا ۲۰ آمپر (C16/C20)'
-              }`
+              }\nتجهیزات نصب‌شده: ${rack.devices.length} تجهیز با اشغال ${usedUnits} از ${rack.units} یونیت`
         }
       >
-        <span className="flex items-center gap-1.5 font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30">
-          <Zap className="w-3 h-3 text-amber-400 shrink-0" />
-          <span>{totalWatts >= 1000 ? `${totalKw} kW` : `${totalWatts}W`}</span>
-          <span className="text-[9px] text-amber-300/80 font-normal">({totalKva} kVA)</span>
-        </span>
-        <span className="text-slate-400">
-          {isEn
-            ? `Used: ${usedUnits}/${rack.units}U (${Math.round((usedUnits / rack.units) * 100)}%)`
-            : `اشغال: ${usedUnits}/${rack.units}U (${Math.round((usedUnits / rack.units) * 100)}%)`}
-        </span>
-        <span className="text-cyan-400 font-bold">
-          {rack.devices.length} {isEn ? 'Devs' : 'تجهیز'}
-        </span>
+        {/* Main Power Metric Row */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <div className={`p-1 rounded-md flex items-center justify-center ${
+              totalWatts > 3000
+                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse'
+                : totalWatts > 1500
+                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+            }`}>
+              <Zap className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex items-baseline gap-1.5 font-mono">
+              <span className="text-white font-bold text-xs tracking-wide">
+                {totalWatts >= 1000 ? `${totalKw} kW` : `${totalWatts} W`}
+              </span>
+              <span className="text-amber-400 font-semibold text-[11px]">
+                ({totalKva} kVA)
+              </span>
+              <span className="text-slate-400 text-[10px] font-normal">
+                ~{totalAmps}A
+              </span>
+            </div>
+          </div>
+
+          {/* Occupancy & Dev Count Badge */}
+          <div className="flex items-center gap-1.5 font-mono text-[10px]">
+            <span className="text-slate-300 bg-slate-800/90 px-1.5 py-0.5 rounded border border-white/10">
+              {usedUnits}/{rack.units}U ({Math.round((usedUnits / rack.units) * 100)}%)
+            </span>
+            <span className="text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30 font-bold">
+              {rack.devices.length} {isEn ? 'Dev' : 'دستگاه'}
+            </span>
+          </div>
+        </div>
+
+        {/* Informative Label */}
+        <div className="flex items-center justify-between text-[10px] text-slate-400 font-sans">
+          <span>{isEn ? 'Total Rack Power Load' : 'توان مصرفی کل تجهیزات رک'}</span>
+          <span className="text-[9px] text-slate-500 font-mono">230V AC • PF 0.85</span>
+        </div>
       </div>
 
       {/* Dragging Active Overlay Feedback */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Network, Server, Wifi, Router as RouterIcon, ShieldCheck, MapPin, FileCode2, Terminal, Key, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Cpu, Radio, Plus, ListFilter } from 'lucide-react';
+import { X, Network, Server, Wifi, Router as RouterIcon, ShieldCheck, MapPin, FileCode2, Terminal, Key, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Cpu, Radio, Plus, ListFilter, Zap } from 'lucide-react';
 import { Device, DeviceType, DevicePlatform, ConnectionMode, ConfigTemplate } from '../types';
 import { fetchTemplates, testDeviceConnection, fetchDevices } from '../services/api';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -30,6 +30,8 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
   const [unit, setUnit] = useState(isEn ? 'IT Server Room' : 'اتاق سرور و رک');
   const [rack, setRack] = useState('Rack-B02');
   const [totalPorts, setTotalPorts] = useState(24);
+  const [powerSupplies, setPowerSupplies] = useState<number>(1);
+  const [powerWatts, setPowerWatts] = useState<number>(120);
   const [cdpEnabled, setCdpEnabled] = useState(true);
   const [lldpEnabled, setLldpEnabled] = useState(true);
   const [snmpCommunity, setSnmpCommunity] = useState('public');
@@ -296,6 +298,8 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
         unit: unit.trim(),
         rack: rack.trim(),
         total_ports: Number(totalPorts),
+        power_supplies: Number(powerSupplies) || 1,
+        power_watts: Number(powerWatts) || 120,
         cdp_enabled: cdpEnabled,
         lldp_enabled: lldpEnabled,
         snmp_community: snmpCommunity.trim(),
@@ -500,6 +504,8 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
                     setRole('Access Switch');
                     setModel('Cisco Catalyst 2960X-48FPS-L');
                     setTotalPorts(24);
+                    setPowerSupplies(1);
+                    setPowerWatts(120);
                   }}
                   className={`p-2.5 rounded-xl border flex flex-col items-center gap-1.5 transition ${
                     type === 'switch'
@@ -518,6 +524,8 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
                     setRole('Edge Gateway');
                     setModel('Cisco ISR 4451-X');
                     setTotalPorts(8);
+                    setPowerSupplies(1);
+                    setPowerWatts(150);
                   }}
                   className={`p-2.5 rounded-xl border flex flex-col items-center gap-1.5 transition ${
                     type === 'router'
@@ -536,6 +544,8 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
                     setRole('Wireless AP');
                     setModel('Cisco Catalyst 9120AXI');
                     setTotalPorts(2);
+                    setPowerSupplies(1);
+                    setPowerWatts(25);
                   }}
                   className={`p-2.5 rounded-xl border flex flex-col items-center gap-1.5 transition ${
                     type === 'access_point'
@@ -631,6 +641,81 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
                   <option value={24}>24 Ports</option>
                   <option value={48}>48 Ports</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Power Supplies & Consumption */}
+            <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-amber-900 text-xs font-bold">
+                  <Zap className="w-4 h-4 text-amber-600" />
+                  <span>{isEn ? 'Power Supply Units & Load (PSU & Watts):' : 'مشخصات منبع تغذیه برق و توان مصرفی (Power):'}</span>
+                </div>
+                <span className="text-[11px] font-mono text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-md font-semibold">
+                  ~{(powerWatts / (1000 * 0.85)).toFixed(2)} kVA
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                    {isEn ? 'Power Supplies (PSU Count):' : 'تعداد پاورها (Power Supplies):'}
+                  </label>
+                  <select
+                    value={powerSupplies}
+                    onChange={(e) => setPowerSupplies(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-amber-200 text-slate-800 text-xs focus:outline-none focus:border-amber-500 font-mono"
+                  >
+                    <option value={1}>{isEn ? '1 PSU (Single Feed)' : '۱ منبع تغذیه (Single PSU)'}</option>
+                    <option value={2}>{isEn ? '2 PSUs (1+1 Redundant)' : '۲ منبع تغذیه (Redundant 1+1)'}</option>
+                    <option value={3}>{isEn ? '3 PSUs (2+1 Redundant)' : '۳ منبع تغذیه (Redundant 2+1)'}</option>
+                    <option value={4}>{isEn ? '4 PSUs (2+2 Dual Feed)' : '۴ منبع تغذیه (Dual Feed 2+2)'}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-700 mb-1">
+                    {isEn ? 'Rated Power (Watts):' : 'توان مصرفی برحسب وات (Watts):'}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={5}
+                      max={12000}
+                      step={5}
+                      value={powerWatts}
+                      onChange={(e) => setPowerWatts(Math.max(0, Number(e.target.value)))}
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-amber-200 text-slate-800 text-xs focus:outline-none focus:border-amber-500 font-mono text-left"
+                      dir="ltr"
+                    />
+                    <span className="text-xs font-mono font-bold text-amber-800 shrink-0">W</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Presets */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-0.5 text-[10px]">
+                <span className="text-slate-500">{isEn ? 'Quick presets:' : 'مقادیر سریع:'}</span>
+                {[
+                  { label: 'AP (25W)', w: 25, psu: 1 },
+                  { label: 'Router (80W)', w: 80, psu: 1 },
+                  { label: 'Switch 24P (120W)', w: 120, psu: 1 },
+                  { label: 'PoE+ Switch (370W)', w: 370, psu: 2 },
+                  { label: '1U Server (350W)', w: 350, psu: 2 },
+                  { label: '2U Server (650W)', w: 650, psu: 2 },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => {
+                      setPowerWatts(preset.w);
+                      setPowerSupplies(preset.psu);
+                    }}
+                    className="px-2 py-0.5 rounded-md bg-white border border-amber-300/80 text-amber-800 hover:bg-amber-100 hover:border-amber-400 font-mono transition"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
               </div>
             </div>
 
