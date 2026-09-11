@@ -42,6 +42,7 @@ export interface MikroTikPortConfigConfirmModalProps {
   targetPorts?: SwitchPort[];
   updates: MikroTikPortConfigUpdates;
   isLoading?: boolean;
+  isLightMode?: boolean;
 }
 
 export const generateMikroTikPortConfigCli = (
@@ -121,6 +122,7 @@ export const MikroTikPortConfigConfirmModal: React.FC<MikroTikPortConfigConfirmM
   targetPorts = [],
   updates,
   isLoading = false,
+  isLightMode = false,
 }) => {
   const { t, isEn } = useLanguage();
   const [copied, setCopied] = useState(false);
@@ -136,22 +138,48 @@ export const MikroTikPortConfigConfirmModal: React.FC<MikroTikPortConfigConfirmM
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-cyan-500/40 rounded-xl shadow-2xl shadow-cyan-950/50 flex flex-col overflow-hidden max-h-[90vh]">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-xs animate-in fade-in duration-200 ${
+        isLightMode ? 'bg-slate-900/50' : 'bg-black/80'
+      }`}
+    >
+      <div
+        className={`relative w-full max-w-2xl rounded-xl border flex flex-col overflow-hidden max-h-[90vh] ${
+          isLightMode
+            ? 'bg-white border-cyan-500/40 shadow-2xl shadow-slate-400/40 text-slate-800'
+            : 'bg-slate-900 border-cyan-500/40 shadow-2xl shadow-cyan-950/50 text-slate-100'
+        }`}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-950/80">
+        <div
+          className={`flex items-center justify-between px-5 py-4 border-b ${
+            isLightMode ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/80 border-slate-800'
+          }`}
+        >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-cyan-950/80 border border-cyan-500/50 text-cyan-400">
+            <div
+              className={`p-2 rounded-lg border ${
+                isLightMode
+                  ? 'bg-cyan-50 border-cyan-300 text-cyan-700'
+                  : 'bg-cyan-950/80 border-cyan-500/50 text-cyan-400'
+              }`}
+            >
               <Terminal className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className={`text-base font-bold flex items-center gap-2 ${isLightMode ? 'text-slate-900' : 'text-white'}`}>
                 <span>{isEn ? 'Confirm RouterOS Commands' : 'تایید اجرای دستورات RouterOS میکروتیک'}</span>
-                <span className="text-xs font-mono px-2 py-0.5 rounded bg-cyan-900/60 border border-cyan-700/60 text-cyan-300">
+                <span
+                  className={`text-xs font-mono px-2 py-0.5 rounded border font-bold ${
+                    isLightMode
+                      ? 'bg-cyan-50 border-cyan-300 text-cyan-700'
+                      : 'bg-cyan-900/60 border-cyan-700/60 text-cyan-300'
+                  }`}
+                >
                   MikroTik CLI
                 </span>
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className={`text-xs ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                 {isEn
                   ? `Target Router: ${device.name || 'MikroTik'} (${device.ip || '192.168.88.1'}) • ${targetPortIds.length} Port(s)`
                   : `دیوایس مقصد: ${device.name || 'MikroTik'} (${device.ip || '192.168.88.1'}) • تعداد ${targetPortIds.length} پورت`}
@@ -161,21 +189,31 @@ export const MikroTikPortConfigConfirmModal: React.FC<MikroTikPortConfigConfirmM
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className={`p-1 rounded-lg transition-colors ${
+              isLightMode ? 'text-slate-400 hover:text-slate-800 hover:bg-slate-100' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Port Tags & Summary */}
-        <div className="px-5 py-3 bg-slate-950/40 border-b border-slate-800/80 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-400 font-medium">
+        <div
+          className={`px-5 py-3 border-b flex flex-wrap items-center gap-2 ${
+            isLightMode ? 'bg-slate-100/70 border-slate-200 text-slate-700' : 'bg-slate-950/40 border-slate-800/80 text-slate-400'
+          }`}
+        >
+          <span className="text-xs font-medium">
             {isEn ? 'Selected Interfaces:' : 'اینترفیس‌های انتخاب‌شده:'}
           </span>
           {targetPortIds.map((p) => (
             <span
               key={p}
-              className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700"
+              className={`text-xs font-mono font-semibold px-2 py-0.5 rounded border ${
+                isLightMode
+                  ? 'bg-white text-cyan-800 border-cyan-200'
+                  : 'bg-slate-800 text-cyan-300 border-slate-700'
+              }`}
             >
               {p}
             </span>
@@ -185,18 +223,26 @@ export const MikroTikPortConfigConfirmModal: React.FC<MikroTikPortConfigConfirmM
         {/* CLI Script Preview */}
         <div className="flex-1 p-5 overflow-y-auto space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-              <Cpu className="w-4 h-4 text-cyan-400" />
+            <span
+              className={`text-xs font-semibold flex items-center gap-1.5 ${
+                isLightMode ? 'text-slate-700' : 'text-slate-300'
+              }`}
+            >
+              <Cpu className={`w-4 h-4 ${isLightMode ? 'text-cyan-600' : 'text-cyan-400'}`} />
               {isEn ? 'Live RouterOS Script Preview:' : 'پیش‌نمایش دستورات ارسالی به میکروتیک:'}
             </span>
             <button
               onClick={handleCopy}
-              className="text-xs text-slate-400 hover:text-cyan-300 flex items-center gap-1 px-2 py-1 rounded bg-slate-800/80 border border-slate-700 hover:border-cyan-500/50 transition-colors"
+              className={`text-xs flex items-center gap-1 px-2 py-1 rounded border transition-colors cursor-pointer ${
+                isLightMode
+                  ? 'text-slate-700 hover:text-cyan-800 bg-slate-100 border-slate-300 hover:border-cyan-400'
+                  : 'text-slate-400 hover:text-cyan-300 bg-slate-800/80 border-slate-700 hover:border-cyan-500/50'
+              }`}
             >
               {copied ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400">{isEn ? 'Copied' : 'کپی شد'}</span>
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-emerald-500 font-bold">{isEn ? 'Copied' : 'کپی شد'}</span>
                 </>
               ) : (
                 <>
@@ -207,12 +253,24 @@ export const MikroTikPortConfigConfirmModal: React.FC<MikroTikPortConfigConfirmM
             </button>
           </div>
 
-          <div className="relative rounded-lg bg-black/90 border border-slate-800 p-4 font-mono text-xs text-cyan-300 leading-relaxed overflow-x-auto selection:bg-cyan-500 selection:text-black">
+          <div
+            className={`relative rounded-lg p-4 font-mono text-xs leading-relaxed overflow-x-auto ${
+              isLightMode
+                ? 'bg-slate-900 border border-slate-800 text-cyan-300 selection:bg-cyan-500 selection:text-black'
+                : 'bg-black/90 border border-slate-800 text-cyan-300 selection:bg-cyan-500 selection:text-black'
+            }`}
+          >
             <pre className="whitespace-pre-wrap">{cliScript}</pre>
           </div>
 
-          <div className="p-3 rounded-lg bg-cyan-950/30 border border-cyan-800/40 flex items-start gap-2.5 text-xs text-cyan-200">
-            <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+          <div
+            className={`p-3 rounded-lg border flex items-start gap-2.5 text-xs ${
+              isLightMode
+                ? 'bg-cyan-50/80 border-cyan-200 text-cyan-800'
+                : 'bg-cyan-950/30 border-cyan-800/40 text-cyan-200'
+            }`}
+          >
+            <Sparkles className={`w-4 h-4 shrink-0 mt-0.5 ${isLightMode ? 'text-cyan-600' : 'text-cyan-400'}`} />
             <div>
               {isEn
                 ? 'These commands will be dispatched directly to the MikroTik RouterOS device via active management session / SSH tunnel.'
@@ -222,12 +280,18 @@ export const MikroTikPortConfigConfirmModal: React.FC<MikroTikPortConfigConfirmM
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-3 px-5 py-3.5 border-t border-slate-800 bg-slate-950/80">
+        <div
+          className={`flex items-center justify-end gap-3 px-5 py-3.5 border-t ${
+            isLightMode ? 'border-slate-200 bg-slate-50' : 'border-slate-800 bg-slate-950/80'
+          }`}
+        >
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2 text-xs font-medium text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className={`px-4 py-2 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
+              isLightMode ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200' : 'text-slate-300 hover:text-white hover:bg-slate-800'
+            }`}
           >
             {isEn ? 'Cancel' : 'انصراف'}
           </button>
@@ -235,11 +299,15 @@ export const MikroTikPortConfigConfirmModal: React.FC<MikroTikPortConfigConfirmM
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className="px-5 py-2 text-xs font-bold text-black bg-cyan-400 hover:bg-cyan-300 active:bg-cyan-500 rounded-lg shadow-md shadow-cyan-500/20 flex items-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
+            className={`px-5 py-2 text-xs font-bold rounded-lg shadow-md flex items-center gap-2 transition-colors disabled:opacity-50 cursor-pointer ${
+              isLightMode
+                ? 'text-white bg-cyan-600 hover:bg-cyan-700 shadow-cyan-600/20 active:bg-cyan-800'
+                : 'text-black bg-cyan-400 hover:bg-cyan-300 shadow-cyan-500/20 active:bg-cyan-500'
+            }`}
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin text-black" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 <span>{isEn ? 'Sending to MikroTik...' : 'در حال ارسال به میکروتیک...'}</span>
               </>
             ) : (

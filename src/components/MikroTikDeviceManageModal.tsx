@@ -279,22 +279,40 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
         >
           <div className="flex items-center gap-3">
             {/* MikroTik Logo Badge */}
-            <div className="w-10 h-10 rounded-xl bg-cyan-950/80 border border-cyan-500/50 flex items-center justify-center text-cyan-400 shadow-md shadow-cyan-950/50">
+            <div
+              className={`w-10 h-10 rounded-xl border flex items-center justify-center shadow-md ${
+                isLightMode
+                  ? 'bg-cyan-50 border-cyan-300 text-cyan-700 shadow-cyan-900/10'
+                  : 'bg-cyan-950/80 border-cyan-500/50 text-cyan-400 shadow-cyan-950/50'
+              }`}
+            >
               <Cpu className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold tracking-tight">
+                <h2 className={`text-lg font-bold tracking-tight ${isLightMode ? 'text-slate-900' : 'text-white'}`}>
                   {device.name || 'MikroTik Router'}
                 </h2>
-                <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/60">
+                <span
+                  className={`px-2 py-0.5 rounded-md text-xs font-mono font-bold border ${
+                    isLightMode
+                      ? 'bg-cyan-50 text-cyan-700 border-cyan-300'
+                      : 'bg-cyan-950 text-cyan-300 border-cyan-700/60'
+                  }`}
+                >
                   RouterOS v7.14
                 </span>
-                <span className="px-2 py-0.5 rounded-md text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700">
+                <span
+                  className={`px-2 py-0.5 rounded-md text-xs font-mono border ${
+                    isLightMode
+                      ? 'bg-slate-100 text-slate-700 border-slate-300'
+                      : 'bg-slate-800 text-slate-300 border-slate-700'
+                  }`}
+                >
                   {device.ip || '192.168.88.1'}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className={`text-xs mt-0.5 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                 {isEn
                   ? 'MikroTik RouterOS Hardware & Port Settings Console (WinBox/WebFig Style)'
                   : 'کنسول مدیریت سخت‌افزار و پورت‌های روتر میکروتیک (طراحی اختصاصی WinBox/WebFig)'}
@@ -310,10 +328,14 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
                 onClose();
                 onConnectTerminal?.(device);
               }}
-              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-300 flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs ${
+                isLightMode
+                  ? 'bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border-cyan-300'
+                  : 'bg-cyan-950 hover:bg-cyan-900 border-cyan-500/50 text-cyan-300'
+              }`}
               title={isEn ? 'Open RouterOS CLI Terminal' : 'باز کردن ترمینال خط فرمان میکروتیک'}
             >
-              <Terminal className="w-4 h-4 text-cyan-400" />
+              <Terminal className={`w-4 h-4 ${isLightMode ? 'text-cyan-600' : 'text-cyan-400'}`} />
               <span>{isEn ? 'CLI Terminal' : 'کنسول ترمینال'}</span>
             </button>
 
@@ -321,7 +343,11 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              className={`p-1.5 rounded-lg transition-colors ${
+                isLightMode
+                  ? 'text-slate-400 hover:text-slate-800 hover:bg-slate-100'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
             >
               <X className="w-5 h-5" />
             </button>
@@ -331,7 +357,7 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
         {/* Navigation Tabs */}
         <div
           className={`flex items-center justify-between px-6 border-b text-xs font-semibold ${
-            isLightMode ? 'bg-slate-100 border-slate-200' : 'bg-slate-900/50 border-slate-800'
+            isLightMode ? 'bg-slate-100/80 border-slate-200' : 'bg-slate-900/50 border-slate-800'
           }`}
         >
           <div className="flex items-center gap-1">
@@ -340,13 +366,21 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
               onClick={() => setActiveTab('ports')}
               className={`px-4 py-3 border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${
                 activeTab === 'ports'
-                  ? 'border-cyan-400 text-cyan-400 font-bold bg-cyan-950/20'
+                  ? isLightMode
+                    ? 'border-cyan-600 text-cyan-700 font-bold bg-white'
+                    : 'border-cyan-400 text-cyan-400 font-bold bg-cyan-950/20'
+                  : isLightMode
+                  ? 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
               <Server className="w-4 h-4" />
               <span>{isEn ? 'Ports & Faceplate' : 'پورت‌ها و شاسی سخت‌افزاری'}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-300">
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  isLightMode ? 'bg-slate-200 text-slate-700' : 'bg-slate-800 text-slate-300'
+                }`}
+              >
                 {ports.length}
               </span>
             </button>
@@ -355,7 +389,11 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
               onClick={() => setActiveTab('bridge')}
               className={`px-4 py-3 border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${
                 activeTab === 'bridge'
-                  ? 'border-cyan-400 text-cyan-400 font-bold bg-cyan-950/20'
+                  ? isLightMode
+                    ? 'border-cyan-600 text-cyan-700 font-bold bg-white'
+                    : 'border-cyan-400 text-cyan-400 font-bold bg-cyan-950/20'
+                  : isLightMode
+                  ? 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -367,7 +405,11 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
               onClick={() => setActiveTab('resources')}
               className={`px-4 py-3 border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${
                 activeTab === 'resources'
-                  ? 'border-cyan-400 text-cyan-400 font-bold bg-cyan-950/20'
+                  ? isLightMode
+                    ? 'border-cyan-600 text-cyan-700 font-bold bg-white'
+                    : 'border-cyan-400 text-cyan-400 font-bold bg-cyan-950/20'
+                  : isLightMode
+                  ? 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -379,7 +421,11 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
               onClick={() => setActiveTab('export')}
               className={`px-4 py-3 border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${
                 activeTab === 'export'
-                  ? 'border-cyan-400 text-cyan-400 font-bold bg-cyan-950/20'
+                  ? isLightMode
+                    ? 'border-cyan-600 text-cyan-700 font-bold bg-white'
+                    : 'border-cyan-400 text-cyan-400 font-bold bg-cyan-950/20'
+                  : isLightMode
+                  ? 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -388,7 +434,11 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
             </button>
           </div>
 
-          <div className="text-[11px] font-mono text-cyan-400 flex items-center gap-2">
+          <div
+            className={`text-[11px] font-mono flex items-center gap-2 ${
+              isLightMode ? 'text-cyan-700' : 'text-cyan-400'
+            }`}
+          >
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>RouterBOARD CCR/CRS</span>
           </div>
@@ -399,34 +449,60 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
           {activeTab === 'ports' && (
             <div className="space-y-6">
               {/* MikroTik Realistic Chassis Faceplate */}
-              <div className="rounded-xl border border-slate-800 bg-linear-to-b from-slate-900 to-slate-950 p-5 shadow-inner">
-                <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+              <div
+                className={`rounded-xl border p-5 shadow-inner ${
+                  isLightMode
+                    ? 'border-slate-300 bg-linear-to-b from-slate-200 via-slate-100 to-slate-200 shadow-slate-300/50'
+                    : 'border-slate-800 bg-linear-to-b from-slate-900 to-slate-950'
+                }`}
+              >
+                <div
+                  className={`flex items-center justify-between mb-4 border-b pb-3 ${
+                    isLightMode ? 'border-slate-300' : 'border-slate-800'
+                  }`}
+                >
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-white uppercase tracking-widest">
+                    <span
+                      className={`text-xs font-mono font-bold uppercase tracking-widest ${
+                        isLightMode ? 'text-slate-800' : 'text-white'
+                      }`}
+                    >
                       MikroTik RouterBOARD Faceplate
                     </span>
-                    <span className="text-[10px] text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded border ${
+                        isLightMode
+                          ? 'text-cyan-800 bg-cyan-50 border-cyan-300 font-medium'
+                          : 'text-cyan-400 bg-cyan-950/80 border-cyan-800'
+                      }`}
+                    >
                       Right-click on any port for RouterOS commands!
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-xs">
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-xs shadow-emerald-400" />
-                      <span className="text-slate-400">R: Running</span>
+                      <span className={isLightMode ? 'text-slate-600' : 'text-slate-400'}>R: Running</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-amber-400" />
-                      <span className="text-slate-400">X: Disabled</span>
+                      <span className={isLightMode ? 'text-slate-600' : 'text-slate-400'}>X: Disabled</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-cyan-400" />
-                      <span className="text-slate-400">SFP+ 10G</span>
+                      <span className={isLightMode ? 'text-slate-600' : 'text-slate-400'}>SFP+ 10G</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Ports Row */}
-                <div className="flex flex-wrap items-center gap-3 p-3 bg-black/50 rounded-lg border border-slate-800/80 min-h-[90px]">
+                <div
+                  className={`flex flex-wrap items-center gap-3 p-3 rounded-lg border min-h-[90px] ${
+                    isLightMode
+                      ? 'bg-white/80 border-slate-300 shadow-inner'
+                      : 'bg-black/50 border-slate-800/80'
+                  }`}
+                >
                   {ports.map((port) => (
                     <MikroTikPortSvg
                       key={port.port_id}
@@ -445,13 +521,13 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
                   ))}
                 </div>
 
-                <div className="mt-2 text-[11px] text-slate-400 flex items-center justify-between">
+                <div className={`mt-2 text-[11px] flex items-center justify-between ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>
                   <span>
                     {isEn
                       ? '💡 Click a port to edit properties below, or Right-Click to dispatch instant commands.'
                       : '💡 جهت ویرایش روی پورت کلیک کنید و یا راست‌کلیک کرده تا دستورات RouterOS بلافاصله ارسال شوند.'}
                   </span>
-                  <span className="font-mono text-cyan-400 text-[10px]">
+                  <span className={`font-mono text-[10px] ${isLightMode ? 'text-cyan-700 font-bold' : 'text-cyan-400'}`}>
                     Model: {device.model || 'MikroTik CCR2004'}
                   </span>
                 </div>
@@ -459,62 +535,110 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
 
               {/* Selected Port Property Inspector & RouterOS Config Panel */}
               {selectedPort && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 rounded-xl border border-slate-800 bg-slate-900/60">
+                <div
+                  className={`grid grid-cols-1 md:grid-cols-2 gap-6 p-5 rounded-xl border ${
+                    isLightMode
+                      ? 'border-slate-200 bg-white shadow-xs'
+                      : 'border-slate-800 bg-slate-900/60'
+                  }`}
+                >
                   {/* Left Column: Port Properties & Live Status */}
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <div
+                      className={`flex items-center justify-between border-b pb-2 ${
+                        isLightMode ? 'border-slate-200' : 'border-slate-800'
+                      }`}
+                    >
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-white font-mono">
+                        <span className={`text-sm font-bold font-mono ${isLightMode ? 'text-slate-900' : 'text-white'}`}>
                           {selectedPort.port_id}
                         </span>
-                        <span className="text-xs text-slate-400">({selectedPort.name})</span>
+                        <span className={`text-xs ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                          ({selectedPort.name})
+                        </span>
                         {selectedPort.admin_status === 'disabled' ? (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                              isLightMode
+                                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                : 'bg-amber-950 text-amber-300 border-amber-700'
+                            }`}
+                          >
                             Disabled (X)
                           </span>
                         ) : selectedPort.status === 'up' ? (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                              isLightMode
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : 'bg-emerald-950 text-emerald-300 border-emerald-700'
+                            }`}
+                          >
                             Running (R)
                           </span>
                         ) : (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                              isLightMode
+                                ? 'bg-slate-100 text-slate-600 border-slate-300'
+                                : 'bg-slate-800 text-slate-400 border-slate-700'
+                            }`}
+                          >
                             Link Down
                           </span>
                         )}
                       </div>
-                      <span className="text-xs font-mono text-slate-400">
+                      <span className={`text-xs font-mono ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         MAC: {selectedPort.mac_address || device.mac || '48:8F:5A:xx:xx:xx'}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
-                        <span className="text-slate-400 block mb-1">
+                      <div
+                        className={`p-2.5 rounded-lg border ${
+                          isLightMode ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'
+                        }`}
+                      >
+                        <span className={`block mb-1 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                           {isEn ? 'Negotiated Speed' : 'سرعت ارتباط'}
                         </span>
-                        <span className="font-mono font-bold text-cyan-300 text-sm">
+                        <span className={`font-mono font-bold text-sm ${isLightMode ? 'text-cyan-700' : 'text-cyan-300'}`}>
                           {selectedPort.speed || '1 Gbps Full'}
                         </span>
                       </div>
-                      <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
-                        <span className="text-slate-400 block mb-1">
+                      <div
+                        className={`p-2.5 rounded-lg border ${
+                          isLightMode ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'
+                        }`}
+                      >
+                        <span className={`block mb-1 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                           {isEn ? 'Bridge PVID / VLAN' : 'شناسه PVID بریج'}
                         </span>
-                        <span className="font-mono font-bold text-cyan-300 text-sm">
+                        <span className={`font-mono font-bold text-sm ${isLightMode ? 'text-cyan-700' : 'text-cyan-300'}`}>
                           VLAN {selectedPort.vlan || 1}
                         </span>
                       </div>
-                      <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
-                        <span className="text-slate-400 block mb-1">
+                      <div
+                        className={`p-2.5 rounded-lg border ${
+                          isLightMode ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'
+                        }`}
+                      >
+                        <span className={`block mb-1 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                           {isEn ? 'MTU / L2MTU' : 'حداکثر واحد انتقال (MTU)'}
                         </span>
-                        <span className="font-mono font-bold text-slate-200">1500 / 1592</span>
+                        <span className={`font-mono font-bold ${isLightMode ? 'text-slate-800' : 'text-slate-200'}`}>
+                          1500 / 1592
+                        </span>
                       </div>
-                      <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
-                        <span className="text-slate-400 block mb-1">
+                      <div
+                        className={`p-2.5 rounded-lg border ${
+                          isLightMode ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'
+                        }`}
+                      >
+                        <span className={`block mb-1 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                           {isEn ? 'Tx / Rx Packets' : 'ترافیک ارسالی / دریافتی'}
                         </span>
-                        <span className="font-mono font-bold text-slate-200">
+                        <span className={`font-mono font-bold ${isLightMode ? 'text-slate-800' : 'text-slate-200'}`}>
                           124.5k / 389.2k
                         </span>
                       </div>
@@ -532,9 +656,13 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
                             port: selectedPort,
                           });
                         }}
-                        className="w-full py-2 px-3 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                        className={`w-full py-2 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-2 transition-colors cursor-pointer ${
+                          isLightMode
+                            ? 'bg-slate-100 hover:bg-slate-200 text-cyan-800 border-slate-300'
+                            : 'bg-slate-800 hover:bg-slate-700 text-cyan-300 border-cyan-500/30'
+                        }`}
                       >
-                        <Sliders className="w-4 h-4 text-cyan-400" />
+                        <Sliders className={`w-4 h-4 ${isLightMode ? 'text-cyan-600' : 'text-cyan-400'}`} />
                         <span>
                           {isEn
                             ? 'Open Right-Click Context Menu'
@@ -545,13 +673,21 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
                   </div>
 
                   {/* Right Column: Edit MikroTik Interface Configuration */}
-                  <div className="space-y-4 border-t md:border-t-0 md:border-l border-slate-800 md:pl-6 pt-4 md:pt-0">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                      <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                        <Edit3 className="w-3.5 h-3.5 text-cyan-400" />
+                  <div
+                    className={`space-y-4 border-t md:border-t-0 md:border-l md:pl-6 pt-4 md:pt-0 ${
+                      isLightMode ? 'border-slate-200' : 'border-slate-800'
+                    }`}
+                  >
+                    <div
+                      className={`flex items-center justify-between border-b pb-2 ${
+                        isLightMode ? 'border-slate-200' : 'border-slate-800'
+                      }`}
+                    >
+                      <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${isLightMode ? 'text-slate-800' : 'text-white'}`}>
+                        <Edit3 className={`w-3.5 h-3.5 ${isLightMode ? 'text-cyan-600' : 'text-cyan-400'}`} />
                         {isEn ? 'Configure RouterOS Port' : 'پیکربندی تنظیمات پورت در میکروتیک'}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
+                      <span className={`text-[10px] font-mono ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         /interface ethernet
                       </span>
                     </div>
@@ -559,7 +695,7 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
                     <div className="space-y-3 text-xs">
                       {/* Admin Status Toggle */}
                       <div>
-                        <label className="block text-slate-400 mb-1 font-medium">
+                        <label className={`block mb-1 font-medium ${isLightMode ? 'text-slate-700' : 'text-slate-400'}`}>
                           {isEn ? 'Admin Status (disabled=yes/no)' : 'وضعیت کاربری (Admin Status):'}
                         </label>
                         <div className="grid grid-cols-2 gap-2">
@@ -568,11 +704,15 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
                             onClick={() => setEditAdminStatus('enabled')}
                             className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
                               editAdminStatus === 'enabled'
-                                ? 'bg-emerald-950 text-emerald-300 border-emerald-500'
+                                ? isLightMode
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-400 shadow-xs'
+                                  : 'bg-emerald-950 text-emerald-300 border-emerald-500'
+                                : isLightMode
+                                ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
                                 : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
                             }`}
                           >
-                            <Power className="w-3.5 h-3.5 text-emerald-400" />
+                            <Power className="w-3.5 h-3.5 text-emerald-500" />
                             <span>{isEn ? 'Enabled' : 'فعال (Enable)'}</span>
                           </button>
                           <button
@@ -580,11 +720,15 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
                             onClick={() => setEditAdminStatus('disabled')}
                             className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
                               editAdminStatus === 'disabled'
-                                ? 'bg-amber-950 text-amber-300 border-amber-500'
+                                ? isLightMode
+                                  ? 'bg-amber-100 text-amber-800 border-amber-400 shadow-xs'
+                                  : 'bg-amber-950 text-amber-300 border-amber-500'
+                                : isLightMode
+                                ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
                                 : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
                             }`}
                           >
-                            <PowerOff className="w-3.5 h-3.5 text-amber-400" />
+                            <PowerOff className="w-3.5 h-3.5 text-amber-500" />
                             <span>{isEn ? 'Disabled' : 'غیرفعال (Disable)'}</span>
                           </button>
                         </div>
@@ -592,7 +736,7 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
 
                       {/* Bridge PVID */}
                       <div>
-                        <label className="block text-slate-400 mb-1 font-medium">
+                        <label className={`block mb-1 font-medium ${isLightMode ? 'text-slate-700' : 'text-slate-400'}`}>
                           {isEn ? 'Bridge PVID (VLAN ID):' : 'شناسه VLAN در بریج (PVID):'}
                         </label>
                         <input
@@ -601,19 +745,27 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
                           max="4094"
                           value={editVlan}
                           onChange={(e) => setEditVlan(Number(e.target.value))}
-                          className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-cyan-500 focus:outline-hidden"
+                          className={`w-full rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-hidden border ${
+                            isLightMode
+                              ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-cyan-600'
+                              : 'bg-slate-950 border-slate-700 text-white focus:border-cyan-500'
+                          }`}
                         />
                       </div>
 
                       {/* Speed & Auto Negotiation */}
                       <div>
-                        <label className="block text-slate-400 mb-1 font-medium">
+                        <label className={`block mb-1 font-medium ${isLightMode ? 'text-slate-700' : 'text-slate-400'}`}>
                           {isEn ? 'Speed & Duplex Mode:' : 'تنظیمات سرعت و مذاکره خودکار:'}
                         </label>
                         <select
                           value={editSpeed}
                           onChange={(e) => setEditSpeed(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-cyan-500 focus:outline-hidden"
+                          className={`w-full rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-hidden border ${
+                            isLightMode
+                              ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-cyan-600'
+                              : 'bg-slate-950 border-slate-700 text-white focus:border-cyan-500'
+                          }`}
                         >
                           <option value="auto">Auto-Negotiation (Default)</option>
                           <option value="100M-full">100M Full Duplex</option>
@@ -624,7 +776,7 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
 
                       {/* Port Comment */}
                       <div>
-                        <label className="block text-slate-400 mb-1 font-medium">
+                        <label className={`block mb-1 font-medium ${isLightMode ? 'text-slate-700' : 'text-slate-400'}`}>
                           {isEn ? 'RouterOS Comment / Description:' : 'یادداشت / کامنت روتر او اس:'}
                         </label>
                         <input
@@ -632,19 +784,27 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
                           value={editComment}
                           onChange={(e) => setEditComment(e.target.value)}
                           placeholder="e.g. Uplink to Core Switch"
-                          className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:border-cyan-500 focus:outline-hidden"
+                          className={`w-full rounded-lg px-3 py-1.5 text-xs focus:outline-hidden border ${
+                            isLightMode
+                              ? 'bg-slate-50 border-slate-300 text-slate-900 focus:border-cyan-600'
+                              : 'bg-slate-950 border-slate-700 text-white focus:border-cyan-500'
+                          }`}
                         />
                       </div>
 
                       {/* Loop Protect */}
                       <div className="flex items-center justify-between pt-1">
-                        <span className="text-slate-400">
+                        <span className={isLightMode ? 'text-slate-700' : 'text-slate-400'}>
                           {isEn ? 'Hardware Loop Protect:' : 'محافظت در برابر لوپ (Loop Protect):'}
                         </span>
                         <select
                           value={editLoopProtect}
                           onChange={(e) => setEditLoopProtect(e.target.value as any)}
-                          className="bg-slate-950 border border-slate-700 rounded-md px-2 py-1 text-xs text-cyan-300 font-mono"
+                          className={`rounded-md px-2 py-1 text-xs font-mono border ${
+                            isLightMode
+                              ? 'bg-slate-50 border-slate-300 text-cyan-800'
+                              : 'bg-slate-950 border-slate-700 text-cyan-300'
+                          }`}
                         >
                           <option value="on">On</option>
                           <option value="off">Off</option>
@@ -653,7 +813,7 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
                     </div>
 
                     {/* Apply Configuration Button */}
-                    <div className="pt-3 border-t border-slate-800">
+                    <div className={`pt-3 border-t ${isLightMode ? 'border-slate-200' : 'border-slate-800'}`}>
                       <button
                         type="button"
                         onClick={() => {
@@ -669,7 +829,11 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
                             },
                           });
                         }}
-                        className="w-full py-2.5 px-4 rounded-lg text-xs font-bold bg-cyan-400 hover:bg-cyan-300 text-black shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
+                        className={`w-full py-2.5 px-4 rounded-lg text-xs font-bold shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 ${
+                          isLightMode
+                            ? 'bg-cyan-600 hover:bg-cyan-700 text-white shadow-cyan-600/20'
+                            : 'bg-cyan-400 hover:bg-cyan-300 text-black shadow-cyan-500/20'
+                        }`}
                       >
                         <Save className="w-4 h-4" />
                         <span>
@@ -687,12 +851,16 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
 
           {activeTab === 'bridge' && (
             <div className="space-y-4">
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60">
-                <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-cyan-400" />
+              <div
+                className={`p-4 rounded-xl border ${
+                  isLightMode ? 'border-slate-200 bg-white shadow-xs' : 'border-slate-800 bg-slate-900/60'
+                }`}
+              >
+                <h4 className={`text-sm font-bold mb-2 flex items-center gap-2 ${isLightMode ? 'text-slate-900' : 'text-white'}`}>
+                  <Layers className={`w-4 h-4 ${isLightMode ? 'text-cyan-600' : 'text-cyan-400'}`} />
                   <span>{isEn ? 'MikroTik Bridge & VLAN Filtering' : 'بریج و فیلترینگ VLAN میکروتیک'}</span>
                 </h4>
-                <p className="text-xs text-slate-400 mb-4">
+                <p className={`text-xs mb-4 ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                   {isEn
                     ? 'RouterOS Bridge VLAN Filtering handles wire-speed hardware offloading on CRS/CCR switches.'
                     : 'بریج روتر او اس با پشتیبانی از Hardware Offloading تبادل فریم‌ها را با حداکثر سرعت انجام می‌دهد.'}
@@ -700,7 +868,11 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left">
-                    <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px]">
+                    <thead
+                      className={`uppercase font-mono text-[10px] ${
+                        isLightMode ? 'bg-slate-100 text-slate-600' : 'bg-slate-950 text-slate-400'
+                      }`}
+                    >
                       <tr>
                         <th className="p-2.5">{isEn ? 'Interface' : 'اینترفیس'}</th>
                         <th className="p-2.5">{isEn ? 'Bridge' : 'بریج'}</th>
@@ -709,18 +881,35 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
                         <th className="p-2.5">{isEn ? 'Status' : 'وضعیت'}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800 font-mono">
+                    <tbody
+                      className={`divide-y font-mono ${
+                        isLightMode ? 'divide-slate-200 text-slate-700' : 'divide-slate-800 text-slate-300'
+                      }`}
+                    >
                       {ports.map((p) => (
-                        <tr key={p.port_id} className="hover:bg-slate-800/40">
-                          <td className="p-2.5 font-bold text-cyan-300">{p.port_id}</td>
-                          <td className="p-2.5 text-slate-300">bridge1</td>
-                          <td className="p-2.5 text-emerald-400">{p.vlan || 1}</td>
-                          <td className="p-2.5 text-cyan-400">yes</td>
+                        <tr
+                          key={p.port_id}
+                          className={`transition-colors ${
+                            isLightMode ? 'hover:bg-slate-50' : 'hover:bg-slate-800/40'
+                          }`}
+                        >
+                          <td className={`p-2.5 font-bold ${isLightMode ? 'text-cyan-700' : 'text-cyan-300'}`}>
+                            {p.port_id}
+                          </td>
+                          <td className="p-2.5">bridge1</td>
+                          <td className={`p-2.5 font-bold ${isLightMode ? 'text-emerald-700' : 'text-emerald-400'}`}>
+                            {p.vlan || 1}
+                          </td>
+                          <td className={`p-2.5 ${isLightMode ? 'text-cyan-700' : 'text-cyan-400'}`}>yes</td>
                           <td className="p-2.5">
                             <span
                               className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
                                 p.status === 'up'
-                                  ? 'bg-emerald-950 text-emerald-300'
+                                  ? isLightMode
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-emerald-950 text-emerald-300'
+                                  : isLightMode
+                                  ? 'bg-slate-100 text-slate-600 border border-slate-300'
                                   : 'bg-slate-800 text-slate-400'
                               }`}
                             >
@@ -738,52 +927,74 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
 
           {activeTab === 'resources' && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 space-y-2">
-                <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                  <Cpu className="w-4 h-4 text-cyan-400" />
+              <div
+                className={`p-4 rounded-xl border space-y-2 ${
+                  isLightMode ? 'border-slate-200 bg-white shadow-xs' : 'border-slate-800 bg-slate-900/60'
+                }`}
+              >
+                <span className={`text-xs flex items-center gap-1.5 ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <Cpu className={`w-4 h-4 ${isLightMode ? 'text-cyan-600' : 'text-cyan-400'}`} />
                   {isEn ? 'CPU Architecture' : 'معماری و پردازنده'}
                 </span>
-                <div className="text-lg font-bold font-mono text-white">ARM 64-bit</div>
-                <div className="text-xs text-cyan-300 font-mono">4 Cores @ 2000 MHz</div>
-                <div className="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
-                  <div className="bg-cyan-400 h-full w-[14%]" />
+                <div className={`text-lg font-bold font-mono ${isLightMode ? 'text-slate-900' : 'text-white'}`}>ARM 64-bit</div>
+                <div className={`text-xs font-mono ${isLightMode ? 'text-cyan-700 font-bold' : 'text-cyan-300'}`}>
+                  4 Cores @ 2000 MHz
                 </div>
-                <div className="text-[10px] text-slate-400">Current Load: 14%</div>
+                <div className={`w-full rounded-full h-1.5 mt-2 overflow-hidden ${isLightMode ? 'bg-slate-200' : 'bg-slate-800'}`}>
+                  <div className="bg-cyan-500 h-full w-[14%]" />
+                </div>
+                <div className={`text-[10px] ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Current Load: 14%</div>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 space-y-2">
-                <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                  <Zap className="w-4 h-4 text-emerald-400" />
+              <div
+                className={`p-4 rounded-xl border space-y-2 ${
+                  isLightMode ? 'border-slate-200 bg-white shadow-xs' : 'border-slate-800 bg-slate-900/60'
+                }`}
+              >
+                <span className={`text-xs flex items-center gap-1.5 ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <Zap className={`w-4 h-4 ${isLightMode ? 'text-emerald-600' : 'text-emerald-400'}`} />
                   {isEn ? 'System Memory (RAM)' : 'حافظه اصلی (RAM)'}
                 </span>
-                <div className="text-lg font-bold font-mono text-white">4096 MB</div>
-                <div className="text-xs text-emerald-300 font-mono">Free: 3412.5 MB (83%)</div>
-                <div className="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
-                  <div className="bg-emerald-400 h-full w-[17%]" />
+                <div className={`text-lg font-bold font-mono ${isLightMode ? 'text-slate-900' : 'text-white'}`}>4096 MB</div>
+                <div className={`text-xs font-mono ${isLightMode ? 'text-emerald-700 font-bold' : 'text-emerald-300'}`}>
+                  Free: 3412.5 MB (83%)
                 </div>
-                <div className="text-[10px] text-slate-400">Used: 683.5 MB</div>
+                <div className={`w-full rounded-full h-1.5 mt-2 overflow-hidden ${isLightMode ? 'bg-slate-200' : 'bg-slate-800'}`}>
+                  <div className="bg-emerald-500 h-full w-[17%]" />
+                </div>
+                <div className={`text-[10px] ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Used: 683.5 MB</div>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 space-y-2">
-                <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                  <HardDrive className="w-4 h-4 text-purple-400" />
+              <div
+                className={`p-4 rounded-xl border space-y-2 ${
+                  isLightMode ? 'border-slate-200 bg-white shadow-xs' : 'border-slate-800 bg-slate-900/60'
+                }`}
+              >
+                <span className={`text-xs flex items-center gap-1.5 ${isLightMode ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <HardDrive className={`w-4 h-4 ${isLightMode ? 'text-purple-600' : 'text-purple-400'}`} />
                   {isEn ? 'NAND Flash Storage' : 'حافظه ذخیره‌سازی فلش'}
                 </span>
-                <div className="text-lg font-bold font-mono text-white">128 MB</div>
-                <div className="text-xs text-purple-300 font-mono">Free: 94.2 MB (73%)</div>
-                <div className="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
-                  <div className="bg-purple-400 h-full w-[27%]" />
+                <div className={`text-lg font-bold font-mono ${isLightMode ? 'text-slate-900' : 'text-white'}`}>128 MB</div>
+                <div className={`text-xs font-mono ${isLightMode ? 'text-purple-700 font-bold' : 'text-purple-300'}`}>
+                  Free: 94.2 MB (73%)
                 </div>
-                <div className="text-[10px] text-slate-400">Bad Blocks: 0.0%</div>
+                <div className={`w-full rounded-full h-1.5 mt-2 overflow-hidden ${isLightMode ? 'bg-slate-200' : 'bg-slate-800'}`}>
+                  <div className="bg-purple-500 h-full w-[27%]" />
+                </div>
+                <div className={`text-[10px] ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>Bad Blocks: 0.0%</div>
               </div>
             </div>
           )}
 
           {activeTab === 'export' && (
             <div className="space-y-4">
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 space-y-3">
+              <div
+                className={`p-4 rounded-xl border space-y-3 ${
+                  isLightMode ? 'border-slate-200 bg-white shadow-xs' : 'border-slate-800 bg-slate-900/60'
+                }`}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white font-mono">
+                  <span className={`text-xs font-bold font-mono ${isLightMode ? 'text-slate-900' : 'text-white'}`}>
                     /export hide-sensitive
                   </span>
                   <button
@@ -802,13 +1013,23 @@ export const MikroTikDeviceManageModal: React.FC<MikroTikDeviceManageModalProps>
                       navigator.clipboard.writeText(text);
                       alert(isEn ? 'RouterOS .rsc script copied to clipboard!' : 'اسکریپت .rsc در کلیپ‌بورد کپی شد!');
                     }}
-                    className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs flex items-center gap-1.5"
+                    className={`px-3 py-1 rounded text-xs flex items-center gap-1.5 cursor-pointer border ${
+                      isLightMode
+                        ? 'bg-slate-100 hover:bg-slate-200 text-cyan-800 border-slate-300'
+                        : 'bg-slate-800 hover:bg-slate-700 text-cyan-300 border-slate-700'
+                    }`}
                   >
                     <Copy className="w-3.5 h-3.5" />
                     <span>{isEn ? 'Copy .rsc' : 'کپی اسکریپت'}</span>
                   </button>
                 </div>
-                <pre className="p-3 bg-black/80 rounded-lg text-xs font-mono text-cyan-300 overflow-x-auto leading-relaxed max-h-60">
+                <pre
+                  className={`p-3 rounded-lg text-xs font-mono leading-relaxed max-h-60 overflow-x-auto ${
+                    isLightMode
+                      ? 'bg-slate-900 text-cyan-300 border border-slate-800'
+                      : 'bg-black/80 text-cyan-300'
+                  }`}
+                >
 {`# RouterOS v7.14 Configuration Export
 # Device: ${device.name || 'MikroTik'} (${device.ip || '192.168.88.1'})
 # Software ID: 4KL9-WQ21
@@ -835,6 +1056,7 @@ ${ports.map((p) => `add bridge=bridge1 interface=${p.port_id} pvid=${p.vlan || 1
             y={contextMenu.y}
             port={contextMenu.port}
             deviceName={device.name || 'MikroTik'}
+            isLightMode={isLightMode}
             onClose={() => setContextMenu(null)}
             onExecuteAction={(action, extra) => {
               const targetPortId = contextMenu.port.port_id;
@@ -906,6 +1128,7 @@ ${ports.map((p) => `add bridge=bridge1 interface=${p.port_id} pvid=${p.vlan || 1
             targetPortIds={confirmModal.targetPortIds}
             updates={confirmModal.updates}
             isLoading={isExecuting}
+            isLightMode={isLightMode}
           />
         )}
       </div>

@@ -40,6 +40,7 @@ export interface MikroTikPortContextMenuProps {
     extra?: any
   ) => void;
   onOpenTerminal?: (portId: string) => void;
+  isLightMode?: boolean;
 }
 
 export const MikroTikPortContextMenu: React.FC<MikroTikPortContextMenuProps> = ({
@@ -50,6 +51,7 @@ export const MikroTikPortContextMenu: React.FC<MikroTikPortContextMenuProps> = (
   onClose,
   onExecuteAction,
   onOpenTerminal,
+  isLightMode = false,
 }) => {
   const { t, isEn } = useLanguage();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -96,30 +98,52 @@ export const MikroTikPortContextMenu: React.FC<MikroTikPortContextMenuProps> = (
     <div
       ref={menuRef}
       id="mikrotik-port-context-menu"
-      className="fixed z-50 w-72 bg-slate-900/95 backdrop-blur-md border border-cyan-500/40 rounded-xl shadow-2xl shadow-cyan-950/60 text-slate-200 text-xs py-1.5 overflow-visible select-none animate-in fade-in zoom-in-95 duration-100"
+      className={`fixed z-50 w-72 backdrop-blur-md border rounded-xl shadow-2xl text-xs py-1.5 overflow-visible select-none animate-in fade-in zoom-in-95 duration-100 ${
+        isLightMode
+          ? 'bg-white/95 border-cyan-500/40 shadow-slate-400/40 text-slate-800'
+          : 'bg-slate-900/95 border-cyan-500/40 shadow-cyan-950/60 text-slate-200'
+      }`}
       style={{ left: safeX, top: safeY }}
     >
       {/* Header Info */}
-      <div className="px-3 py-2 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
+      <div
+        className={`px-3 py-2 border-b flex items-center justify-between ${
+          isLightMode ? 'border-slate-200 bg-slate-50' : 'border-slate-800 bg-slate-950/50'
+        }`}
+      >
         <div className="flex items-center gap-2 min-w-0">
-          <div className="p-1 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-400 shrink-0">
+          <div
+            className={`p-1 rounded border shrink-0 ${
+              isLightMode
+                ? 'bg-cyan-50 border-cyan-300 text-cyan-700'
+                : 'bg-cyan-950/80 border-cyan-500/40 text-cyan-400'
+            }`}
+          >
             <Server className="w-3.5 h-3.5" />
           </div>
           <div className="truncate">
-            <div className="font-bold text-white flex items-center gap-1.5">
+            <div className={`font-bold flex items-center gap-1.5 ${isLightMode ? 'text-slate-900' : 'text-white'}`}>
               <span>{port.port_id}</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-bold bg-cyan-900/60 text-cyan-300 border border-cyan-700/50">
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold border ${
+                  isLightMode
+                    ? 'bg-cyan-50 text-cyan-700 border-cyan-300'
+                    : 'bg-cyan-900/60 text-cyan-300 border-cyan-700/50'
+                }`}
+              >
                 MikroTik
               </span>
             </div>
-            <div className="text-[10px] text-slate-400 font-mono truncate">
+            <div className={`text-[10px] font-mono truncate ${isLightMode ? 'text-slate-500' : 'text-slate-400'}`}>
               {deviceName} • {isDisabled ? 'X (Disabled)' : isUp ? 'R (Running)' : 'Down'}
             </div>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"
+          className={`p-1 rounded transition-colors ${
+            isLightMode ? 'hover:bg-slate-200 text-slate-400 hover:text-slate-800' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+          }`}
         >
           <X className="w-3.5 h-3.5" />
         </button>

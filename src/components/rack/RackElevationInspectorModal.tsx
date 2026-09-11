@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CustomTopologyRack, MountedHardwareDevice, RackViewMode } from '../../types';
 import { RackCabinetSvg } from './RackCabinetSvg';
 import { HardwareSvgRenderer } from './HardwareSvgRenderer';
+import { DeleteConfirmModal } from '../DeleteConfirmModal';
 import {
   X,
   Eye,
@@ -28,6 +29,8 @@ interface RackElevationInspectorModalProps {
   onOpenAddHardware: (rackId: string, targetU?: number) => void;
   onEditDeviceNic: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditSpecs?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
+  onEditDeviceProperties?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
+  onPromptRemoveDevice?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onMoveDevice?: (rackId: string, deviceId: string, newStartU: number) => void;
   onRemoveDevice: (rackId: string, deviceId: string) => void;
   onDeleteRack: (rackId: string) => void;
@@ -41,12 +44,15 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
   onOpenAddHardware,
   onEditDeviceNic,
   onEditSpecs,
+  onEditDeviceProperties,
+  onPromptRemoveDevice,
   onMoveDevice,
   onRemoveDevice,
   onDeleteRack,
 }) => {
   const { isEn, isRtl } = useLanguage();
   const [selectedDevice, setSelectedDevice] = useState<MountedHardwareDevice | null>(null);
+  const [deviceToRemove, setDeviceToRemove] = useState<MountedHardwareDevice | null>(null);
 
   if (!isOpen || !rack) return null;
 
@@ -191,8 +197,26 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                 onSelectDevice={(dev) => setSelectedDevice(dev)}
                 onEditDeviceNic={(dev) => onEditDeviceNic(dev, rack)}
                 onEditSpecs={(dev) => onEditSpecs && onEditSpecs(dev, rack)}
+                onEditDeviceProperties={(dev) => {
+                  if (onEditDeviceProperties) onEditDeviceProperties(dev, rack);
+                  else if (onEditSpecs) onEditSpecs(dev, rack);
+                }}
+                onPromptRemoveDevice={(dev) => {
+                  if (onPromptRemoveDevice) {
+                    onPromptRemoveDevice(dev, rack);
+                  } else {
+                    setDeviceToRemove(dev);
+                  }
+                }}
                 onMoveDevice={onMoveDevice}
-                onRemoveDevice={onRemoveDevice}
+                onRemoveDevice={(rId, dId) => {
+                  const dev = rack.devices.find((d) => d.id === dId);
+                  if (dev) {
+                    setDeviceToRemove(dev);
+                  } else {
+                    onRemoveDevice(rId, dId);
+                  }
+                }}
                 selectedDeviceId={currentSelectedDevice?.id}
               />
             </div>
@@ -285,35 +309,42 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                       </button>
                     </div>
 
-                    {/* Edit Full Specs */}
-                    {onEditSpecs && (
+                    {/* Edit Device Properties Modal Button */}
+                    {(onEditDeviceProperties || onEditSpecs) && (
                       <button
                         type="button"
-                        onClick={() => onEditSpecs(currentSelectedDevice, rack)}
-                        className="px-2.5 py-1 rounded-lg bg-cyan-600/80 text-white hover:bg-cyan-500 text-xs font-bold flex items-center gap-1 transition"
+                        title={isEn ? 'Edit Device Properties' : 'ویرایش مشخصات دستگاه (Edit Device Properties)'}
+                        onClick={() => {
+                          if (onEditDeviceProperties) {
+                            onEditDeviceProperties(currentSelectedDevice, rack);
+                          } else if (onEditSpecs) {
+                            onEditSpecs(currentSelectedDevice, rack);
+                          }
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-cyan-600/80 text-white hover:bg-cyan-500 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
                       >
-                        <Sliders className="w-3 h-3" />
-                        <span>{isEn ? 'Edit Specs' : 'ویرایش مشخصات'}</span>
+                        <Edit3 className="w-3 h-3" />
+                        <span>{isEn ? 'Edit Properties' : 'مشخصات دستگاه'}</span>
                       </button>
                     )}
 
-                    {/* Edit NICs & Ports */}
+                    {/* Configure Network Cards & Ports Modal Button */}
                     <button
                       type="button"
+                      title={isEn ? 'Configure Network Cards & Ports' : 'تنظیم پورت‌ها و کارت‌های شبکه (Configure Network Cards & Ports)'}
                       onClick={() => onEditDeviceNic(currentSelectedDevice, rack)}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-600/80 text-white hover:bg-emerald-500 text-xs font-bold flex items-center gap-1 transition"
+                      className="px-2.5 py-1 rounded-lg bg-emerald-600/80 text-white hover:bg-emerald-500 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
                     >
                       <Network className="w-3 h-3" />
-                      <span>{isEn ? 'Ports' : 'پورت‌ها'}</span>
+                      <span>{isEn ? 'Cards & Ports' : 'کارت‌ها و پورت‌ها'}</span>
                     </button>
 
+                    {/* Safe Remove with Confirmation */}
                     <button
                       type="button"
-                      onClick={() => {
-                        onRemoveDevice(rack.id, currentSelectedDevice.id);
-                        setSelectedDevice(null);
-                      }}
-                      className="p-1 rounded-lg bg-red-950/60 text-red-400 hover:bg-red-800 hover:text-white transition"
+                      title={isEn ? 'Remove from Rack' : 'حذف از رک (Remove from Rack)'}
+                      onClick={() => setDeviceToRemove(currentSelectedDevice)}
+                      className="p-1.5 rounded-lg bg-red-950/60 text-red-400 hover:bg-red-800 hover:text-white transition cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -444,17 +475,18 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                         </div>
 
                         <div className="flex items-center gap-1">
-                          {onEditSpecs && (
+                          {(onEditDeviceProperties || onEditSpecs) && (
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onEditSpecs(dev, rack);
+                                if (onEditDeviceProperties) onEditDeviceProperties(dev, rack);
+                                else if (onEditSpecs) onEditSpecs(dev, rack);
                               }}
-                              className="p-1 rounded hover:bg-slate-800 text-cyan-400 hover:text-cyan-200 transition"
-                              title={isEn ? 'Edit Specifications' : 'ویرایش مشخصات'}
+                              className="p-1 rounded hover:bg-slate-800 text-cyan-400 hover:text-cyan-200 transition cursor-pointer"
+                              title={isEn ? 'Edit Device Properties' : 'ویرایش مشخصات دستگاه (Edit Device Properties)'}
                             >
-                              <Sliders className="w-3.5 h-3.5" />
+                              <Edit3 className="w-3.5 h-3.5" />
                             </button>
                           )}
                           <button
@@ -463,8 +495,8 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                               e.stopPropagation();
                               onEditDeviceNic(dev, rack);
                             }}
-                            className="p-1 rounded hover:bg-slate-800 text-emerald-400 hover:text-emerald-200 transition"
-                            title={isEn ? 'Configure Network Cards' : 'تنظیم کارت‌های شبکه'}
+                            className="p-1 rounded hover:bg-slate-800 text-emerald-400 hover:text-emerald-200 transition cursor-pointer"
+                            title={isEn ? 'Configure Network Cards & Ports' : 'تنظیم پورت‌ها و کارت‌های شبکه (Configure Network Cards & Ports)'}
                           >
                             <Network className="w-3.5 h-3.5" />
                           </button>
@@ -472,11 +504,10 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onRemoveDevice(rack.id, dev.id);
-                              if (selectedDevice?.id === dev.id) setSelectedDevice(null);
+                              setDeviceToRemove(dev);
                             }}
-                            className="p-1 rounded hover:bg-red-900/80 text-red-400 hover:text-red-200 transition"
-                            title={isEn ? 'Remove' : 'حذف'}
+                            className="p-1 rounded hover:bg-red-900/80 text-red-400 hover:text-red-200 transition cursor-pointer"
+                            title={isEn ? 'Remove from Rack' : 'حذف از رک (Remove from Rack)'}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -490,6 +521,30 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
           </div>
         </div>
       </div>
+
+      {/* Delete confirmation modal when removing device from rack */}
+      {deviceToRemove && (
+        <DeleteConfirmModal
+          isOpen={!!deviceToRemove}
+          onClose={() => setDeviceToRemove(null)}
+          target={{
+            type: 'rack_device',
+            id: deviceToRemove.id,
+            name: deviceToRemove.name,
+            rackId: rack.id,
+            rackName: rack.name,
+            startU: deviceToRemove.startU,
+            heightU: deviceToRemove.heightU,
+            model: deviceToRemove.model,
+            brand: deviceToRemove.brand,
+          }}
+          onConfirmRemoveFromRack={(rackId, deviceId) => {
+            onRemoveDevice(rackId, deviceId);
+            if (selectedDevice?.id === deviceId) setSelectedDevice(null);
+            setDeviceToRemove(null);
+          }}
+        />
+      )}
     </div>
   );
 };

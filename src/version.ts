@@ -10,9 +10,32 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.23.0';
+export const APP_VERSION = '1.24.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.24.0',
+    releaseDate: '2026-09-11',
+    type: 'minor',
+    title: 'رفع مشکل همپوشانی کادر هاور رک (Z-Index)، تاییدیه حذف تجهیز از رک، تفکیک مودال‌های تنظیمات و پشتیبانی از تم روشن میکروتیک',
+    title_en: 'Rack Device Hover Z-Index Stacking Fix, Rack Device Deletion Confirmation, Distinct Device Properties & Port Modals, & MikroTik Light Mode Theme Suite',
+    changes: [
+      'اصلاح ساختار لایه‌بندی Z-Index در نمای کابینت رک (RackCabinetSvg) با خارج کردن کادر عملیات و مشخصات هاور دیوایس از داخل foreignObject اس‌وی‌جی به لایه شناور برتر (z-50)، تا کادر هاور هرگز به زیر دیوایس‌های پایینی نیفتد.',
+      'افزودن مودال تایید حذف امن (DeleteConfirmModal) هنگام کلیک بر روی دکمه حذف تجهیز از داخل رک، به همراه نمایش نام تجهیز، یونیت قرارگیری و هشدارهای مربوطه قبل از خروج تجهیز از رک.',
+      'تفکیک دکمه‌های هاور دیوایس در رک: اختصاص دکمه «ویرایش مشخصات سخت‌افزاری» به باز شدن مودال Edit Device Properties و دکمه مجزا برای «پیکربندی کارت‌های شبکه و پورت‌ها» با تول‌تیپ‌های فارسی و انگلیسی دقیق.',
+      'پشتیبانی جامع و حرفه‌ای از تم روشن (Light Mode) در تمامی بخش‌های میکروتیک شامل پنجره ترمینال، پنل مدیریت دیوایس و اینترفیس‌ها، جدول بریج و وی‌لن، سربرگ منابع و کانفیگ و منوی راست‌کلیک پورت‌ها.',
+      'طراحی و پیاده‌سازی گرافیک اختصاصی پورت‌های میکروتیک مطابق با شکل واقعی سوکت‌های RouterOS با تفکیک رنگ پین‌ها و وضعیت چراغ‌های ال‌ای‌دی در هر دو تم روشن و تاریک.',
+      'قابلیت انتخاب موقعیت مکانی تجهیز (ساختمان، طبقه، واحد، رک) از بین موارد از پیش تعریف‌شده در سیستم فیزیکی همراه با امکان تعریف سریع مورد جدید در مودال ثبت تجهیز (Register New Network Device).'
+    ],
+    changes_en: [
+      'Resolved SVG stacking context clipping for rack device hover actions by hoisting the hover overlay above the SVG container into a dedicated top-level z-50 overlay, preventing it from clipping underneath lower rack units.',
+      'Integrated DeleteConfirmModal on rack device removal action, preventing accidental unmounting and clearly detailing device name, rack unit (U), and impact.',
+      'Separated rack device action buttons: configured "Edit Device Properties" modal independently from "Configure Network Cards & Ports" modal with distinct, descriptive tooltips.',
+      'Comprehensive light mode theme support for the MikroTik suite: CLI Terminal, Device Management Modal, Port Inspector, Bridge & VLAN filtering, Resource Monitors, and Port Context Menu.',
+      'Authentic MikroTik port hardware graphics with RouterOS-accurate port housings, metallic shielding, gold pin contacts, and dual Link/Activity LEDs in both light and dark themes.',
+      'Integrated existing physical hierarchy selection (Building, Floor, Unit, Rack) into Register New Network Device modal with instant quick-add for new entries.'
+    ]
+  },
   {
     version: '1.23.0',
     releaseDate: '2026-09-11',

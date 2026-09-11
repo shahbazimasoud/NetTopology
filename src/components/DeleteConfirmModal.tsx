@@ -20,7 +20,19 @@ export interface DeleteRackTarget {
   devices: MountedHardwareDevice[];
 }
 
-export type DeleteTarget = DeleteDeviceTarget | DeleteRackTarget;
+export interface DeleteRackDeviceTarget {
+  type: 'rack_device';
+  id: string;
+  name: string;
+  rackId: string;
+  rackName?: string;
+  startU: number;
+  heightU: number;
+  model?: string;
+  brand?: string;
+}
+
+export type DeleteTarget = DeleteDeviceTarget | DeleteRackTarget | DeleteRackDeviceTarget;
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
@@ -28,6 +40,7 @@ interface DeleteConfirmModalProps {
   target: DeleteTarget | null;
   onConfirmDeleteDevice?: (deviceId: string) => void;
   onConfirmDeleteRack?: (rackId: string, deleteMountedDevices: boolean) => void;
+  onConfirmRemoveFromRack?: (rackId: string, deviceId: string) => void;
 }
 
 export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
@@ -36,14 +49,17 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   target,
   onConfirmDeleteDevice,
   onConfirmDeleteRack,
+  onConfirmRemoveFromRack,
 }) => {
   const { isEn } = useLanguage();
 
   if (!isOpen || !target) return null;
 
   const isRack = target.type === 'rack';
+  const isRackDevice = target.type === 'rack_device';
   const rackTarget = isRack ? (target as DeleteRackTarget) : null;
-  const deviceTarget = !isRack ? (target as DeleteDeviceTarget) : null;
+  const rackDeviceTarget = isRackDevice ? (target as DeleteRackDeviceTarget) : null;
+  const deviceTarget = target.type === 'device' ? (target as DeleteDeviceTarget) : null;
   const hasMountedDevices = (rackTarget?.devices?.length || 0) > 0;
 
   return (
@@ -63,9 +79,11 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             <div className={`p-2 rounded-xl border ${
               isRack && hasMountedDevices
                 ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                : isRackDevice
+                ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
                 : 'bg-rose-500/15 border-rose-500/30 text-rose-400'
             }`}>
-              {isRack ? <Box className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+              {isRack ? <Box className="w-5 h-5" /> : isRackDevice ? <Server className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
             </div>
             <div>
               <h3 className="text-base font-bold text-white">
@@ -73,6 +91,10 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
                   ? isEn
                     ? `Delete Server Rack (${target.name})`
                     : `حذف رک سرور («${target.name}»)`
+                  : isRackDevice
+                  ? isEn
+                    ? `Remove Device from Rack (${target.name})`
+                    : `حذف تجهیز از داخل رک («${target.name}»)`
                   : isEn
                   ? `Delete Device (${target.name})`
                   : `حذف تجهیز («${target.name}»)`}
@@ -82,6 +104,10 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
                   ? isEn
                     ? `${rackTarget?.units}U Datacenter Cabinet`
                     : `رک استاندارد دیتاسنتر ${rackTarget?.units} یونیت`
+                  : isRackDevice
+                  ? isEn
+                    ? `Rack: ${rackDeviceTarget?.rackName || 'Rack'} • Units U${rackDeviceTarget?.startU}-U${(rackDeviceTarget?.startU || 1) + (rackDeviceTarget?.heightU || 1) - 1}`
+                    : `رک: ${rackDeviceTarget?.rackName || 'رک'} • یونیت‌های U${rackDeviceTarget?.startU} الی U${(rackDeviceTarget?.startU || 1) + (rackDeviceTarget?.heightU || 1) - 1}`
                   : deviceTarget?.model || deviceTarget?.ip || (isEn ? 'Network Hardware' : 'تجهیز شبکه')}
               </p>
             </div>
@@ -155,6 +181,33 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
                 </p>
               </div>
             )
+          ) : isRackDevice ? (
+            /* Rack Device Removal Content */
+            <div className="space-y-3">
+              <div className="p-3.5 rounded-xl bg-rose-950/25 border border-rose-500/40 text-rose-200 text-xs space-y-2">
+                <div className="flex items-center gap-2 font-bold text-rose-300">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>
+                    {isEn
+                      ? `Confirm Device Removal from Rack`
+                      : `تایید حذف و خروج تجهیز از رک`}
+                  </span>
+                  </div>
+                <p className="leading-relaxed text-slate-200">
+                  {isEn
+                    ? `Are you sure you want to remove "${rackDeviceTarget?.name}" (${rackDeviceTarget?.brand || ''} ${rackDeviceTarget?.model || ''}) from rack "${rackDeviceTarget?.rackName || 'Rack'}"?`
+                    : `آیا از حذف تجهیز «${rackDeviceTarget?.name}» (${rackDeviceTarget?.brand || ''} ${rackDeviceTarget?.model || ''}) از داخل رک «${rackDeviceTarget?.rackName || 'رک'}» اطمینان دارید؟`}
+                </p>
+                <div className="flex items-center gap-3 text-[11px] font-mono text-slate-300 pt-1">
+                  <span>{isEn ? 'Position' : 'موقعیت'}: <strong className="text-amber-400">U{rackDeviceTarget?.startU}-U{(rackDeviceTarget?.startU || 1) + (rackDeviceTarget?.heightU || 1) - 1}</strong> ({rackDeviceTarget?.heightU}U)</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                {isEn
+                  ? 'This device will be unmounted from the rack. Its configuration and ports will remain safely preserved in the equipment inventory.'
+                  : 'توجه: این تجهیز از رک پیاده‌سازی خواهد شد؛ اما مشخصات و پورت‌های آن جهت استفاده مجدد در لیست تجهیزات باقی می‌ماند.'}
+              </p>
+            </div>
           ) : (
             /* Device Deletion Content */
             <div className="space-y-3">
@@ -236,6 +289,22 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
                 <span>{isEn ? 'Delete Rack' : 'حذف رک'}</span>
               </button>
             )
+          ) : isRackDevice ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (rackDeviceTarget && onConfirmRemoveFromRack) {
+                  onConfirmRemoveFromRack(rackDeviceTarget.rackId, rackDeviceTarget.id);
+                } else if (rackDeviceTarget && onConfirmDeleteDevice) {
+                  onConfirmDeleteDevice(rackDeviceTarget.id);
+                }
+                onClose();
+              }}
+              className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold border border-rose-500/50 shadow-lg transition active:scale-95 cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>{isEn ? 'Confirm & Remove from Rack' : 'تایید و حذف از رک'}</span>
+            </button>
           ) : (
             <button
               type="button"
