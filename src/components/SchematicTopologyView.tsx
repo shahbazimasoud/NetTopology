@@ -416,6 +416,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       color: 'yellow',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      viewMode: globalDeviceViewMode,
     };
 
     const updatedMap: CustomTopologyMap = {
@@ -424,7 +425,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       updatedAt: new Date().toISOString(),
     };
     saveCustomMaps(customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m)));
-  }, [currentCustomMap, customMaps, pan.x, pan.y, zoom, saveCustomMaps]);
+  }, [currentCustomMap, customMaps, pan.x, pan.y, zoom, saveCustomMaps, globalDeviceViewMode]);
 
   const handleUpdateStickyNote = useCallback((updatedNote: CustomTopologyStickyNote) => {
     if (!currentCustomMap) return;
@@ -3539,8 +3540,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
               });
             })()}
 
-              {/* Sticky Notes Connector Lines to Linked Devices (rendered only if showStickyNotes) */}
-              {showStickyNotes && currentCustomMap?.stickyNotes && currentCustomMap.stickyNotes.map((note) => {
+              {/* Sticky Notes Connector Lines to Linked Devices (rendered only if showStickyNotes and matching current viewMode) */}
+              {showStickyNotes && currentCustomMap?.stickyNotes && currentCustomMap.stickyNotes
+                .filter((note) => (note.viewMode || 'card') === globalDeviceViewMode)
+                .map((note) => {
                 if (!note.linkedDeviceId) return null;
                 const devPos = nodePositions.get(note.linkedDeviceId) || customPositions[note.linkedDeviceId];
                 if (!devPos) return null;
@@ -3567,8 +3570,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                 );
               })}
 
-              {/* Sticky Notes on Canvas (rendered only if showStickyNotes) */}
-              {showStickyNotes && currentCustomMap?.stickyNotes && currentCustomMap.stickyNotes.map((note) => (
+              {/* Sticky Notes on Canvas (rendered only if showStickyNotes and matching current viewMode) */}
+              {showStickyNotes && currentCustomMap?.stickyNotes && currentCustomMap.stickyNotes
+                .filter((note) => (note.viewMode || 'card') === globalDeviceViewMode)
+                .map((note) => (
                 <foreignObject
                   key={note.id}
                   x={note.x}

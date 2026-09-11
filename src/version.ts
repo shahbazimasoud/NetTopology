@@ -10,9 +10,24 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.24.0';
+export const APP_VERSION = '1.24.1';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.24.1',
+    releaseDate: '2026-09-11',
+    type: 'patch',
+    title: 'تفکیک نمایش یادداشت‌ها (Sticky Notes) بر اساس نوع ویو (کارت شماتیک و فیزیکال)',
+    title_en: 'View-Specific Sticky Notes Isolation (Card View vs Physical View)',
+    changes: [
+      'تفکیک هوشمند یادداشت‌های متنی (Sticky Notes): یادداشت‌های ثبت شده در نمای کارت شماتیک منحصراً در همین نما نمایش داده می‌شوند و یادداشت‌های ثبت شده در نمای فیزیکی فقط در نمای فیزیکال قابل مشاهده هستند.',
+      'افزودن فیلد viewMode به نوع ساختار داده CustomTopologyStickyNote و فیلتر کردن اتوماتیک خطوط اتصال و کارت‌های یادداشت بر پایه حالت نمایش فعال بوم.'
+    ],
+    changes_en: [
+      'Isolated Sticky Notes between canvas views: notes created in Card View are now strictly displayed in Card View, and notes created in Physical View are exclusively visible in Physical View.',
+      'Added viewMode attribute to CustomTopologyStickyNote type and dynamically filtered note rendering and device connector lines based on active canvas displayMode.'
+    ]
+  },
   {
     version: '1.24.0',
     releaseDate: '2026-09-11',

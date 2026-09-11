@@ -271,6 +271,7 @@ export interface CustomTopologyStickyNote {
   linkedDeviceId?: string;
   createdAt: string;
   updatedAt: string;
+  viewMode?: DeviceCanvasDisplayMode;
 }
 
 export type DeviceCanvasDisplayMode = 'card' | 'physical';
