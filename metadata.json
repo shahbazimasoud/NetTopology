@@ -1,0 +1,6 @@
+{
+  "name": "NetTopology & Device Manager",
+  "description": "پنل مدیریت تجهیزات شبکه، مانیتورینگ لحظه‌ای، اسکن همسایگی CDP/LLDP، نقشه شماتیک توپولوژی و بررسی وضعیت پورت‌ها و VLAN با بک‌اند پایتون",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

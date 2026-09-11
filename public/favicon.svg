@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="netGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6366F1" />
+      <stop offset="0.5" stop-color="#3B82F6" />
+      <stop offset="1" stop-color="#06B6D4" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#6366F1" flood-opacity="0.5" />
+    </filter>
+  </defs>
+  
+  <!-- Background rounded pill/box -->
+  <rect width="64" height="64" rx="16" fill="#090D1A" />
+  <rect width="64" height="64" rx="16" stroke="url(#netGrad)" stroke-width="2" stroke-opacity="0.6" />
+
+  <!-- Connecting Network Lines / Bus -->
+  <path d="M32 18 L32 46" stroke="#38BDF8" stroke-width="2.5" stroke-dasharray="2 2" stroke-linecap="round" />
+  <path d="M16 32 L48 32" stroke="#38BDF8" stroke-width="2.5" stroke-dasharray="2 2" stroke-linecap="round" />
+  <path d="M18 20 L32 32 L46 44" stroke="#818CF8" stroke-width="2" stroke-linecap="round" />
+  <path d="M46 20 L32 32 L18 44" stroke="#818CF8" stroke-width="2" stroke-linecap="round" />
+
+  <!-- Center Core Node / Switch -->
+  <circle cx="32" cy="32" r="8" fill="url(#netGrad)" filter="url(#glow)" />
+  <circle cx="32" cy="32" r="4" fill="#FFFFFF" />
+
+  <!-- Edge Satellite Nodes (Switch / Routers) -->
+  <!-- Top -->
+  <circle cx="32" cy="16" r="4.5" fill="#38BDF8" />
+  <circle cx="32" cy="16" r="2" fill="#090D1A" />
+
+  <!-- Bottom -->
+  <circle cx="32" cy="48" r="4.5" fill="#38BDF8" />
+  <circle cx="32" cy="48" r="2" fill="#090D1A" />
+
+  <!-- Left -->
+  <circle cx="16" cy="32" r="4.5" fill="#818CF8" />
+  <circle cx="16" cy="32" r="2" fill="#090D1A" />
+
+  <!-- Right -->
+  <circle cx="48" cy="32" r="4.5" fill="#818CF8" />
+  <circle cx="48" cy="32" r="2" fill="#090D1A" />
+
+  <!-- Corner nodes -->
+  <circle cx="18" cy="20" r="3" fill="#34D399" />
+  <circle cx="46" cy="20" r="3" fill="#34D399" />
+  <circle cx="18" cy="44" r="3" fill="#34D399" />
+  <circle cx="46" cy="44" r="3" fill="#34D399" />
+</svg>
