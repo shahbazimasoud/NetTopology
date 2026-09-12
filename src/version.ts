@@ -10,9 +10,32 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.30.0';
+export const APP_VERSION = '1.31.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.31.0',
+    releaseDate: '2026-09-12',
+    type: 'minor',
+    title: 'توسعه گسترده کاتالوگ سخت‌افزاری سیسکو، میکروتیک و فورتی‌نت و تثبیت دقیق یونیت شروع در مودال افزودن به رک',
+    title_en: 'Massive Expansion of Cisco, MikroTik & Fortinet Hardware Catalog and Precise Start-U Preservation in Rack Mounting Modal',
+    changes: [
+      'تثبیت دقیق مقدار Starting Unit (Start U) در مودال افزودن تجهیز به رک مطابق با یونیتی که کاربر روی آن کلیک کرده و حذف تغییر خودکار آن.',
+      'افزودن محصولات جدید سوییچ سیسکو شامل سری Catalyst 2960-XR، 3560-X، 3650، 9200L، 9300X با توان UPOE+، شاسی‌های ماژولار 9404R و 9407R، سوییچ هسته 9500-48Y4C، شاسی غول‌پیکر 9606R و سوییچ‌های دیتاسنتری Nexus 3064، 3172، 9336C و 9364C.',
+      'افزودن روترها و تجهیزات امنیتی سیسکو شامل ISR 1100، 1941، 2911، 2951، 3945، 4331، 4351، 4431، 4461، سری نسل جدید Catalyst 8200، 8300 (1U/2U)، 8500، روترهای اپراتوری ASR 1001-HX، 1002-HX، 1004، 1006-X و فایروال‌های سخت‌افزاری ASA 5516-X، ASA 5525-X، Firepower 1120/1140، Firepower 2130 و Cisco Secure Firewall 3110.',
+      'توسعه سبد محصولات میکروتیک شامل روترهای پرقدرت RB4011، RB5009 تمام PoE، CCR1016، پرچمدار فیبر نوری CCR2004 Optical، سوییچ‌های CRS326، CRS354-48G، سوییچ غول‌پیکر CRS354-48P با توان ۸۰۰ وات، CRS317، CRS309 بی‌صدا، CRS312 مسی، CRS326-24S، سوییچ‌های فوق‌سریع ۱۰۰ گیگابیت CRS504، CRS510، CRS518 و سوییچ اختصاصی CSS326 SwOS.',
+      'افزودن مجموعه کامل تجهیزات فورتی‌نت شامل FortiGate 60F Rackmount، 80F، فایروال نسل جدید SP5 با مدل‌های 90G و 120G، سری‌های سازمانی و دیتاسنتری 400F، 900G/1000F، 1800F، 2600F، ابر فایروال ۴۰۰ گیگابیت 4400F، سوییچ‌های هوشمند FortiSwitch 124F-FPOE، 448E و سوییچ دیتاسنتری 1048E، دستگاه تحلیل امنیت FortiAnalyzer 300G و گیت‌وی ایمیل FortiMail 200F.',
+      'پشتیبانی از انواع جدید پورت‌های شبکه 2.5GbE RJ45 و 1GbE SFP در سیستم کارت‌های شبکه و مودال پیکربندی دیوایس‌ها.'
+    ],
+    changes_en: [
+      'Strictly preserved the clicked rack unit in Starting Unit (Start U) in the Add Hardware modal, preventing unwanted auto-recalculation.',
+      'Added extensive Cisco switch line: Catalyst 2960-XR, 3560-X, 3650, 9200L, 9300X (90W UPOE+), modular chassis 9404R & 9407R, core switch 9500-48Y4C, 9606R core chassis, and data center Nexus 3064, 3172, 9336C, 9364C.',
+      'Added Cisco routing and security suite: ISR 1100, 1941, 2911, 2951, 3945, 4331, 4351, 4431, 4461, Catalyst 8200, 8300 (1U/2U), 8500, carrier routers ASR 1001-HX, 1002-HX, 1004, 1006-X, and firewalls ASA 5516-X, ASA 5525-X, Firepower 1120, Firepower 2130, and Cisco Secure Firewall 3110.',
+      'Expanded MikroTik portfolio: RB4011, RB5009 (Full PoE), CCR1016, CCR2004 Optical Flagship, CRS326, CRS354-48G, CRS354-48P (800W), CRS317, silent CRS309, CRS312 10G Copper, CRS326-24S, 100G ultra switches CRS504, CRS510, CRS518, and CSS326 SwOS.',
+      'Added comprehensive Fortinet lineup: FortiGate 60F RM, 80F, SP5 next-gen firewalls 90G & 120G, campus/datacenter firewalls 400F, 900G/1000F, 1800F, 2600F, hyperscale 4400F (400G), FortiSwitch 124F-FPOE, 448E, 1048E, FortiAnalyzer 300G, and FortiMail 200F.',
+      'Added support for 2.5GbE RJ45 and 1GbE SFP port types in NIC configurations and rack hardware modals.'
+    ]
+  },
   {
     version: '1.30.0',
     releaseDate: '2026-09-12',

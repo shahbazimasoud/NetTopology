@@ -185,7 +185,9 @@ export type RackViewMode = 'front' | 'rear';
 
 export type NetworkPortType =
   | '1GbE RJ45'
+  | '2.5GbE RJ45'
   | '10GbE RJ45'
+  | '1GbE SFP'
   | '10G SFP+'
   | '25G SFP28'
   | '40G QSFP+'

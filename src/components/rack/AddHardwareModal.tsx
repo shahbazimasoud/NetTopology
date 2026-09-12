@@ -48,7 +48,9 @@ interface AddHardwareModalProps {
 
 const PORT_TYPES: NetworkPortType[] = [
   '1GbE RJ45',
+  '2.5GbE RJ45',
   '10GbE RJ45',
+  '1GbE SFP',
   '10G SFP+',
   '25G SFP28',
   '40G QSFP+',
@@ -216,11 +218,15 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
     setPowerSupplyCount(matchingTemplate.defaultPowerSupplyCount || 1);
     setPowerWatts(matchingTemplate.defaultPowerWatts);
 
-    // Pick first free slot in target rack for this device height
-    const chosenRack = racks.find((r) => r.id === targetRackId) || racks[0];
-    const freeSlot = findFirstFreeSlot(chosenRack, hw.heightU);
-    if (freeSlot !== null) {
-      setTargetU(freeSlot);
+    // If defaultTargetU was passed, strictly preserve it; otherwise pick first free slot
+    if (defaultTargetU !== undefined && defaultTargetU !== null && defaultTargetU > 0) {
+      setTargetU(defaultTargetU);
+    } else {
+      const chosenRack = racks.find((r) => r.id === targetRackId) || racks[0];
+      const freeSlot = findFirstFreeSlot(chosenRack, hw.heightU);
+      if (freeSlot !== null) {
+        setTargetU(freeSlot);
+      }
     }
   };
 
@@ -243,8 +249,18 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
       setPduAmperage(editingDevice.pduAmperage ?? (tpl.defaultPduAmperage ?? 16));
       if (defaultRackId) setTargetRackId(defaultRackId);
     } else {
+      if (defaultRackId) setTargetRackId(defaultRackId);
+
+      // When the user clicked a specific unit on the rack, strictly set targetU to that unit
+      if (defaultTargetU !== undefined && defaultTargetU !== null && defaultTargetU > 0) {
+        setTargetU(defaultTargetU);
+      }
+
       if (inventoryDevices.length > 0 && !selectedInventoryDeviceId) {
         handleSelectInventoryDevice(inventoryDevices[0]);
+        if (defaultTargetU !== undefined && defaultTargetU !== null && defaultTargetU > 0) {
+          setTargetU(defaultTargetU);
+        }
       } else {
         const tpl = HARDWARE_CATALOG.find((t) => t.category === activeCategory) || HARDWARE_CATALOG[0];
         setSelectedTemplate(tpl);
@@ -257,13 +273,14 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
         setPduAmperage(tpl.defaultPduAmperage ?? 16);
 
         const chosenRack = racks.find((r) => r.id === (defaultRackId || racks[0]?.id)) || racks[0];
-        if (defaultRackId) setTargetRackId(defaultRackId);
 
         let initialU = defaultTargetU || 1;
-        const collisionCheck = getCollision(chosenRack, initialU, tpl.heightU);
-        if (collisionCheck) {
-          const freeSlot = findFirstFreeSlot(chosenRack, tpl.heightU);
-          if (freeSlot !== null) initialU = freeSlot;
+        if (!defaultTargetU) {
+          const collisionCheck = getCollision(chosenRack, initialU, tpl.heightU);
+          if (collisionCheck) {
+            const freeSlot = findFirstFreeSlot(chosenRack, tpl.heightU);
+            if (freeSlot !== null) initialU = freeSlot;
+          }
         }
         setTargetU(initialU);
 
@@ -304,11 +321,13 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
         }))
       );
 
-      // Check collision with current targetU
-      const col = getCollision(currentRack, targetU, tpl.heightU, editingDevice?.id);
-      if (col) {
-        const freeU = findFirstFreeSlot(currentRack, tpl.heightU, editingDevice?.id);
-        if (freeU !== null) setTargetU(freeU);
+      // Check collision with current targetU only if defaultTargetU was not specified
+      if (!defaultTargetU) {
+        const col = getCollision(currentRack, targetU, tpl.heightU, editingDevice?.id);
+        if (col) {
+          const freeU = findFirstFreeSlot(currentRack, tpl.heightU, editingDevice?.id);
+          if (freeU !== null) setTargetU(freeU);
+        }
       }
     }
   };
@@ -333,10 +352,13 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
       }))
     );
 
-    const col = getCollision(currentRack, targetU, tpl.heightU, editingDevice?.id);
-    if (col) {
-      const freeU = findFirstFreeSlot(currentRack, tpl.heightU, editingDevice?.id);
-      if (freeU !== null) setTargetU(freeU);
+    // Only auto-relocate if defaultTargetU was not explicitly provided by user
+    if (!defaultTargetU) {
+      const col = getCollision(currentRack, targetU, tpl.heightU, editingDevice?.id);
+      if (col) {
+        const freeU = findFirstFreeSlot(currentRack, tpl.heightU, editingDevice?.id);
+        if (freeU !== null) setTargetU(freeU);
+      }
     }
   };
 
