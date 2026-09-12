@@ -191,6 +191,11 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   const [isWritingMemory, setIsWritingMemory] = useState(false);
   const [sshSessionMode, setSshSessionMode] = useState<'connecting' | 'real_ssh' | 'fallback_emulation'>('connecting');
   const [sshLatency, setSshLatency] = useState<number | null>(null);
+  const [selectedPortIds, setSelectedPortIds] = useState<string[]>([]);
+  const [showAppearanceMenu, setShowAppearanceMenu] = useState(false);
+  const appearanceMenuRef = useRef<HTMLDivElement>(null);
+  const lastClickedPortRef = useRef<SwitchPort | null>(null);
+  const lastInsertedPortTextRef = useRef<string | null>(null);
 
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -247,6 +252,128 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isHistoryOpen]);
+
+  // Close appearance menu on click outside
+  useEffect(() => {
+    if (!showAppearanceMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (appearanceMenuRef.current && !appearanceMenuRef.current.contains(e.target as Node)) {
+        setShowAppearanceMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAppearanceMenu]);
+
+  // Handle port click with intelligent insertion and Ctrl+Click range support
+  const handlePortClick = (port: SwitchPort, e: React.MouseEvent) => {
+    const isRangeAction = (e.ctrlKey || e.metaKey || e.shiftKey) && lastClickedPortRef.current !== null;
+    let newSelectedIds: string[] = [];
+    let isRange = false;
+    let rangeStr = '';
+
+    if (isRangeAction && lastClickedPortRef.current) {
+      const idxA = ports.findIndex((p) => p.port_id === lastClickedPortRef.current?.port_id);
+      const idxB = ports.findIndex((p) => p.port_id === port.port_id);
+      if (idxA !== -1 && idxB !== -1) {
+        const minIdx = Math.min(idxA, idxB);
+        const maxIdx = Math.max(idxA, idxB);
+        const rangePorts = ports.slice(minIdx, maxIdx + 1);
+        newSelectedIds = rangePorts.map((p) => p.port_id);
+        isRange = true;
+
+        const firstPort = rangePorts[0].port_id;
+        const lastPort = rangePorts[rangePorts.length - 1].port_id;
+        const matchFirst = firstPort.match(/^(.*?)(\d+)$/);
+        const matchLast = lastPort.match(/^(.*?)(\d+)$/);
+        if (matchFirst && matchLast && matchFirst[1] === matchLast[1]) {
+          rangeStr = `${firstPort} - ${matchLast[2]}`;
+        } else {
+          rangeStr = rangePorts.map((p) => p.port_id).join(', ');
+        }
+      } else {
+        newSelectedIds = [port.port_id];
+        lastClickedPortRef.current = port;
+      }
+    } else {
+      newSelectedIds = [port.port_id];
+      lastClickedPortRef.current = port;
+    }
+
+    setSelectedPort(port);
+    setSelectedPortIds(newSelectedIds);
+
+    const targetText = isRange ? rangeStr : port.port_id;
+
+    setCurrentInput((prevInput) => {
+      // 1. If empty or whitespace only
+      if (!prevInput.trim()) {
+        const cmd =
+          cliMode === 'GLOBAL_CONFIG' || cliMode === 'INTERFACE_CONFIG'
+            ? isRange
+              ? `interface range ${targetText}`
+              : `interface ${targetText}`
+            : isRange
+            ? `show interfaces ${targetText}`
+            : `show interface ${targetText}`;
+        lastInsertedPortTextRef.current = targetText;
+        return cmd;
+      }
+
+      // 2. If prevInput contains the previously inserted port/range token
+      const lastInserted = lastInsertedPortTextRef.current;
+      if (lastInserted && prevInput.includes(lastInserted)) {
+        let replaced = prevInput.replace(lastInserted, targetText);
+        if (isRange && !replaced.includes('interface range ') && replaced.includes('interface ')) {
+          replaced = replaced.replace('interface ', 'interface range ');
+        } else if (!isRange && replaced.includes('interface range ')) {
+          replaced = replaced.replace('interface range ', 'interface ');
+        }
+        lastInsertedPortTextRef.current = targetText;
+        return replaced;
+      }
+
+      // 3. If prevInput contains any known port ID from current device
+      for (const p of ports) {
+        if (prevInput.includes(p.port_id)) {
+          let replaced = prevInput.replace(p.port_id, targetText);
+          if (isRange && !replaced.includes('interface range ') && replaced.includes('interface ')) {
+            replaced = replaced.replace('interface ', 'interface range ');
+          } else if (!isRange && replaced.includes('interface range ')) {
+            replaced = replaced.replace('interface range ', 'interface ');
+          }
+          lastInsertedPortTextRef.current = targetText;
+          return replaced;
+        }
+      }
+
+      // 4. Regex for interface abbreviations like Gi0/1, Fa0/1, Eth1, GigabitEthernet0/1
+      const shortPortRegex = /\b(?:Gi|Fa|Te|Eth|Ge|FastEthernet|GigabitEthernet|TenGigabitEthernet)\d+(?:\/\d+)*(?:\s*-\s*\d+)?\b/i;
+      const match = prevInput.match(shortPortRegex);
+      if (match) {
+        let replaced = prevInput.replace(match[0], targetText);
+        if (isRange && !replaced.includes('interface range ') && replaced.includes('interface ')) {
+          replaced = replaced.replace('interface ', 'interface range ');
+        } else if (!isRange && replaced.includes('interface range ')) {
+          replaced = replaced.replace('interface range ', 'interface ');
+        }
+        lastInsertedPortTextRef.current = targetText;
+        return replaced;
+      }
+
+      // 5. Append target port/range to user's existing typed command without clearing
+      lastInsertedPortTextRef.current = targetText;
+      if (isRange && prevInput.trim().endsWith('interface')) {
+        return `${prevInput.trim()} range ${targetText}`;
+      }
+      const needsSpace = prevInput.length > 0 && !prevInput.endsWith(' ');
+      return `${prevInput}${needsSpace ? ' ' : ''}${targetText}`;
+    });
+
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 10);
+  };
 
   // Initialize terminal session
   useEffect(() => {
@@ -463,7 +590,9 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
       case 'GLOBAL_CONFIG':
         return `${hostname}(config)#`;
       case 'INTERFACE_CONFIG':
-        return `${hostname}(config-if)#`;
+        return currentInterface.toLowerCase().startsWith('range')
+          ? `${hostname}(config-if-range)#`
+          : `${hostname}(config-if)#`;
       case 'VLAN_CONFIG':
         return `${hostname}(config-vlan)#`;
       default:
@@ -513,6 +642,9 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
       appendLines([{ id: String(Date.now()), type: 'input', text: getPrompt() }]);
       return;
     }
+
+    // Reset last inserted port token on command execution so subsequent clicks behave freshly
+    lastInsertedPortTextRef.current = null;
 
     // Save to history
     setHistory((prev) => [trimmed, ...prev]);
@@ -664,14 +796,17 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
         return;
       }
       const ifName = trimmed.replace(/^interface\s+|^int\s+/i, '').trim();
-      // Match port
-      const matchedPort = ports.find(
-        (p) =>
-          p.port_id.toLowerCase() === ifName.toLowerCase() ||
-          p.name.toLowerCase() === ifName.toLowerCase() ||
-          p.port_id.toLowerCase().includes(ifName.toLowerCase())
-      );
-      const targetIf = matchedPort ? matchedPort.port_id : ifName;
+      const isRange = ifName.toLowerCase().startsWith('range ');
+      let targetIf = ifName;
+      if (!isRange) {
+        const matchedPort = ports.find(
+          (p) =>
+            p.port_id.toLowerCase() === ifName.toLowerCase() ||
+            p.name.toLowerCase() === ifName.toLowerCase() ||
+            p.port_id.toLowerCase().includes(ifName.toLowerCase())
+        );
+        targetIf = matchedPort ? matchedPort.port_id : ifName;
+      }
       setCurrentInterface(targetIf);
       setCliMode('INTERFACE_CONFIG');
       appendLines([
@@ -738,13 +873,40 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
     // 8. Interface Subcommands (when in INTERFACE_CONFIG)
     if (cliMode === 'INTERFACE_CONFIG') {
-      const port = ports.find((p) => p.port_id === currentInterface || p.name === currentInterface);
+      const isRange = currentInterface.toLowerCase().startsWith('range ');
+      let targetPorts: SwitchPort[] = [];
+      if (isRange) {
+        if (selectedPortIds.length > 0) {
+          targetPorts = ports.filter((p) => selectedPortIds.includes(p.port_id));
+        }
+        if (targetPorts.length === 0) {
+          const cleanRange = currentInterface.replace(/^range\s+/i, '').trim();
+          const dashMatch = cleanRange.match(/^(.*?)(\d+)\s*-\s*(\d+)$/);
+          if (dashMatch) {
+            const prefix = dashMatch[1].trim();
+            const startN = parseInt(dashMatch[2], 10);
+            const endN = parseInt(dashMatch[3], 10);
+            targetPorts = ports.filter((p) => {
+              const m = p.port_id.match(/^(.*?)(\d+)$/);
+              if (!m) return false;
+              const num = parseInt(m[2], 10);
+              return p.port_id.toLowerCase().startsWith(prefix.toLowerCase()) && num >= startN && num <= endN;
+            });
+          }
+        }
+      } else {
+        const found = ports.find((p) => p.port_id === currentInterface || p.name === currentInterface);
+        if (found) targetPorts = [found];
+      }
 
       if (cmdLower === 'shutdown') {
-        if (port) {
-          await updateSwitchPort(device.id, port.port_id, { admin_status: 'disabled', status: 'down' });
+        if (targetPorts.length > 0) {
+          for (const p of targetPorts) {
+            await updateSwitchPort(device.id, p.port_id, { admin_status: 'disabled', status: 'down' });
+          }
+          const targetIds = targetPorts.map((p) => p.port_id);
           setPorts((prev) =>
-            prev.map((p) => (p.port_id === port.port_id ? { ...p, admin_status: 'disabled', status: 'down' } : p))
+            prev.map((p) => (targetIds.includes(p.port_id) ? { ...p, admin_status: 'disabled', status: 'down' } : p))
           );
         }
         setHasUnsavedChanges(true);
@@ -757,10 +919,13 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
       }
 
       if (cmdLower === 'no shutdown' || cmdLower === 'no shut') {
-        if (port) {
-          await updateSwitchPort(device.id, port.port_id, { admin_status: 'enabled', status: 'up' });
+        if (targetPorts.length > 0) {
+          for (const p of targetPorts) {
+            await updateSwitchPort(device.id, p.port_id, { admin_status: 'enabled', status: 'up' });
+          }
+          const targetIds = targetPorts.map((p) => p.port_id);
           setPorts((prev) =>
-            prev.map((p) => (p.port_id === port.port_id ? { ...p, admin_status: 'enabled', status: 'up' } : p))
+            prev.map((p) => (targetIds.includes(p.port_id) ? { ...p, admin_status: 'enabled', status: 'up' } : p))
           );
         }
         setHasUnsavedChanges(true);
@@ -774,10 +939,13 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
       if (cmdLower.startsWith('switchport mode ')) {
         const mode = cmdLower.includes('trunk') ? 'trunk' : 'access';
-        if (port) {
-          await updateSwitchPort(device.id, port.port_id, { mode });
+        if (targetPorts.length > 0) {
+          for (const p of targetPorts) {
+            await updateSwitchPort(device.id, p.port_id, { mode });
+          }
+          const targetIds = targetPorts.map((p) => p.port_id);
           setPorts((prev) =>
-            prev.map((p) => (p.port_id === port.port_id ? { ...p, mode } : p))
+            prev.map((p) => (targetIds.includes(p.port_id) ? { ...p, mode } : p))
           );
         }
         setHasUnsavedChanges(true);
@@ -787,10 +955,13 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
       if (cmdLower.startsWith('switchport access vlan ')) {
         const vlanVal = parseInt(trimmed.replace(/^switchport access vlan\s+/i, '').trim());
-        if (!isNaN(vlanVal) && port) {
-          await updateSwitchPort(device.id, port.port_id, { vlan: vlanVal });
+        if (!isNaN(vlanVal) && targetPorts.length > 0) {
+          for (const p of targetPorts) {
+            await updateSwitchPort(device.id, p.port_id, { vlan: vlanVal });
+          }
+          const targetIds = targetPorts.map((p) => p.port_id);
           setPorts((prev) =>
-            prev.map((p) => (p.port_id === port.port_id ? { ...p, vlan: vlanVal } : p))
+            prev.map((p) => (targetIds.includes(p.port_id) ? { ...p, vlan: vlanVal } : p))
           );
           setHasUnsavedChanges(true);
         }
@@ -800,10 +971,13 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
       if (cmdLower.startsWith('switchport trunk allowed vlan ')) {
         const allowed = trimmed.replace(/^switchport trunk allowed vlan\s+/i, '').trim();
-        if (port) {
-          await updateSwitchPort(device.id, port.port_id, { allowed_vlans: allowed });
+        if (targetPorts.length > 0) {
+          for (const p of targetPorts) {
+            await updateSwitchPort(device.id, p.port_id, { allowed_vlans: allowed });
+          }
+          const targetIds = targetPorts.map((p) => p.port_id);
           setPorts((prev) =>
-            prev.map((p) => (p.port_id === port.port_id ? { ...p, allowed_vlans: allowed } : p))
+            prev.map((p) => (targetIds.includes(p.port_id) ? { ...p, allowed_vlans: allowed } : p))
           );
           setHasUnsavedChanges(true);
         }
@@ -813,10 +987,13 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
       if (cmdLower.startsWith('description ') || cmdLower.startsWith('desc ')) {
         const descText = trimmed.replace(/^description\s+|^desc\s+/i, '').trim();
-        if (port) {
-          await updateSwitchPort(device.id, port.port_id, { description: descText });
+        if (targetPorts.length > 0) {
+          for (const p of targetPorts) {
+            await updateSwitchPort(device.id, p.port_id, { description: descText });
+          }
+          const targetIds = targetPorts.map((p) => p.port_id);
           setPorts((prev) =>
-            prev.map((p) => (p.port_id === port.port_id ? { ...p, description: descText } : p))
+            prev.map((p) => (targetIds.includes(p.port_id) ? { ...p, description: descText } : p))
           );
           setHasUnsavedChanges(true);
         }
@@ -1782,51 +1959,108 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
               )}
             </div>
 
-            {/* Terminal Background & Text Color Selectors */}
-            <div className="flex flex-col gap-1 px-2 py-1 rounded-lg bg-slate-900 border border-slate-800 shadow-inner">
-              {/* Terminal Background Color Selector */}
-              <div className="flex items-center gap-1.5" title={isEn ? "Terminal Background Color" : "رنگ پس‌زمینه کنسول ترمینال"}>
-                <Palette className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <div className="flex items-center gap-1">
-                  {TERMINAL_BG_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => handleSelectBgColor(opt.color)}
-                      className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded transition-all cursor-pointer border ${
-                        terminalBgColor === opt.color
-                          ? 'scale-110 border-white ring-2 ring-indigo-500 shadow-[0_0_8px_rgba(255,255,255,0.5)]'
-                          : 'border-white/20 hover:scale-110 hover:border-white/60 opacity-80 hover:opacity-100'
-                      }`}
-                      style={{ backgroundColor: opt.color }}
-                      title={`${isEn ? opt.nameEn : opt.nameFa} (${opt.color})`}
-                      aria-label={opt.nameEn}
-                    />
-                  ))}
-                </div>
-              </div>
+            {/* Terminal Appearance Menu Popover (Button-based to prevent clutter) */}
+            <div className="relative" ref={appearanceMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowAppearanceMenu(!showAppearanceMenu)}
+                className={`px-2 py-1 rounded-lg border text-xs flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  showAppearanceMenu
+                    ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
+                    : 'bg-slate-900/90 text-slate-300 hover:text-white border-slate-700/80 hover:bg-slate-800'
+                }`}
+                title={isEn ? "Terminal Colors & Font" : "تنظیم رنگ پس‌زمینه و قلم ترمینال"}
+              >
+                <Palette className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="hidden sm:inline font-medium text-[11px]">{isEn ? 'Appearance' : 'رنگ و قلم'}</span>
+                <span
+                  className="w-3 h-3 rounded-full border border-white/40 inline-block shrink-0 shadow-xs"
+                  style={{ backgroundColor: terminalBgColor }}
+                />
+              </button>
 
-              {/* Terminal Text Color Selector */}
-              <div className="flex items-center gap-1.5" title={isEn ? "Terminal Text Color" : "رنگ قلم متن ترمینال"}>
-                <Type className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <div className="flex items-center gap-1">
-                  {TERMINAL_TEXT_OPTIONS.map((opt) => (
+              {showAppearanceMenu && (
+                <div
+                  className="absolute top-full mt-1.5 right-0 z-50 w-72 p-3 rounded-xl bg-slate-900/95 backdrop-blur-md border border-slate-700 shadow-2xl animate-in fade-in zoom-in-95 text-slate-200"
+                  dir={isEn ? 'ltr' : 'rtl'}
+                >
+                  <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-800 text-xs font-semibold text-white">
+                    <span className="flex items-center gap-1.5">
+                      <Palette className="w-4 h-4 text-indigo-400" />
+                      {isEn ? 'Terminal Appearance' : 'تنظیمات رنگ و فونت کنسول'}
+                    </span>
                     <button
-                      key={opt.id}
                       type="button"
-                      onClick={() => handleSelectTextColor(opt.color)}
-                      className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded transition-all cursor-pointer border ${
-                        terminalTextColor === opt.color
-                          ? 'scale-110 border-white ring-2 ring-indigo-500 shadow-[0_0_8px_rgba(255,255,255,0.5)]'
-                          : 'border-white/30 hover:scale-110 hover:border-white/70 opacity-80 hover:opacity-100'
-                      }`}
-                      style={{ backgroundColor: opt.color }}
-                      title={`${isEn ? opt.nameEn : opt.nameFa} (${opt.color})`}
-                      aria-label={opt.nameEn}
-                    />
-                  ))}
+                      onClick={() => setShowAppearanceMenu(false)}
+                      className="text-slate-400 hover:text-white text-xs cursor-pointer p-0.5 rounded hover:bg-slate-800"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Terminal Background Color */}
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between text-[11px] font-medium text-slate-300 mb-1.5">
+                      <span>{isEn ? 'Background Color:' : 'رنگ پس‌زمینه:'}</span>
+                      <span className="font-mono text-[10px] text-indigo-300">
+                        {TERMINAL_BG_OPTIONS.find((o) => o.color === terminalBgColor)?.[isEn ? 'nameEn' : 'nameFa'] || terminalBgColor}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {TERMINAL_BG_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => handleSelectBgColor(opt.color)}
+                          className={`flex items-center gap-1 p-1 rounded-md border text-[10px] transition-all cursor-pointer ${
+                            terminalBgColor === opt.color
+                              ? 'border-indigo-400 ring-2 ring-indigo-500/50 bg-slate-800 text-white font-bold'
+                              : 'border-slate-800 hover:border-slate-600 bg-slate-950/60 text-slate-400 hover:text-slate-200'
+                          }`}
+                          title={`${isEn ? opt.nameEn : opt.nameFa} (${opt.color})`}
+                        >
+                          <span
+                            className="w-3 h-3 rounded-full border border-white/20 shrink-0"
+                            style={{ backgroundColor: opt.color }}
+                          />
+                          <span className="truncate">{isEn ? opt.nameEn.split(' ')[0] : opt.nameFa.split(' ')[0]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Terminal Text / Font Color */}
+                  <div>
+                    <div className="flex items-center justify-between text-[11px] font-medium text-slate-300 mb-1.5">
+                      <span>{isEn ? 'Font / Text Color:' : 'رنگ قلم متن:'}</span>
+                      <span className="font-mono text-[10px] text-indigo-300">
+                        {TERMINAL_TEXT_OPTIONS.find((o) => o.color === terminalTextColor)?.[isEn ? 'nameEn' : 'nameFa'] || terminalTextColor}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {TERMINAL_TEXT_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => handleSelectTextColor(opt.color)}
+                          className={`flex items-center gap-1 p-1 rounded-md border text-[10px] transition-all cursor-pointer ${
+                            terminalTextColor === opt.color
+                              ? 'border-indigo-400 ring-2 ring-indigo-500/50 bg-slate-800 text-white font-bold'
+                              : 'border-slate-800 hover:border-slate-600 bg-slate-950/60 text-slate-400 hover:text-slate-200'
+                          }`}
+                          title={`${isEn ? opt.nameEn : opt.nameFa} (${opt.color})`}
+                        >
+                          <span
+                            className="w-3 h-3 rounded-full border border-white/20 shrink-0"
+                            style={{ backgroundColor: opt.color }}
+                          />
+                          <span className="truncate">{isEn ? opt.nameEn.split(' ')[0] : opt.nameFa.split(' ')[0]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Window & View Controls */}
@@ -1916,17 +2150,9 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             device={device}
             ports={ports}
             isMikroTik={false}
-            onPortClick={(port) => {
-              setSelectedPort(port);
-              if (!currentInput.trim()) {
-                if (cliMode === 'GLOBAL_CONFIG') {
-                  setCurrentInput(`interface ${port.port_id}`);
-                } else {
-                  setCurrentInput(`show interface ${port.port_id}`);
-                }
-              }
-            }}
+            onPortClick={handlePortClick}
             selectedPortId={selectedPort?.port_id}
+            selectedPortIds={selectedPortIds}
           />
         )}
 

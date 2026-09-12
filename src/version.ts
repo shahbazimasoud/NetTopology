@@ -10,9 +10,30 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.31.0';
+export const APP_VERSION = '1.32.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.32.0',
+    releaseDate: '2026-09-12',
+    type: 'minor',
+    title: 'تعبیه منوی شناور رنگ و قلم در ترمینال‌های سیسکو و میکروتیک، رفع پرش تولتیپ فیس‌پلیت پورت‌ها و هوشمندسازی انتخاب و جایگزینی بازه‌ای پورت‌ها در خط فرمان',
+    title_en: 'Appearance Menu Popover for Cisco & MikroTik Terminals, Flicker-Free Port Tooltips, and Smart Port/Range Command Insertion',
+    changes: [
+      'انتقال پالت‌های انتخاب رنگ پس‌زمینه و قلم ترمینال‌های سیسکو و میکروتیک به یک دکمه منوی اختصاصی ظاهر (Appearance) جهت جلوگیری از شلوغی هدر ترمینال.',
+      'رفع کامل لرزش و پرش‌های مکرر تولتیپ پورت‌ها در بخش Hardware Port Faceplate با حذف شناسه بومی title مرورگر و پیاده‌سازی تولتیپ مستقل، سبک و بدون تداخل رویدادهای ماوس.',
+      'هوشمندسازی کلیک روی پورت‌ها جهت درج در دستور: جایگزینی هوشمندانه نام پورت جدید با پورت قبلی بدون پاک شدن متن دستور تایپ‌شده کاربر.',
+      'پشتیبانی از کلید Ctrl/Shift برای انتخاب بازه‌ای از پورت‌ها (Range Selection) در سیسکو و میکروتیک.',
+      'پشتیبانی جامع ترمینال سیسکو از دستورات بازه‌ای نظیر interface range و تغییر خودکار پرامپت به (config-if-range)# و اعمال دستورات ساب‌کانفیگ (shutdown، no shutdown، switchport vlan و...) روی تمامی پورت‌های انتخاب‌شده در بازه.'
+    ],
+    changes_en: [
+      'Added a dedicated Appearance popover menu for Cisco and MikroTik terminals to cleanly house background and text color swatches without cluttering the toolbar.',
+      'Completely eliminated tooltip flickering and mouse hover jitter on the Hardware Port Faceplate by removing native browser title attributes and isolating hover events.',
+      'Implemented smart port click insertion in terminal command input: clicking subsequent ports cleanly replaces the previous interface token without erasing existing typed commands.',
+      'Added Ctrl/Meta/Shift key support for selecting ranges of ports across both Cisco and MikroTik port faceplates.',
+      'Full Cisco CLI support for interface range commands with dynamic (config-if-range)# prompt and multi-port subcommand application (shutdown, vlan assignment, mode trunk/access, description).'
+    ]
+  },
   {
     version: '1.31.0',
     releaseDate: '2026-09-12',

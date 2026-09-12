@@ -98,6 +98,11 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
   const [ports, setPorts] = useState<SwitchPort[]>([]);
   const [selectedPort, setSelectedPort] = useState<SwitchPort | null>(null);
+  const [selectedPortIds, setSelectedPortIds] = useState<string[]>([]);
+  const [showAppearanceMenu, setShowAppearanceMenu] = useState(false);
+  const appearanceMenuRef = useRef<HTMLDivElement>(null);
+  const lastClickedPortRef = useRef<SwitchPort | null>(null);
+  const lastInsertedPortTextRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!device || !isOpen) return;
@@ -107,6 +112,93 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
       })
       .catch((err) => console.warn('Failed to fetch ports for MikroTik terminal', err));
   }, [device?.id, isOpen]);
+
+  // Close appearance menu on click outside
+  useEffect(() => {
+    if (!showAppearanceMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (appearanceMenuRef.current && !appearanceMenuRef.current.contains(e.target as Node)) {
+        setShowAppearanceMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAppearanceMenu]);
+
+  // Handle MikroTik port click with intelligent insertion and Ctrl+Click range support
+  const handlePortClick = (port: SwitchPort, e: React.MouseEvent) => {
+    const isRangeAction = (e.ctrlKey || e.metaKey || e.shiftKey) && lastClickedPortRef.current !== null;
+    let newSelectedIds: string[] = [];
+    let isRange = false;
+    let rangeStr = '';
+
+    if (isRangeAction && lastClickedPortRef.current) {
+      const idxA = ports.findIndex((p) => p.port_id === lastClickedPortRef.current?.port_id);
+      const idxB = ports.findIndex((p) => p.port_id === port.port_id);
+      if (idxA !== -1 && idxB !== -1) {
+        const minIdx = Math.min(idxA, idxB);
+        const maxIdx = Math.max(idxA, idxB);
+        const rangePorts = ports.slice(minIdx, maxIdx + 1);
+        newSelectedIds = rangePorts.map((p) => p.port_id);
+        isRange = true;
+        rangeStr = rangePorts.map((p) => p.port_id).join(',');
+      } else {
+        newSelectedIds = [port.port_id];
+        lastClickedPortRef.current = port;
+      }
+    } else {
+      newSelectedIds = [port.port_id];
+      lastClickedPortRef.current = port;
+    }
+
+    setSelectedPort(port);
+    setSelectedPortIds(newSelectedIds);
+
+    const targetText = isRange ? rangeStr : port.port_id;
+
+    setInput((prevInput) => {
+      // 1. If empty or whitespace only
+      if (!prevInput.trim()) {
+        lastInsertedPortTextRef.current = targetText;
+        if (isRange) {
+          return `/interface print where name in (${newSelectedIds.map((id) => `"${id}"`).join(',')})`;
+        }
+        return `/interface print where name="${port.port_id}"`;
+      }
+
+      // 2. If prevInput contains the previously inserted port/range token
+      const lastInserted = lastInsertedPortTextRef.current;
+      if (lastInserted && prevInput.includes(lastInserted)) {
+        lastInsertedPortTextRef.current = targetText;
+        return prevInput.replace(lastInserted, targetText);
+      }
+
+      // 3. If prevInput contains any known port ID from current device
+      for (const p of ports) {
+        if (prevInput.includes(p.port_id)) {
+          lastInsertedPortTextRef.current = targetText;
+          return prevInput.replace(p.port_id, targetText);
+        }
+      }
+
+      // 4. Regex for interface tokens like ether1, sfp-sfpplus1
+      const mtkRegex = /\b(?:ether\d+|sfp(?:-sfpplus)?\d+)\b/i;
+      const match = prevInput.match(mtkRegex);
+      if (match) {
+        lastInsertedPortTextRef.current = targetText;
+        return prevInput.replace(match[0], targetText);
+      }
+
+      // 5. Append target port/range to user's existing typed command without clearing
+      lastInsertedPortTextRef.current = targetText;
+      const needsSpace = prevInput.length > 0 && !prevInput.endsWith(' ');
+      return `${prevInput}${needsSpace ? ' ' : ''}${targetText}`;
+    });
+
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 10);
+  };
 
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
@@ -173,6 +265,7 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
 
     setHistory((prev) => [rawCmd, ...prev.filter((c) => c !== rawCmd)].slice(0, 50));
     setHistoryIndex(-1);
+    lastInsertedPortTextRef.current = null;
 
     // Simulate response based on command
     let responseText = '';
@@ -254,30 +347,86 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Color Palette Selector */}
-            <div
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg border ${
-                isLightMode ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
-              }`}
-            >
-              <Palette className="w-3.5 h-3.5 text-slate-400" />
-              {bgOptions.map((opt) => (
-                <button
-                  key={opt.id}
-                  onClick={() => setBgChoice(opt.id)}
-                  style={{ backgroundColor: opt.color }}
-                  className={`w-3.5 h-3.5 rounded-full border transition-transform ${
-                    bgChoice === opt.id
-                      ? isLightMode
-                        ? 'border-cyan-600 ring-1 ring-cyan-500 scale-110'
-                        : 'border-cyan-400 ring-1 ring-cyan-400 scale-110'
-                      : isLightMode
-                      ? 'border-slate-300'
-                      : 'border-slate-700'
-                  }`}
-                  title={isEn ? opt.nameEn : opt.nameFa}
+            {/* Terminal Appearance Menu Popover (Button-based to prevent clutter) */}
+            <div className="relative" ref={appearanceMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowAppearanceMenu(!showAppearanceMenu)}
+                className={`px-2 py-1 rounded-lg border text-xs flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  showAppearanceMenu
+                    ? isLightMode
+                      ? 'bg-cyan-100 text-cyan-800 border-cyan-400 shadow-xs'
+                      : 'bg-cyan-600 text-white border-cyan-400 shadow-xs'
+                    : isLightMode
+                    ? 'bg-slate-50 text-slate-700 hover:text-slate-900 border-slate-200 hover:bg-slate-100'
+                    : 'bg-slate-950/90 text-slate-300 hover:text-white border-slate-800 hover:bg-slate-900'
+                }`}
+                title={isEn ? "Terminal Theme & Colors" : "تنظیم تم و رنگ کنسول میکروتیک"}
+              >
+                <Palette className="w-3.5 h-3.5 text-cyan-500" />
+                <span className="hidden sm:inline font-medium text-[11px]">{isEn ? 'Appearance' : 'رنگ و تم'}</span>
+                <span
+                  className="w-3 h-3 rounded-full border border-black/20 dark:border-white/40 inline-block shrink-0 shadow-xs"
+                  style={{ backgroundColor: currentBg }}
                 />
-              ))}
+              </button>
+
+              {showAppearanceMenu && (
+                <div
+                  className={`absolute top-full mt-1.5 right-0 z-50 w-72 p-3 rounded-xl backdrop-blur-md border shadow-2xl animate-in fade-in zoom-in-95 ${
+                    isLightMode
+                      ? 'bg-white/95 border-slate-200 text-slate-800'
+                      : 'bg-slate-900/95 border-slate-700 text-slate-200'
+                  }`}
+                  dir={isEn ? 'ltr' : 'rtl'}
+                >
+                  <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold">
+                    <span className="flex items-center gap-1.5">
+                      <Palette className="w-4 h-4 text-cyan-500" />
+                      {isEn ? 'RouterOS Terminal Theme' : 'تنظیمات پس‌زمینه و تم روتر او اس'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowAppearanceMenu(false)}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs cursor-pointer p-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between text-[11px] font-medium mb-2">
+                      <span>{isEn ? 'Color Scheme:' : 'طرح رنگ ترمینال:'}</span>
+                      <span className="font-mono text-[10px] text-cyan-600 dark:text-cyan-400">
+                        {isEn ? currentBgOpt.nameEn : currentBgOpt.nameFa}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {bgOptions.map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setBgChoice(opt.id)}
+                          className={`flex items-center gap-2 p-2 rounded-lg border text-left text-[11px] transition-all cursor-pointer ${
+                            bgChoice === opt.id
+                              ? 'border-cyan-500 ring-2 ring-cyan-500/40 font-semibold ' +
+                                (isLightMode ? 'bg-cyan-50 text-cyan-900' : 'bg-slate-800 text-white')
+                              : isLightMode
+                              ? 'border-slate-200 hover:border-slate-300 bg-slate-50/70 text-slate-600 hover:text-slate-900'
+                              : 'border-slate-800 hover:border-slate-700 bg-slate-950/60 text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          <span
+                            className="w-4 h-4 rounded-full border border-black/20 dark:border-white/20 shrink-0 shadow-xs"
+                            style={{ backgroundColor: opt.color }}
+                          />
+                          <span className="truncate">{isEn ? opt.nameEn : opt.nameFa}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Split Screen Button (Request 6) */}
@@ -385,13 +534,9 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
             device={device}
             ports={ports}
             isMikroTik={true}
-            onPortClick={(port) => {
-              setSelectedPort(port);
-              if (!input.trim()) {
-                setInput(`/interface print where name="${port.port_id}"`);
-              }
-            }}
+            onPortClick={handlePortClick}
             selectedPortId={selectedPort?.port_id}
+            selectedPortIds={selectedPortIds}
           />
         )}
 
