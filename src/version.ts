@@ -10,9 +10,28 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.32.0';
+export const APP_VERSION = '1.33.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.33.0',
+    releaseDate: '2026-09-12',
+    type: 'minor',
+    title: 'افزودن درگ & دراپ و جابجایی هوشمند پنجره‌های ترمینال همزمان، قفل بستن ترمینال با کلیک بیرون مودال و رفع برش تولتیپ پورت‌ها',
+    title_en: 'Drag & Drop Terminal Pane Reordering, Smart Multi-Pane Swapping, Backdrop Outside-Click Lock, and Unclipped Port Tooltips',
+    changes: [
+      'پیاده‌سازی قابلیت کشیدن و رها کردن (Drag & Drop) با دستگیره اختصاصی و نمایشگر شناور هدف برای جابجایی و سوآپ مستقیم هر کدام از پنجره‌های ترمینال اسپلیت.',
+      'رفع محدودیت جابجایی تنها دو ترمینال سمت چپ و هوشمندسازی دکمه‌های Swap برای جابجایی دوره‌ای و سریع بین تمام پنجره‌های فعال.',
+      'افزودن دکمه قفل بستن ترمینال (Backdrop Lock) در نوار ابزار میز کار چند ترمینال و مودال‌های سیسکو و میکروتیک برای جلوگیری از بسته شدن با کلیک تصادفی بیرون مودال.',
+      'رفع کامل مشکل افتادن تولتیپ مشخصات پورت‌ها در هاور پشت آیتم‌های بالایی و اسکرول فیس‌پلیت سخت‌افزاری با سیستم مختصات شناور آزاد.'
+    ],
+    changes_en: [
+      'Implemented full Drag & Drop support with dedicated grip handles and drop target indicators to easily reorder and swap any terminal pane in multi-terminal workspace.',
+      'Overcame the two-leftmost-terminal swap limitation by adding smart cyclic swapping and drag-and-drop across all active split-screen panes.',
+      'Added a Backdrop Lock toggle in the multi-terminal workspace top bar and Cisco/MikroTik modals to prevent modal closure upon clicking outside.',
+      'Completely resolved hardware port tooltip clipping over upper elements by using an unconstrained fixed-coordinate overlay renderer.'
+    ]
+  },
   {
     version: '1.32.0',
     releaseDate: '2026-09-12',

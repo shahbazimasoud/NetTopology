@@ -29,6 +29,8 @@ import {
   Columns,
   ArrowLeftRight,
   RefreshCw,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { Device, SwitchPort, VlanInfo } from '../types';
 import {
@@ -131,6 +133,24 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
     terminalBgColor === '#fffbeb' ||
     terminalBgColor.toLowerCase() === '#fff' ||
     terminalBgColor.toLowerCase() === '#ffffff';
+
+  const [preventBackdropClose, setPreventBackdropClose] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('nettop_terminal_lock_backdrop') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const togglePreventBackdropClose = () => {
+    setPreventBackdropClose((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('nettop_terminal_lock_backdrop', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const [terminalTextColor, setTerminalTextColor] = useState<string>(() => {
     try {
@@ -2120,6 +2140,25 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
 
             {!isEmbedded && (
               <button
+                type="button"
+                onClick={togglePreventBackdropClose}
+                className={`p-1.5 rounded transition ${
+                  preventBackdropClose
+                    ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 shadow-xs'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+                title={
+                  preventBackdropClose
+                    ? (isEn ? 'Terminal Locked: Clicking outside will NOT close it (Click to unlock)' : 'ترمینال قفل است: کلیک بیرون پنجره آن را نمی‌بندد (جهت باز کردن کلیک کنید)')
+                    : (isEn ? 'Lock Terminal: Prevent closing when clicking outside' : 'قفل ترمینال: جلوگیری از بسته شدن با کلیک بیرون پنجره')
+                }
+              >
+                {preventBackdropClose ? <Lock className="w-4 h-4 text-amber-400" /> : <Unlock className="w-4 h-4" />}
+              </button>
+            )}
+
+            {!isEmbedded && (
+              <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
                 className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
                 title={isFullscreen ? (isEn ? 'Exit Fullscreen' : 'حالت پنجره') : (isEn ? 'Fullscreen' : 'تمام صفحه')}
@@ -2523,7 +2562,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
         data-modal-backdrop="true"
         dir={isEn ? 'ltr' : 'rtl'}
         onClick={(e) => {
-          if (e.target === e.currentTarget) {
+          if (e.target === e.currentTarget && !preventBackdropClose) {
             handleCloseModal();
           }
         }}

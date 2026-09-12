@@ -29,6 +29,7 @@ export const CompactTerminalFaceplate: React.FC<CompactTerminalFaceplateProps> =
   const { isEn } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [activeHoverPort, setActiveHoverPort] = useState<SwitchPort | null>(null);
+  const [hoverCoords, setHoverCoords] = useState<{ x: number; y: number } | null>(null);
 
   if (!ports || ports.length === 0) {
     return null;
@@ -145,6 +146,12 @@ export const CompactTerminalFaceplate: React.FC<CompactTerminalFaceplateProps> =
       {isExpanded && (
         <div className="px-3 pb-2 pt-0.5">
           <div
+            onScroll={() => {
+              if (activeHoverPort) {
+                setActiveHoverPort(null);
+                setHoverCoords(null);
+              }
+            }}
             className={`rounded-lg p-2 border shadow-inner overflow-x-auto custom-scrollbar ${
               isLightMode
                 ? 'bg-slate-200/90 border-slate-300'
@@ -162,8 +169,15 @@ export const CompactTerminalFaceplate: React.FC<CompactTerminalFaceplateProps> =
                   <div
                     key={port.port_id}
                     onClick={(e) => onPortClick?.(port, e)}
-                    onMouseEnter={() => setActiveHoverPort(port)}
-                    onMouseLeave={() => setActiveHoverPort((cur) => (cur?.port_id === port.port_id ? null : cur))}
+                    onMouseEnter={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setHoverCoords({ x: rect.left + rect.width / 2, y: rect.bottom + 8 });
+                      setActiveHoverPort(port);
+                    }}
+                    onMouseLeave={() => {
+                      setActiveHoverPort((cur) => (cur?.port_id === port.port_id ? null : cur));
+                      setHoverCoords(null);
+                    }}
                     className={`cursor-pointer shrink-0 rounded transition-shadow ${
                       isSelected
                         ? isMikroTik
@@ -178,37 +192,7 @@ export const CompactTerminalFaceplate: React.FC<CompactTerminalFaceplateProps> =
                       height: isMikroTik ? '42px' : '40px',
                       position: 'relative',
                     }}
-                    title={`${port.port_id} (${port.name}) - ${port.status.toUpperCase()} - Mode: ${port.mode.toUpperCase()} - VLAN ${port.vlan}${port.connected_device ? ` - ${port.connected_device}` : ''}`}
                   >
-                    {/* Non-blocking floating tooltip with pointer-events-none directly above hovered port */}
-                    {isHovered && (
-                      <div
-                        className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 z-50 px-2 py-1 rounded-md bg-slate-900/95 border border-indigo-500/60 shadow-xl text-[10px] font-mono text-white whitespace-nowrap"
-                        style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' }}
-                      >
-                        <div className="flex items-center gap-1.5 font-bold">
-                          <span className={port.status === 'up' ? 'text-emerald-400' : 'text-rose-400'}>●</span>
-                          <span className="text-cyan-300">{port.port_id}</span>
-                          <span className="text-slate-400 text-[9px]">({port.name})</span>
-                        </div>
-                        <div className="text-[9px] text-slate-300 flex items-center gap-1 mt-0.5">
-                          <span className={port.status === 'up' ? 'text-emerald-300 font-semibold' : 'text-rose-300'}>
-                            {port.status.toUpperCase()}
-                          </span>
-                          <span>•</span>
-                          <span>VLAN {port.vlan}</span>
-                          <span>•</span>
-                          <span>{port.mode.toUpperCase()}</span>
-                          {port.connected_device && port.connected_device !== 'Disconnected' && (
-                            <>
-                              <span>•</span>
-                              <span className="text-cyan-300 truncate max-w-[100px]">{port.connected_device}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
                     <div
                       style={{
                         transform: 'scale(0.5)',
@@ -235,6 +219,50 @@ export const CompactTerminalFaceplate: React.FC<CompactTerminalFaceplateProps> =
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Completely unclipped, high-z-index floating tooltip positioned below the hovered port */}
+      {activeHoverPort && hoverCoords && (
+        <div
+          className="pointer-events-none fixed z-[99999] px-3 py-1.5 rounded-lg bg-slate-900/95 border border-cyan-500/60 shadow-2xl text-[11px] font-mono text-white whitespace-nowrap animate-in fade-in zoom-in-95 duration-100"
+          style={{
+            left: `${hoverCoords.x}px`,
+            top: `${hoverCoords.y}px`,
+            transform: 'translateX(-50%)',
+            filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.8))',
+          }}
+        >
+          {/* Arrow pointing up towards port */}
+          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-slate-900 border-t border-l border-cyan-500/60" />
+
+          <div className="relative z-10 flex items-center gap-2 font-bold">
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${
+                activeHoverPort.status === 'up'
+                  ? 'bg-emerald-400 shadow-xs shadow-emerald-400'
+                  : 'bg-rose-400'
+              }`}
+            />
+            <span className="text-cyan-300 font-bold">{activeHoverPort.port_id}</span>
+            <span className="text-slate-400 text-[10px]">({activeHoverPort.name})</span>
+            <span className="opacity-40">•</span>
+            <span className={activeHoverPort.status === 'up' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+              {activeHoverPort.status.toUpperCase()}
+            </span>
+            <span className="opacity-40">•</span>
+            <span className="text-amber-300">VLAN {activeHoverPort.vlan}</span>
+            <span className="opacity-40">•</span>
+            <span className="text-purple-300">{activeHoverPort.mode.toUpperCase()}</span>
+          </div>
+
+          {activeHoverPort.connected_device && activeHoverPort.connected_device !== 'Disconnected' && (
+            <div className="relative z-10 text-[10px] text-slate-300 mt-1 flex items-center gap-1.5 border-t border-slate-800 pt-1">
+              <Cable className="w-3 h-3 text-cyan-400 shrink-0" />
+              <span className="text-slate-400">{isEn ? 'Connected:' : 'متصل به:'}</span>
+              <span className="text-white font-semibold truncate max-w-[220px]">{activeHoverPort.connected_device}</span>
+            </div>
+          )}
         </div>
       )}
     </div>

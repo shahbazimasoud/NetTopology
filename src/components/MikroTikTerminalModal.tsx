@@ -24,6 +24,8 @@ import {
   Columns,
   ArrowLeftRight,
   RefreshCw,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { Device, SwitchPort } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -103,6 +105,24 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
   const appearanceMenuRef = useRef<HTMLDivElement>(null);
   const lastClickedPortRef = useRef<SwitchPort | null>(null);
   const lastInsertedPortTextRef = useRef<string | null>(null);
+
+  const [preventBackdropClose, setPreventBackdropClose] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('nettop_terminal_lock_backdrop') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const togglePreventBackdropClose = () => {
+    setPreventBackdropClose((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('nettop_terminal_lock_backdrop', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!device || !isOpen) return;
@@ -497,6 +517,27 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
 
             {!isEmbedded && (
               <button
+                type="button"
+                onClick={togglePreventBackdropClose}
+                className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                  preventBackdropClose
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-xs'
+                    : isLightMode
+                    ? 'bg-slate-100 text-slate-600 hover:text-slate-900 border-slate-200'
+                    : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700'
+                }`}
+                title={
+                  preventBackdropClose
+                    ? (isEn ? 'Terminal Locked: Clicking outside will NOT close it (Click to unlock)' : 'ترمینال قفل است: کلیک بیرون پنجره آن را نمی‌بندد (جهت باز کردن کلیک کنید)')
+                    : (isEn ? 'Lock Terminal: Prevent closing when clicking outside' : 'قفل ترمینال: جلوگیری از بسته شدن با کلیک بیرون پنجره')
+                }
+              >
+                {preventBackdropClose ? <Lock className="w-4 h-4 text-amber-400" /> : <Unlock className="w-4 h-4" />}
+              </button>
+            )}
+
+            {!isEmbedded && (
+              <button
                 onClick={() => setIsFullScreen(!isFullScreen)}
                 className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
                   isLightMode
@@ -790,9 +831,16 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
   }
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-xs animate-in fade-in duration-200 ${
-      isLightMode ? 'bg-slate-900/50' : 'bg-black/85'
-    }`}>
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !preventBackdropClose) {
+          onClose();
+        }
+      }}
+      className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-xs animate-in fade-in duration-200 ${
+        isLightMode ? 'bg-slate-900/50' : 'bg-black/85'
+      }`}
+    >
       {modalContent}
     </div>
   );

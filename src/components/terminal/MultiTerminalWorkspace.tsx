@@ -11,6 +11,9 @@ import {
   Sparkles,
   Terminal as TerminalIcon,
   RefreshCw,
+  GripVertical,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { Device, isMikroTikDevice } from '../../types';
 import { CiscoTerminalModal } from '../CiscoTerminalModal';
@@ -40,6 +43,25 @@ export const MultiTerminalWorkspace: React.FC<MultiTerminalWorkspaceProps> = ({
   const { isEn } = useLanguage();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [layoutOrientation, setLayoutOrientation] = useState<'columns' | 'grid'>('columns');
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [preventBackdropClose, setPreventBackdropClose] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('nettop_terminal_lock_backdrop') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const togglePreventBackdropClose = () => {
+    setPreventBackdropClose((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('nettop_terminal_lock_backdrop', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   if (!isOpen || activeTerminalDevices.length === 0) {
     return null;
@@ -64,6 +86,12 @@ export const MultiTerminalWorkspace: React.FC<MultiTerminalWorkspaceProps> = ({
     next[fromIdx] = next[toIdx];
     next[toIdx] = temp;
     onDevicesChange(next);
+  };
+
+  const handleSwapWithNext = (fromIdx: number) => {
+    if (activeTerminalDevices.length <= 1) return;
+    const toIdx = (fromIdx + 1) % activeTerminalDevices.length;
+    handleSwapPanes(fromIdx, toIdx);
   };
 
   const handleQuickSwapLeftRight = () => {
@@ -141,6 +169,11 @@ export const MultiTerminalWorkspace: React.FC<MultiTerminalWorkspaceProps> = ({
     <div
       className="fixed inset-0 z-50 flex flex-col p-1 sm:p-2.5 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-200 overflow-hidden"
       dir={isEn ? 'ltr' : 'rtl'}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !preventBackdropClose) {
+          onClose();
+        }
+      }}
     >
       {/* Global Multi-Terminal Top Navigation Bar */}
       <div className="flex items-center justify-between px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl mb-2 text-xs select-none shrink-0 shadow-lg">
@@ -156,20 +189,28 @@ export const MultiTerminalWorkspace: React.FC<MultiTerminalWorkspaceProps> = ({
               {activeTerminalDevices.filter(Boolean).length} / {paneCount} {isEn ? 'Panes' : 'ترمینال'}
             </span>
           </div>
+
+          {/* Drag & Drop Hint */}
+          {paneCount > 1 && (
+            <div className="hidden xl:flex items-center gap-1 text-[10px] text-slate-400 font-mono px-2 py-1 rounded bg-slate-800/60 border border-slate-700/50">
+              <GripVertical className="w-3.5 h-3.5 text-indigo-400" />
+              <span>{isEn ? 'Drag & drop panes to reorder/swap' : 'قابلیت کشیدن و رها کردن (Drag & Drop) برای جابجایی پنجره‌ها'}</span>
+            </div>
+          )}
         </div>
 
         {/* Global Action Buttons */}
         <div className="flex items-center gap-1.5">
-          {/* Quick Swap Left/Right Button */}
+          {/* Quick Swap Panes Button */}
           {paneCount >= 2 && (
             <button
               type="button"
               onClick={handleQuickSwapLeftRight}
               className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition flex items-center gap-1.5 font-medium cursor-pointer text-xs"
-              title={isEn ? 'Swap Left and Right Terminals' : 'جابجایی ترمینال چپ و راست با یکدیگر'}
+              title={isEn ? 'Swap Panes (Left & Right / Next)' : 'جابجایی موقعیت پنجره‌ها'}
             >
               <ArrowLeftRight className="w-3.5 h-3.5" />
-              <span>{isEn ? 'Swap Panes' : 'جابجایی چپ و راست'}</span>
+              <span>{isEn ? 'Swap Panes' : 'جابجایی پنجره‌ها'}</span>
             </button>
           )}
 
@@ -197,6 +238,27 @@ export const MultiTerminalWorkspace: React.FC<MultiTerminalWorkspaceProps> = ({
               {layoutOrientation === 'columns' ? <Grid2X2 className="w-3.5 h-3.5" /> : <Rows className="w-3.5 h-3.5" />}
             </button>
           )}
+
+          {/* Lock Terminal Backdrop Close Toggle Button */}
+          <button
+            type="button"
+            onClick={togglePreventBackdropClose}
+            className={`px-2 py-1 rounded-lg border text-xs flex items-center gap-1.5 transition font-medium cursor-pointer ${
+              preventBackdropClose
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-xs shadow-amber-500/20'
+                : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border-slate-700'
+            }`}
+            title={
+              preventBackdropClose
+                ? (isEn ? 'Terminal Locked: Clicking outside will NOT close it (Click to unlock)' : 'ترمینال قفل است: کلیک بیرون پنجره آن را نمی‌بندد (جهت باز کردن کلیک کنید)')
+                : (isEn ? 'Lock Terminal: Prevent closing when clicking outside' : 'قفل ترمینال: جلوگیری از بسته شدن با کلیک بیرون پنجره')
+            }
+          >
+            {preventBackdropClose ? <Lock className="w-3.5 h-3.5 text-amber-400" /> : <Unlock className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">
+              {preventBackdropClose ? (isEn ? 'Locked' : 'قفل بسته شدن') : (isEn ? 'Lock' : 'قفل')}
+            </span>
+          </button>
 
           {/* Fullscreen Button */}
           <button
@@ -231,12 +293,100 @@ export const MultiTerminalWorkspace: React.FC<MultiTerminalWorkspaceProps> = ({
       <div className={`flex-1 grid ${gridLayoutClass} gap-2 min-h-0 overflow-y-auto`}>
         {activeTerminalDevices.map((dev, index) => {
           const isMikroTik = dev ? isMikroTikDevice(dev) : false;
+          const isBeingDragged = draggedIndex === index;
+          const isTargetedByDrag = dragOverIndex === index && draggedIndex !== index;
 
           return (
             <div
               key={dev ? `${dev.id}-${index}` : `empty-slot-${index}`}
-              className="relative flex flex-col h-full min-h-[340px] rounded-xl border border-slate-800 bg-slate-900/90 overflow-hidden shadow-xl"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (dragOverIndex !== index) {
+                  setDragOverIndex(index);
+                }
+              }}
+              onDragLeave={(e) => {
+                if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                if (dragOverIndex === index) {
+                  setDragOverIndex(null);
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const from = draggedIndex !== null ? draggedIndex : parseInt(e.dataTransfer.getData('text/plain'), 10);
+                if (!isNaN(from) && from !== index) {
+                  handleSwapPanes(from, index);
+                }
+                setDraggedIndex(null);
+                setDragOverIndex(null);
+              }}
+              className={`relative flex flex-col h-full min-h-[340px] rounded-xl border transition-all duration-150 overflow-hidden shadow-xl ${
+                isBeingDragged
+                  ? 'opacity-40 border-dashed border-indigo-500 scale-[0.99]'
+                  : isTargetedByDrag
+                  ? 'border-2 border-indigo-400 ring-4 ring-indigo-500/40 bg-indigo-950/20'
+                  : 'border-slate-800 bg-slate-900/90'
+              }`}
             >
+              {/* Drag over drop target visual overlay */}
+              {isTargetedByDrag && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-indigo-950/80 backdrop-blur-xs border-2 border-dashed border-indigo-400 rounded-xl pointer-events-none animate-in fade-in duration-100">
+                  <div className="px-4 py-2.5 rounded-xl bg-slate-900 border border-indigo-400 shadow-2xl flex items-center gap-2.5 text-white font-medium text-xs">
+                    <ArrowLeftRight className="w-4 h-4 text-indigo-400 animate-pulse" />
+                    <span>
+                      {isEn
+                        ? `Drop to swap with Pane ${index + 1}`
+                        : `رها کنید تا با پنجره شماره ${index + 1} جابجا شود`}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Top Drag Handle & Info Bar */}
+              <div className="flex items-center justify-between px-3 py-1 bg-slate-950/90 border-b border-slate-800 text-[11px] text-slate-300 select-none shrink-0">
+                <div
+                  draggable={true}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', String(index));
+                    e.dataTransfer.effectAllowed = 'move';
+                    setDraggedIndex(index);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedIndex(null);
+                    setDragOverIndex(null);
+                  }}
+                  className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing hover:text-white transition px-1.5 py-0.5 rounded hover:bg-slate-800 font-mono font-medium text-[11px]"
+                  title={isEn ? "Drag to swap/reorder this pane with another" : "این پنجره را با ماوس بگیرید و روی پنجره دیگر رها کنید تا جابجا شوند (Drag & Drop)"}
+                >
+                  <GripVertical className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span className="font-bold text-white">{isEn ? `Pane ${index + 1}` : `پنجره ${index + 1}`}</span>
+                  {dev && (
+                    <span className="text-slate-400 truncate max-w-[120px] sm:max-w-[200px]">
+                      : {dev.name} ({dev.ip || dev.model})
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1 font-mono text-[10px] text-slate-400">
+                  {paneCount > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleSwapWithNext(index)}
+                      className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 hover:border-amber-500/40 flex items-center gap-1 transition cursor-pointer"
+                      title={
+                        isEn
+                          ? `Swap with Pane ${(index + 1) % paneCount + 1}`
+                          : `جابجایی با پنجره شماره ${(index + 1) % paneCount + 1}`
+                      }
+                    >
+                      <ArrowLeftRight className="w-3 h-3" />
+                      <span>{isEn ? `Swap ➔ P${(index + 1) % paneCount + 1}` : `جابجایی با ${(index + 1) % paneCount + 1}`}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* If device is selected, render the embedded CLI terminal */}
               {dev ? (
                 isMikroTik ? (
@@ -247,7 +397,7 @@ export const MultiTerminalWorkspace: React.FC<MultiTerminalWorkspaceProps> = ({
                     onDeviceUpdated={onDeviceUpdated}
                     isLightMode={isLightMode}
                     isEmbedded={true}
-                    onSwap={handleQuickSwapLeftRight}
+                    onSwap={() => handleSwapWithNext(index)}
                     paneIndex={index}
                     totalPanes={paneCount}
                     onClosePane={() => handleClosePane(index)}
@@ -261,7 +411,7 @@ export const MultiTerminalWorkspace: React.FC<MultiTerminalWorkspaceProps> = ({
                     onClose={() => handleClosePane(index)}
                     onDeviceUpdated={onDeviceUpdated}
                     isEmbedded={true}
-                    onSwap={handleQuickSwapLeftRight}
+                    onSwap={() => handleSwapWithNext(index)}
                     paneIndex={index}
                     totalPanes={paneCount}
                     onClosePane={() => handleClosePane(index)}
