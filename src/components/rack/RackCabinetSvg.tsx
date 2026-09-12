@@ -18,6 +18,7 @@ import {
   Terminal,
   Layers,
   ArrowRightLeft,
+  CreditCard,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 
@@ -29,6 +30,7 @@ interface RackCabinetSvgProps {
   onEditRack?: (rack: CustomTopologyRack) => void;
   onDeleteRack: (rackId: string) => void;
   onSelectDevice?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
+  onViewInCardMode?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditDeviceNic?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditSpecs?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditDeviceProperties?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
@@ -50,6 +52,7 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
   onEditRack,
   onDeleteRack,
   onSelectDevice,
+  onViewInCardMode,
   onEditDeviceNic,
   onEditSpecs,
   onEditDeviceProperties,
@@ -802,6 +805,22 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                   >
                     <Layers className="w-2.5 h-2.5" />
                     <span>Port</span>
+                  </button>
+                )}
+
+                {/* Card View Switch & Inspection */}
+                {onViewInCardMode && (
+                  <button
+                    type="button"
+                    title={isEn ? 'Switch to Card View & Inspect Cabling' : 'مشاهده در نمای کارتی و بررسی اتصالات کابل‌ها'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewInCardMode(hoveredMountedDev.dev, rack);
+                    }}
+                    className="px-1.5 py-0.5 rounded hover:bg-blue-950 text-blue-300 hover:text-blue-100 border border-blue-800/60 flex items-center gap-0.5 text-[9.5px] font-medium transition cursor-pointer"
+                  >
+                    <CreditCard className="w-2.5 h-2.5" />
+                    <span>{isEn ? 'Card' : 'کارت'}</span>
                   </button>
                 )}
 

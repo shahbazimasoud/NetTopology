@@ -19,6 +19,7 @@ import {
   Sliders,
   Zap,
   ArrowRightLeft,
+  CreditCard,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 
@@ -30,6 +31,7 @@ interface RackElevationInspectorModalProps {
   onOpenAddHardware: (rackId: string, targetU?: number) => void;
   onEditRack?: (rack: CustomTopologyRack) => void;
   onTransferDevice?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
+  onViewInCardMode?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditDeviceNic: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditSpecs?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
   onEditDeviceProperties?: (device: MountedHardwareDevice, rack: CustomTopologyRack) => void;
@@ -49,6 +51,7 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
   onOpenAddHardware,
   onEditRack,
   onTransferDevice,
+  onViewInCardMode,
   onEditDeviceNic,
   onEditSpecs,
   onEditDeviceProperties,
@@ -235,6 +238,7 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                   }
                 }}
                 onMoveDevice={onMoveDevice}
+                onViewInCardMode={onViewInCardMode}
                 onRemoveDevice={(rId, dId) => {
                   const dev = rack.devices.find((d) => d.id === dId);
                   if (dev) {
@@ -351,6 +355,22 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                       >
                         <Edit3 className="w-3 h-3" />
                         <span>{isEn ? 'Edit Properties' : 'مشخصات دستگاه'}</span>
+                      </button>
+                    )}
+
+                    {/* View in Card Mode */}
+                    {onViewInCardMode && (
+                      <button
+                        type="button"
+                        title={isEn ? 'Switch to Card View & Inspect Cabling' : 'مشاهده در نمای کارتی و بررسی اتصالات کابل‌ها'}
+                        onClick={() => {
+                          onClose();
+                          onViewInCardMode(currentSelectedDevice, rack);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-blue-600/80 text-white hover:bg-blue-500 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
+                      >
+                        <CreditCard className="w-3 h-3" />
+                        <span>{isEn ? 'Card View' : 'نمای کارتی'}</span>
                       </button>
                     )}
 

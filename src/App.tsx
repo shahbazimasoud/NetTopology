@@ -13,6 +13,7 @@ import { PortInspectorModal } from './components/PortInspectorModal';
 import { CiscoTerminalModal } from './components/CiscoTerminalModal';
 import { MikroTikTerminalModal } from './components/MikroTikTerminalModal';
 import { MikroTikDeviceManageModal } from './components/MikroTikDeviceManageModal';
+import { MultiTerminalWorkspace } from './components/terminal/MultiTerminalWorkspace';
 import { ApplyTemplateModal } from './components/ApplyTemplateModal';
 import { ReleaseNotesModal } from './components/ReleaseNotesModal';
 import { SettingsView } from './components/settings/SettingsView';
@@ -83,7 +84,14 @@ export default function App() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [portInspectorDevice, setPortInspectorDevice] = useState<Device | null>(null);
-  const [terminalDevice, setTerminalDevice] = useState<Device | null>(null);
+  const [activeTerminals, setActiveTerminals] = useState<(Device | null)[]>([]);
+  const openTerminal = (dev: Device | null) => {
+    if (!dev) {
+      setActiveTerminals([]);
+    } else {
+      setActiveTerminals([dev]);
+    }
+  };
   const [applyTemplateDevice, setApplyTemplateDevice] = useState<Device | null>(null);
   const [applyPreselectedTemplateId, setApplyPreselectedTemplateId] = useState<string | undefined>(undefined);
   const [isReleaseNotesOpen, setIsReleaseNotesOpen] = useState(false);
@@ -378,7 +386,7 @@ export default function App() {
               onDeleteDevice={handleDeleteDevice}
               onEditDevice={(dev) => setEditingDevice(dev)}
               onInspectPorts={(dev) => setPortInspectorDevice(dev)}
-              onConnectTerminal={(dev) => setTerminalDevice(dev)}
+              onConnectTerminal={(dev) => openTerminal(dev)}
               onApplyTemplate={(dev) => {
                 setApplyTemplateDevice(dev);
                 setApplyPreselectedTemplateId(undefined);
@@ -393,7 +401,7 @@ export default function App() {
             <TemplateManagementView
               devices={devices}
               onDeviceUpdated={loadData}
-              onOpenTerminal={(dev) => setTerminalDevice(dev)}
+              onOpenTerminal={(dev) => openTerminal(dev)}
             />
           )}
 
@@ -407,7 +415,7 @@ export default function App() {
               isScanning={isScanning}
               onInspectDevice={(dev) => setPortInspectorDevice(dev)}
               onInspectPorts={(dev) => setPortInspectorDevice(dev)}
-              onConnectTerminal={(dev) => setTerminalDevice(dev)}
+              onConnectTerminal={(dev) => openTerminal(dev)}
               isFullMode={isTopologyFullscreen}
               onToggleFullMode={toggleTopologyFullscreen}
             />
@@ -552,7 +560,7 @@ export default function App() {
         isOpen={!!portInspectorDevice && !isMikroTikDevice(portInspectorDevice)}
         onClose={() => setPortInspectorDevice(null)}
         onPortUpdated={loadData}
-        onConnectTerminal={(dev) => setTerminalDevice(dev)}
+        onConnectTerminal={(dev) => openTerminal(dev)}
         onWriteMemory={handleWriteMemory}
       />
 
@@ -562,24 +570,18 @@ export default function App() {
         isOpen={!!portInspectorDevice && isMikroTikDevice(portInspectorDevice)}
         onClose={() => setPortInspectorDevice(null)}
         onPortUpdated={loadData}
-        onConnectTerminal={(dev) => setTerminalDevice(dev)}
+        onConnectTerminal={(dev) => openTerminal(dev)}
         onDeviceUpdated={loadData}
         isLightMode={panelTheme === 'light'}
       />
 
-      {/* Cisco Terminal Modal */}
-      <CiscoTerminalModal
-        device={terminalDevice}
-        isOpen={!!terminalDevice && !isMikroTikDevice(terminalDevice)}
-        onClose={() => setTerminalDevice(null)}
-        onDeviceUpdated={loadData}
-      />
-
-      {/* MikroTik Terminal Modal */}
-      <MikroTikTerminalModal
-        device={terminalDevice}
-        isOpen={!!terminalDevice && isMikroTikDevice(terminalDevice)}
-        onClose={() => setTerminalDevice(null)}
+      {/* Multi-Terminal Workspace & Split CLI System (Cisco & MikroTik) */}
+      <MultiTerminalWorkspace
+        activeTerminalDevices={activeTerminals}
+        isOpen={activeTerminals.length > 0}
+        onClose={() => setActiveTerminals([])}
+        onDevicesChange={setActiveTerminals}
+        allDevices={topology?.devices || devices}
         onDeviceUpdated={loadData}
         isLightMode={panelTheme === 'light'}
       />

@@ -10,9 +10,49 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.27.0';
+export const APP_VERSION = '1.29.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.29.0',
+    releaseDate: '2026-09-12',
+    type: 'minor',
+    title: 'فیس‌پلیت پورت‌های گرافیکی با سایز ۵۰٪ در ترمینال سیسکو و میکروتیک و سیستم تقسیم صفحه و کار همزمان با چند ترمینال (Multi-Terminal Workspace)',
+    title_en: 'Compact 50% Port Faceplate in Cisco & MikroTik Terminals and Multi-Terminal Split-Screen Workspace',
+    changes: [
+      'افزودن کادر گرافیکی نمایش پورت‌ها بالای پنجره کنسول ترمینال سیسکو و میکروتیک (دقیقاً مشابه مودال فیس‌پلیت پورت‌ها اما با ابعاد نصف و فشرده) به همراه وضعیت زنده Link UP/DOWN، شماره پورت، و امکان کلیک روی پورت جهت تزریق سریع دستور به CLI.',
+      'پیاده‌سازی قابلیت تقسیم صفحه ترمینال (Split Screen): با کلیک روی دکمه Split، صفحه مانیتور به دو نیمه تقسیم شده و ترمینال جاری در سمت چپ و لیست هوشمند انتخاب دیوایس‌های شبکه در سمت راست باز می‌شود.',
+      'امکان اتصال و اجرای همزمان CLI چند دیوایس با پشتیبانی از باز شدن حداکثر ۴ ترمینال همزمان در چینش ستونی یا گرید (۲x۲).',
+      'قابلیت جابجایی سریع جایگاه ترمینال‌ها با یک کلیک (دکمه Swap Panes: سمت راستی به چپ و سمت چپی به راست).',
+      'امکان تغییر دیوایس متصل به هر پنجره، بستن مستقل هر ترمینال، و پشتیبانی کامل از هر دو برند تجهیزات Cisco IOS و MikroTik RouterOS.'
+    ],
+    changes_en: [
+      'Integrated a compact 50% scale graphical port faceplate into the top header of both Cisco and MikroTik terminal modals with live link UP/DOWN indicators, port numbering, and click-to-CLI command injection.',
+      'Implemented Split-Screen Multi-Terminal workspace: clicking the Split button places the active terminal on the left and opens an interactive network device selector on the right.',
+      'Added support for concurrent CLI sessions for up to 4 devices simultaneously in flexible column or 2x2 grid layouts.',
+      'Enabled quick one-click pane swapping (Swap Panes button to switch left and right terminals instantly).',
+      'Added per-pane device switching, individual pane closing, and full cross-platform support for both Cisco IOS and MikroTik RouterOS devices.'
+    ]
+  },
+  {
+    version: '1.28.0',
+    releaseDate: '2026-09-12',
+    type: 'minor',
+    title: 'رفع مشکل پنهان شدن دیوایس‌ها در رک، بهینه‌سازی ابعاد مودال افزودن تجهیز، جستجو در کاتالوگ سخت‌افزار، و یکپارچه‌سازی لایه نمای کارتی',
+    title_en: 'Fix Rack Device Persistence, Add Hardware Modal Sizing & Catalog Search, and Card View Integration for Rack-Mounted Devices',
+    changes: [
+      'رفع باگ حذف یا غیب شدن ناگهانی پچ‌پنل و سایر تجهیزات رک پس از افزودن دیوایس‌های جدید (میکروتیک، فورتی‌گیت و...) با تضمین تخصیص شناسه‌های منحصربه‌فرد و تفکیک حالت‌های ویرایش و درج تجهیز جدید.',
+      'اصلاح ساختار و استایل کانتینر مودال افزودن سخت‌افزار (Add Hardware Device to Rack)، تنظیم موقعیت عمودی و اسکرول داخلی جهت جلوگیری از افتادن زیر هدر و بیرون‌زدگی از پنجره مرورگر.',
+      'افزودن کادر جستجوی زنده (Live Search Box) در تب کاتالوگ سخت‌افزار (Hardware Catalog) برای یافتن سریع تجهیزات بر اساس نام، مدل، برند (سیسکو، میکروتیک، فورتی‌گیت، HP و...) و دسته‌بندی.',
+      'پشتیبانی کامل از لایه نمای کارتی (Card View) برای تجهیزات داخل رک، همگام‌سازی موقعیت قرارگیری روی بوم نقشه، و افزودن دکمه‌های انتقال مستقیم به نمای کارتی (Card View) در منوی هاور و پنل اینسپکتور جهت بررسی و کابل‌کشی پورت‌ها.'
+    ],
+    changes_en: [
+      'Fixed the disappearing patch panel/hardware bug when adding new devices (such as MikroTik, FortiGate, etc.) into a rack by enforcing collision-free unique IDs and separating edit vs. new mount logic.',
+      'Optimized the Add Hardware Device to Rack modal sizing, vertical bounds, and scroll containers to prevent falling under the page header or clipping outside the viewport.',
+      'Implemented a live search box in the Hardware Catalog tab to quickly filter and locate hardware templates by brand, model name, and category.',
+      'Added full Card View integration for rack-mounted devices, including automated canvas coordinate mapping and direct "Card View" quick-actions in the hover menu and inspector modal for port cabling inspection.'
+    ]
+  },
   {
     version: '1.27.0',
     releaseDate: '2026-09-11',

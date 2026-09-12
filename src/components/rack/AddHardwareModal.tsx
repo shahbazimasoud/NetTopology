@@ -74,6 +74,7 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
   });
   const [selectedInventoryDeviceId, setSelectedInventoryDeviceId] = useState<string | null>(null);
   const [inventorySearch, setInventorySearch] = useState('');
+  const [catalogSearch, setCatalogSearch] = useState('');
 
   const [activeCategory, setActiveCategory] = useState<HardwareCategory>('hpe_server');
   const [selectedTemplate, setSelectedTemplate] = useState<HardwareCatalogTemplate>(HARDWARE_CATALOG[0]);
@@ -164,6 +165,22 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
     if (!selectedInventoryDeviceId) return null;
     return inventoryDevices.find((d) => d.id === selectedInventoryDeviceId) || null;
   }, [inventoryDevices, selectedInventoryDeviceId]);
+
+  // Filtered hardware catalog templates based on search query or active category
+  const filteredCatalogTemplates = useMemo(() => {
+    const q = catalogSearch.toLowerCase().trim();
+    if (!q) {
+      return HARDWARE_CATALOG.filter((t) => t.category === activeCategory);
+    }
+    return HARDWARE_CATALOG.filter((t) => {
+      const modelMatch = (t.model || '').toLowerCase().includes(q);
+      const brandMatch = (t.brand || '').toLowerCase().includes(q);
+      const descFaMatch = (t.description_fa || '').toLowerCase().includes(q);
+      const descEnMatch = (t.description_en || '').toLowerCase().includes(q);
+      const catMatch = (t.category || '').toLowerCase().includes(q);
+      return modelMatch || brandMatch || descFaMatch || descEnMatch || catMatch;
+    });
+  }, [catalogSearch, activeCategory]);
 
   // Select an inventory device and automatically configure its physical profile
   const handleSelectInventoryDevice = (dev: Device) => {
@@ -379,11 +396,20 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
     e.preventDefault();
     if (!targetRackId || currentCollision) return;
 
-    const chosenDevId = editingDevice
-      ? editingDevice.id
-      : selectedInventoryDevice
-      ? selectedInventoryDevice.id
-      : `dev-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+    let chosenDevId: string;
+    if (editingDevice) {
+      chosenDevId = editingDevice.id;
+    } else if (sourceMode === 'inventory' && selectedInventoryDevice) {
+      const baseId = selectedInventoryDevice.id.startsWith('hw-')
+        ? selectedInventoryDevice.id
+        : `hw-${selectedInventoryDevice.id}`;
+      const targetRack = racks.find((r) => r.id === targetRackId);
+      const alreadyHas = targetRack?.devices.some((d) => d.id === baseId);
+      chosenDevId = alreadyHas ? `${baseId}-${Date.now()}` : baseId;
+    } else {
+      // Catalog device: ALWAYS unique ID!
+      chosenDevId = `hw-cat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    }
 
     const deviceToSave: MountedHardwareDevice = {
       id: chosenDevId,
@@ -397,7 +423,7 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
       networkCards,
       powerWatts,
       powerSupplyCount,
-      ip: selectedInventoryDevice?.ip || editingDevice?.ip,
+      ip: sourceMode === 'inventory' ? selectedInventoryDevice?.ip : editingDevice?.ip,
       pduOutletsCount: selectedTemplate.category === 'pdu' ? pduOutletsCount : undefined,
       pduOutletType: selectedTemplate.category === 'pdu' ? pduOutletType : undefined,
       pduAmperage: selectedTemplate.category === 'pdu' ? pduAmperage : undefined,
@@ -409,15 +435,15 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 md:py-8 bg-black/85 backdrop-blur-md animate-fade-in"
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       <div
-        className="w-full max-w-4xl max-h-[92vh] rounded-3xl bg-slate-900 border border-slate-700/80 shadow-2xl overflow-hidden flex flex-col text-slate-100"
+        className="w-full max-w-4xl max-h-[82vh] rounded-3xl bg-slate-900 border border-slate-700/80 shadow-2xl overflow-hidden flex flex-col text-slate-100 my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <div className="px-6 py-3.5 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center">
               <Server className="w-5 h-5" />
@@ -463,7 +489,12 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
               <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setSourceMode('inventory')}
+                  onClick={() => {
+                    setSourceMode('inventory');
+                    if (!selectedInventoryDeviceId && inventoryDevices.length > 0) {
+                      handleSelectInventoryDevice(inventoryDevices[0]);
+                    }
+                  }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                     sourceMode === 'inventory'
                       ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-xs'
@@ -480,7 +511,10 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setSourceMode('catalog')}
+                  onClick={() => {
+                    setSourceMode('catalog');
+                    setSelectedInventoryDeviceId(null);
+                  }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                     sourceMode === 'catalog'
                       ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xs'
@@ -593,20 +627,63 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
           {/* Source Mode 2: Catalog Categories & Templates */}
           {!editingDevice && sourceMode === 'catalog' && (
             <>
-              {/* Category Selector Tabs */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-300 block">
-                  {isEn ? 'Hardware Category:' : 'دسته‌بندی سخت‌افزار:'}
-                </label>
+              {/* Hardware Catalog Search Box & Category Selector */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>{isEn ? 'Hardware Catalog Selection:' : 'انتخاب از کاتالوگ سخت‌افزاری:'}</span>
+                  </label>
+
+                  {/* Search Box */}
+                  <div className="relative min-w-[240px] flex-1 sm:max-w-xs">
+                    <input
+                      type="text"
+                      value={catalogSearch}
+                      onChange={(e) => setCatalogSearch(e.target.value)}
+                      placeholder={
+                        isEn
+                          ? 'Search model, brand (e.g. Patch Panel, FortiGate, DL380, Cisco)...'
+                          : 'جستجو در کاتالوگ (پچ پنل، فورتی‌گیت، سیسکو، سرور HP)...'
+                      }
+                      className="w-full px-3 py-1.5 pl-8 pr-8 text-xs rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                    />
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                    {catalogSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setCatalogSearch('')}
+                        className="absolute right-2.5 top-2 text-slate-400 hover:text-white p-0.5 rounded"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Category Selector Tabs */}
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
+                  {catalogSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setCatalogSearch('')}
+                      className="px-2.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1 shrink-0 border bg-cyan-950/60 border-cyan-500/50 text-cyan-300 hover:bg-cyan-900/60 cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                      <span>{isEn ? 'Clear Search' : 'پاک کردن فیلتر'}</span>
+                    </button>
+                  )}
                   {HARDWARE_CATEGORIES.map((cat) => {
-                    const isSelected = activeCategory === cat.id;
+                    const isSelected = !catalogSearch && activeCategory === cat.id;
                     return (
                       <button
                         key={cat.id}
                         type="button"
-                        onClick={() => handleCategoryChange(cat.id)}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 shrink-0 border cursor-pointer ${
+                        onClick={() => {
+                          setCatalogSearch('');
+                          handleCategoryChange(cat.id);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 shrink-0 border cursor-pointer ${
                           isSelected
                             ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white border-cyan-400 shadow-md shadow-cyan-600/20'
                             : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
@@ -620,30 +697,52 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
               </div>
 
               {/* Model & Generation Grid */}
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-slate-300 block">
-                  {isEn ? 'Select Hardware Model:' : 'انتخاب مدل تجهیز:'}
-                </label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-300 block">
+                    {catalogSearch
+                      ? isEn
+                        ? `Search Results (${filteredCatalogTemplates.length} models found):`
+                        : `نتایج جستجو (${filteredCatalogTemplates.length} مدل پیدا شد):`
+                      : isEn
+                      ? 'Select Hardware Model:'
+                      : 'انتخاب مدل تجهیز:'}
+                  </label>
+                  {filteredCatalogTemplates.length === 0 && (
+                    <span className="text-xs text-amber-400">
+                      {isEn ? 'No models match your search.' : 'موردی با این مشخصات یافت نشد.'}
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-48 overflow-y-auto p-1 scrollbar-thin">
-                  {HARDWARE_CATALOG.filter((t) => t.category === activeCategory).map((tpl) => {
+                  {filteredCatalogTemplates.map((tpl) => {
                     const isSelected = selectedTemplate.id === tpl.id;
+                    const catInfo = HARDWARE_CATEGORIES.find((c) => c.id === tpl.category);
                     return (
                       <div
                         key={tpl.id}
-                        onClick={() => handleTemplateChange(tpl)}
+                        onClick={() => {
+                          setActiveCategory(tpl.category);
+                          handleTemplateChange(tpl);
+                        }}
                         className={`p-3 rounded-xl border cursor-pointer transition-all ${
                           isSelected
                             ? 'bg-cyan-950/40 border-cyan-400 ring-1 ring-cyan-500/40 shadow-md'
                             : 'bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-sm text-white">{tpl.model}</span>
-                          <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-bold text-xs text-white truncate" title={tpl.model}>{tpl.model}</span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 shrink-0">
                             {tpl.heightU}U
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                        {catalogSearch && catInfo && (
+                          <div className="text-[9.5px] text-cyan-400/80 font-medium mt-0.5 truncate">
+                            {isEn ? catInfo.label_en : catInfo.label_fa}
+                          </div>
+                        )}
+                        <p className="text-[10.5px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                           {isEn ? tpl.description_en : tpl.description_fa}
                         </p>
                       </div>

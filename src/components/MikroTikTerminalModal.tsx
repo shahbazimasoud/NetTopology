@@ -20,10 +20,15 @@ import {
   History as HistoryIcon,
   Clock,
   Cpu,
-  Sparkles
+  Sparkles,
+  Columns,
+  ArrowLeftRight,
+  RefreshCw,
 } from 'lucide-react';
 import { Device, SwitchPort } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
+import { fetchDevicePorts } from '../services/api';
+import { CompactTerminalFaceplate } from './terminal/CompactTerminalFaceplate';
 
 export interface MikroTikTerminalModalProps {
   device: Device | null;
@@ -31,6 +36,15 @@ export interface MikroTikTerminalModalProps {
   onClose: () => void;
   onDeviceUpdated?: () => void;
   isLightMode?: boolean;
+  isEmbedded?: boolean;
+  onSplitScreen?: () => void;
+  onSwap?: () => void;
+  paneIndex?: number;
+  totalPanes?: number;
+  onMovePane?: (fromIndex: number, toIndex: number) => void;
+  onClosePane?: () => void;
+  onChangeDevice?: () => void;
+  allDevices?: Device[];
 }
 
 interface TerminalLine {
@@ -63,6 +77,15 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
   onClose,
   onDeviceUpdated,
   isLightMode = false,
+  isEmbedded = false,
+  onSplitScreen,
+  onSwap,
+  paneIndex,
+  totalPanes,
+  onMovePane,
+  onClosePane,
+  onChangeDevice,
+  allDevices,
 }) => {
   const { t, isEn } = useLanguage();
   const [lines, setLines] = useState<TerminalLine[]>([]);
@@ -73,6 +96,17 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
   const [showGuide, setShowGuide] = useState(true);
   const [bgChoice, setBgChoice] = useState(isLightMode ? 'winbox-silver' : 'slate');
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
+  const [ports, setPorts] = useState<SwitchPort[]>([]);
+  const [selectedPort, setSelectedPort] = useState<SwitchPort | null>(null);
+
+  useEffect(() => {
+    if (!device || !isOpen) return;
+    fetchDevicePorts(device.id)
+      .then((res) => {
+        if (res && res.ports) setPorts(res.ports);
+      })
+      .catch((err) => console.warn('Failed to fetch ports for MikroTik terminal', err));
+  }, [device?.id, isOpen]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
@@ -176,19 +210,20 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
     setInput('');
   };
 
-  return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-xs animate-in fade-in duration-200 ${
-      isLightMode ? 'bg-slate-900/50' : 'bg-black/85'
-    }`}>
-      <div
-        className={`relative w-full ${
-          isFullScreen ? 'h-full max-w-none' : 'max-w-5xl h-[85vh]'
-        } rounded-2xl border flex flex-col overflow-hidden transition-all ${
-          isLightMode
-            ? 'bg-slate-100 border-cyan-500/40 shadow-2xl shadow-slate-500/20 text-slate-800'
-            : 'bg-slate-950 border-cyan-500/40 shadow-2xl shadow-cyan-950/60 text-slate-100'
-        }`}
-      >
+  const modalContent = (
+    <div
+      className={`relative w-full ${
+        isEmbedded
+          ? 'h-full rounded-xl border-cyan-500/30'
+          : isFullScreen
+          ? 'h-full max-w-none rounded-none'
+          : 'max-w-5xl h-[85vh] rounded-2xl'
+      } border flex flex-col overflow-hidden transition-all ${
+        isLightMode
+          ? 'bg-slate-100 border-cyan-500/40 shadow-2xl shadow-slate-500/20 text-slate-800'
+          : 'bg-slate-950 border-cyan-500/40 shadow-2xl shadow-cyan-950/60 text-slate-100'
+      }`}
+    >
         {/* Terminal Window Titlebar */}
         <div
           className={`flex items-center justify-between px-5 py-3 border-b select-none ${
@@ -245,6 +280,56 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
               ))}
             </div>
 
+            {/* Split Screen Button (Request 6) */}
+            {onSplitScreen && (
+              <button
+                type="button"
+                onClick={onSplitScreen}
+                className={`p-1.5 rounded-lg border text-xs flex items-center gap-1 transition-colors cursor-pointer ${
+                  isLightMode
+                    ? 'bg-cyan-50 text-cyan-700 border-cyan-300 hover:bg-cyan-100'
+                    : 'bg-cyan-950/60 text-cyan-300 border-cyan-600/50 hover:bg-cyan-900/60'
+                }`}
+                title={isEn ? 'Split Screen / Multi-Terminal' : 'تقسیم صفحه به چند ترمینال همزمان'}
+              >
+                <Columns className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline font-medium">{isEn ? 'Split' : 'تقسیم'}</span>
+              </button>
+            )}
+
+            {/* Swap Button (Request 6) */}
+            {totalPanes !== undefined && totalPanes > 1 && onSwap && (
+              <button
+                type="button"
+                onClick={onSwap}
+                className={`p-1.5 rounded-lg border text-xs flex items-center gap-1 transition-colors cursor-pointer ${
+                  isLightMode
+                    ? 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100'
+                    : 'bg-amber-950/60 text-amber-300 border-amber-600/50 hover:bg-amber-900/60'
+                }`}
+                title={isEn ? 'Swap Panes Left/Right' : 'جابجایی چپ و راست'}
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline font-medium">{isEn ? 'Swap' : 'جابجایی'}</span>
+              </button>
+            )}
+
+            {/* Change Device Button (embedded mode) */}
+            {isEmbedded && onChangeDevice && (
+              <button
+                type="button"
+                onClick={onChangeDevice}
+                className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                  isLightMode
+                    ? 'bg-slate-100 text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-200'
+                    : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700'
+                }`}
+                title={isEn ? 'Change Device in this pane' : 'تغییر دیوایس این پنجره'}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            )}
+
             <button
               onClick={() => setShowGuide(!showGuide)}
               className={`p-1.5 rounded-lg border text-xs flex items-center gap-1 transition-colors cursor-pointer ${
@@ -261,29 +346,54 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
               <HelpCircle className="w-4 h-4" />
             </button>
 
-            <button
-              onClick={() => setIsFullScreen(!isFullScreen)}
-              className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                isLightMode
-                  ? 'bg-slate-100 text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-200'
-                  : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700'
-              }`}
-            >
-              {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </button>
+            {!isEmbedded && (
+              <button
+                onClick={() => setIsFullScreen(!isFullScreen)}
+                className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                  isLightMode
+                    ? 'bg-slate-100 text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-200'
+                    : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700'
+                }`}
+              >
+                {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
+            )}
 
             <button
-              onClick={onClose}
+              onClick={() => {
+                if (isEmbedded && onClosePane) {
+                  onClosePane();
+                } else {
+                  onClose();
+                }
+              }}
               className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
                 isLightMode
                   ? 'bg-slate-100 text-slate-600 hover:text-rose-600 border-slate-200 hover:bg-rose-50 hover:border-rose-300'
                   : 'bg-slate-800 text-slate-400 hover:text-rose-400 border-slate-700 hover:border-rose-500/50'
               }`}
+              title={isEmbedded ? (isEn ? 'Close Pane' : 'بستن این پنجره') : (isEn ? 'Close Terminal' : 'بستن ترمینال')}
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
+
+        {/* Graphic Port Faceplate Box (Half-size ports - Request 5) */}
+        {ports && ports.length > 0 && (
+          <CompactTerminalFaceplate
+            device={device}
+            ports={ports}
+            isMikroTik={true}
+            onPortClick={(port) => {
+              setSelectedPort(port);
+              if (!input.trim()) {
+                setInput(`/interface print where name="${port.port_id}"`);
+              }
+            }}
+            selectedPortId={selectedPort?.port_id}
+          />
+        )}
 
         {/* Body (Screen + Guide Sidebar) */}
         <div className="flex-1 flex overflow-hidden">
@@ -528,6 +638,17 @@ export const MikroTikTerminalModal: React.FC<MikroTikTerminalModalProps> = ({
           )}
         </div>
       </div>
+  );
+
+  if (isEmbedded) {
+    return modalContent;
+  }
+
+  return (
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-xs animate-in fade-in duration-200 ${
+      isLightMode ? 'bg-slate-900/50' : 'bg-black/85'
+    }`}>
+      {modalContent}
     </div>
   );
 };

@@ -26,6 +26,9 @@ import {
   PanelRightOpen,
   History as HistoryIcon,
   Clock,
+  Columns,
+  ArrowLeftRight,
+  RefreshCw,
 } from 'lucide-react';
 import { Device, SwitchPort, VlanInfo } from '../types';
 import {
@@ -39,12 +42,22 @@ import {
 } from '../services/api';
 import { useLanguage } from '../i18n/LanguageContext';
 import { logDeviceCommand, evaluateCommandRisk } from '../services/auditLogger';
+import { CompactTerminalFaceplate } from './terminal/CompactTerminalFaceplate';
 
-interface CiscoTerminalModalProps {
+export interface CiscoTerminalModalProps {
   device: Device | null;
   isOpen: boolean;
   onClose: () => void;
   onDeviceUpdated?: () => void;
+  isEmbedded?: boolean;
+  onSplitScreen?: () => void;
+  onSwap?: () => void;
+  paneIndex?: number;
+  totalPanes?: number;
+  onMovePane?: (fromIndex: number, toIndex: number) => void;
+  onClosePane?: () => void;
+  onChangeDevice?: () => void;
+  allDevices?: Device[];
 }
 
 type CliMode = 'USER_EXEC' | 'PRIVILEGED_EXEC' | 'GLOBAL_CONFIG' | 'INTERFACE_CONFIG' | 'VLAN_CONFIG';
@@ -91,6 +104,15 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   isOpen,
   onClose,
   onDeviceUpdated,
+  isEmbedded = false,
+  onSplitScreen,
+  onSwap,
+  paneIndex,
+  totalPanes,
+  onMovePane,
+  onClosePane,
+  onChangeDevice,
+  allDevices,
 }) => {
   const { t, isEn } = useLanguage();
   const [terminalBgColor, setTerminalBgColor] = useState<string>(() => {
@@ -149,6 +171,7 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
   const [currentVlanId, setCurrentVlanId] = useState<number>(1);
   const [hostname, setHostname] = useState<string>('Switch');
   const [ports, setPorts] = useState<SwitchPort[]>([]);
+  const [selectedPort, setSelectedPort] = useState<SwitchPort | null>(null);
   const [vlans, setVlans] = useState<VlanInfo[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
   const [isInterfaceDropdownOpen, setIsInterfaceDropdownOpen] = useState(false);
@@ -1581,22 +1604,16 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
     return true;
   });
 
-  return (
+  const terminalWindow = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 modal-backdrop-blur overflow-y-auto"
-      data-modal-backdrop="true"
-      dir={isEn ? 'ltr' : 'rtl'}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          handleCloseModal();
-        }
-      }}
+      className={`bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100 transition-all ${
+        isEmbedded
+          ? 'w-full h-full rounded-xl border-slate-800 shadow-none'
+          : isFullscreen
+          ? 'w-full h-full max-h-screen rounded-none'
+          : 'w-full max-w-6xl my-auto max-h-[94vh] sm:max-h-[90vh]'
+      }`}
     >
-      <div
-        className={`bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden text-slate-100 transition-all my-auto max-h-[94vh] sm:max-h-[90vh] ${
-          isFullscreen ? 'w-full h-full max-h-screen rounded-none' : 'w-full max-w-6xl'
-        }`}
-      >
         {/* Top Header Bar */}
         <div className="px-4 py-3 bg-slate-950 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-3">
@@ -1813,6 +1830,44 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
             </div>
 
             {/* Window & View Controls */}
+            {/* Split Screen Button (Request 6) */}
+            {onSplitScreen && (
+              <button
+                type="button"
+                onClick={onSplitScreen}
+                className="px-2 py-1 rounded-lg text-indigo-400 hover:text-white hover:bg-indigo-600/30 border border-indigo-500/30 transition flex items-center gap-1 text-[11px] cursor-pointer"
+                title={isEn ? 'Split Screen / Multi-Terminal' : 'تقسیم صفحه به چند ترمینال همزمان'}
+              >
+                <Columns className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline font-medium">{isEn ? 'Split' : 'تقسیم صفحه'}</span>
+              </button>
+            )}
+
+            {/* Swap Button (Request 6) */}
+            {totalPanes !== undefined && totalPanes > 1 && onSwap && (
+              <button
+                type="button"
+                onClick={onSwap}
+                className="px-2 py-1 rounded-lg text-amber-400 hover:text-white hover:bg-amber-600/30 border border-amber-500/30 transition flex items-center gap-1 text-[11px] cursor-pointer"
+                title={isEn ? 'Swap Panes Left/Right' : 'جابجایی چپ و راست'}
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline font-medium">{isEn ? 'Swap' : 'جابجایی'}</span>
+              </button>
+            )}
+
+            {/* Change Device Button (embedded mode) */}
+            {isEmbedded && onChangeDevice && (
+              <button
+                type="button"
+                onClick={onChangeDevice}
+                className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition text-xs cursor-pointer"
+                title={isEn ? 'Change Device in this pane' : 'تغییر دیوایس این پنجره'}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            )}
+
             <button
               onClick={handleToggleSidebar}
               className={`p-1.5 rounded transition ${
@@ -1829,23 +1884,51 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
               {isSidebarOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
             </button>
 
-            <button
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
-              title={isFullscreen ? (isEn ? 'Exit Fullscreen' : 'حالت پنجره') : (isEn ? 'Fullscreen' : 'تمام صفحه')}
-            >
-              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </button>
+            {!isEmbedded && (
+              <button
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                title={isFullscreen ? (isEn ? 'Exit Fullscreen' : 'حالت پنجره') : (isEn ? 'Fullscreen' : 'تمام صفحه')}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
+            )}
 
             <button
-              onClick={handleCloseModal}
+              onClick={() => {
+                if (isEmbedded && onClosePane) {
+                  onClosePane();
+                } else {
+                  handleCloseModal();
+                }
+              }}
               className="p-1.5 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
-              title={isEn ? 'Close Terminal' : 'بستن ترمینال'}
+              title={isEmbedded ? (isEn ? 'Close Pane' : 'بستن این پنجره') : (isEn ? 'Close Terminal' : 'بستن ترمینال')}
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
+
+        {/* Graphic Port Faceplate Box (Half-size ports - Request 5) */}
+        {ports && ports.length > 0 && (
+          <CompactTerminalFaceplate
+            device={device}
+            ports={ports}
+            isMikroTik={false}
+            onPortClick={(port) => {
+              setSelectedPort(port);
+              if (!currentInput.trim()) {
+                if (cliMode === 'GLOBAL_CONFIG') {
+                  setCurrentInput(`interface ${port.port_id}`);
+                } else {
+                  setCurrentInput(`show interface ${port.port_id}`);
+                }
+              }
+            }}
+            selectedPortId={selectedPort?.port_id}
+          />
+        )}
 
         {/* Main Body: Terminal Screen + Sidebar Guides */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -2202,9 +2285,27 @@ export const CiscoTerminalModal: React.FC<CiscoTerminalModalProps> = ({
           )}
         </div>
       </div>
-    </div>
-  );
-};
+    );
+
+    if (isEmbedded) {
+      return terminalWindow;
+    }
+
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 modal-backdrop-blur overflow-y-auto"
+        data-modal-backdrop="true"
+        dir={isEn ? 'ltr' : 'rtl'}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            handleCloseModal();
+          }
+        }}
+      >
+        {terminalWindow}
+      </div>
+    );
+  };
 
 // ==================== Cisco Formatting Helpers ====================
 

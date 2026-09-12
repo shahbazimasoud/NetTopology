@@ -735,28 +735,64 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
   const handleSaveHardware = useCallback((rackId: string, device: MountedHardwareDevice) => {
     if (!currentCustomMap) return;
+    const isEditing = Boolean(editingHardwareDevice);
+
     const updatedRacks = (currentCustomMap.racks || []).map((r) => {
       if (r.id === rackId) {
-        const existingIdx = r.devices.findIndex((d) => d.id === device.id);
         let newDevices = [...r.devices];
-        if (existingIdx >= 0) {
-          newDevices[existingIdx] = device;
+        if (isEditing) {
+          const existingIdx = r.devices.findIndex((d) => d.id === (editingHardwareDevice?.id || device.id));
+          if (existingIdx >= 0) {
+            newDevices[existingIdx] = device;
+          } else {
+            newDevices.push(device);
+          }
         } else {
-          newDevices.push(device);
+          // Adding a new device: ensure ID doesn't collide with ANY existing device in this rack
+          let finalId = device.id;
+          if (newDevices.some((d) => d.id === finalId)) {
+            finalId = `${device.id}-${Date.now()}`;
+          }
+          newDevices.push({ ...device, id: finalId });
         }
         return { ...r, devices: newDevices };
       } else {
-        // Ensure device is not duplicated in other racks
-        return {
-          ...r,
-          devices: r.devices.filter((d) => d.id !== device.id),
-        };
+        // Only remove from other racks if we are moving an existing device during edit
+        if (isEditing && editingHardwareDevice) {
+          return {
+            ...r,
+            devices: r.devices.filter((d) => d.id !== editingHardwareDevice.id && d.id !== device.id),
+          };
+        }
+        return r;
       }
     });
+
+    // Also ensure the device ID exists in currentCustomMap.deviceIds and has a devicePosition
+    const deviceId = device.id;
+    const cleanId = device.id.replace(/^hw-/, '');
+    const currentDeviceIds = currentCustomMap.deviceIds || [];
+    const newDeviceIds = currentDeviceIds.includes(deviceId) || currentDeviceIds.includes(cleanId)
+      ? currentDeviceIds
+      : [...currentDeviceIds, deviceId];
+
+    const currentPositions = { ...(currentCustomMap.devicePositions || {}) };
+    const targetRack = (currentCustomMap.racks || []).find((r) => r.id === rackId);
+    if (!currentPositions[deviceId] && !currentPositions[cleanId]) {
+      const rackX = targetRack ? targetRack.x : 200;
+      const rackY = targetRack ? targetRack.y : 200;
+      const devCount = targetRack?.devices.length || 0;
+      currentPositions[deviceId] = {
+        x: rackX + 380 + (devCount % 2) * 260,
+        y: rackY + (devCount * 140),
+      };
+    }
 
     const updatedMap: CustomTopologyMap = {
       ...currentCustomMap,
       racks: updatedRacks,
+      deviceIds: newDeviceIds,
+      devicePositions: currentPositions,
       updatedAt: new Date().toISOString(),
     };
     saveCustomMaps(customMaps.map((m) => (m.id === updatedMap.id ? updatedMap : m)));
@@ -764,7 +800,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       const found = updatedRacks.find((r) => r.id === inspectingRack.id);
       if (found) setInspectingRack(found);
     }
-  }, [currentCustomMap, customMaps, inspectingRack, saveCustomMaps]);
+  }, [currentCustomMap, customMaps, editingHardwareDevice, inspectingRack, saveCustomMaps]);
 
   const handleRemoveDeviceFromRack = useCallback((rackId: string, deviceId: string) => {
     if (!currentCustomMap) return;
@@ -886,6 +922,61 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     }
   }, [topology?.nodes]);
 
+  // Helper to synthesize or resolve Device from MountedHardwareDevice for inventory, card view, and operations
+  const synthesizeDeviceFromMounted = (
+    mountedDev: MountedHardwareDevice,
+    rack?: CustomTopologyRack,
+    existingList: Device[] = []
+  ): Device => {
+    const cleanId = mountedDev.id.replace(/^hw-/, '');
+    const found = existingList.find(
+      (d) =>
+        d.id === mountedDev.id ||
+        d.id === cleanId ||
+        d.name.toLowerCase() === mountedDev.name.toLowerCase() ||
+        (mountedDev.ip && d.ip === mountedDev.ip)
+    );
+    if (found) return found;
+
+    // Synthesize fallback Device object matching Network Equipment Inventory format
+    const catStr = (mountedDev.category || '').toLowerCase();
+    const devType: DeviceType = catStr.includes('router')
+      ? 'router'
+      : catStr.includes('ap') || catStr.includes('access_point') || catStr.includes('wireless')
+      ? 'access_point'
+      : 'switch';
+
+    const brandLower = (mountedDev.brand || '').toLowerCase();
+    const devPlatform: DevicePlatform = brandLower.includes('cisco')
+      ? 'cisco_ios'
+      : brandLower.includes('mikrotik')
+      ? 'mikrotik_routeros'
+      : 'generic_linux';
+
+    const totalPorts = (mountedDev.networkCards || []).reduce((acc, card) => acc + (card.portCount || 0), 0) || 24;
+
+    return {
+      id: mountedDev.id,
+      name: mountedDev.name,
+      ip: mountedDev.ip || '192.168.1.1',
+      platform: devPlatform,
+      connection_mode: 'ssh',
+      type: devType,
+      role: `${mountedDev.brand || ''} ${mountedDev.model || ''}`.trim() || 'Network Device',
+      model: mountedDev.model || '',
+      mac: '00:00:00:00:00:00',
+      building: '',
+      floor: '',
+      unit: '',
+      rack: rack?.name || '',
+      total_ports: totalPorts,
+      is_online: true,
+      cdp_enabled: true,
+      lldp_enabled: true,
+      snmp_community: 'public',
+    };
+  };
+
   const allAvailableDevices: Device[] = useMemo(() => {
     const list: Device[] = [];
     const seen = new Set<string>();
@@ -901,8 +992,21 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     (localNodes || []).forEach(add);
     (inventoryDevices || []).forEach(add);
 
+    // Also include any devices mounted in custom map racks so they exist in inventory & card layer
+    if (currentCustomMap?.racks) {
+      currentCustomMap.racks.forEach((rack) => {
+        (rack.devices || []).forEach((mDev) => {
+          const synth = synthesizeDeviceFromMounted(mDev, rack, list);
+          add(synth);
+          if (mDev.id !== synth.id) {
+            add({ ...synth, id: mDev.id });
+          }
+        });
+      });
+    }
+
     return list;
-  }, [topology?.nodes, localNodes, inventoryDevices]);
+  }, [topology?.nodes, localNodes, inventoryDevices, currentCustomMap?.racks]);
 
   const getDeviceNameById = useCallback((id: string) => {
     const found = allAvailableDevices.find((d) => d.id === id);
@@ -927,53 +1031,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   // Helper to find or synthesize a Device instance from a MountedHardwareDevice for inventory modal & operations
   const resolveDeviceFromMounted = useCallback(
     (mountedDev: MountedHardwareDevice, rack?: CustomTopologyRack): Device => {
-      const cleanId = mountedDev.id.replace(/^hw-/, '');
-      const found = allAvailableDevices.find(
-        (d) =>
-          d.id === mountedDev.id ||
-          d.id === cleanId ||
-          d.name.toLowerCase() === mountedDev.name.toLowerCase() ||
-          (mountedDev.ip && d.ip === mountedDev.ip)
-      );
-      if (found) return found;
-
-      // Synthesize fallback Device object matching Network Equipment Inventory format
-      const catStr = (mountedDev.category || '').toLowerCase();
-      const devType: DeviceType = catStr.includes('router')
-        ? 'router'
-        : catStr.includes('ap') || catStr.includes('access_point') || catStr.includes('wireless')
-        ? 'access_point'
-        : 'switch';
-
-      const brandLower = (mountedDev.brand || '').toLowerCase();
-      const devPlatform: DevicePlatform = brandLower.includes('cisco')
-        ? 'cisco_ios'
-        : brandLower.includes('mikrotik')
-        ? 'mikrotik_routeros'
-        : 'generic_linux';
-
-      const totalPorts = (mountedDev.networkCards || []).reduce((acc, card) => acc + (card.portCount || 0), 0) || 24;
-
-      return {
-        id: cleanId,
-        name: mountedDev.name,
-        ip: mountedDev.ip || '192.168.1.1',
-        platform: devPlatform,
-        connection_mode: 'ssh',
-        type: devType,
-        role: `${mountedDev.brand || ''} ${mountedDev.model || ''}`.trim() || 'Network Device',
-        model: mountedDev.model || '',
-        mac: '00:00:00:00:00:00',
-        building: '',
-        floor: '',
-        unit: '',
-        rack: rack?.name || '',
-        total_ports: totalPorts,
-        is_online: true,
-        cdp_enabled: true,
-        lldp_enabled: true,
-        snmp_community: 'public',
-      };
+      return synthesizeDeviceFromMounted(mountedDev, rack, allAvailableDevices);
     },
     [allAvailableDevices]
   );
@@ -2032,6 +2090,31 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
         }
       });
 
+      // Also ensure all devices in customMap.racks have positions!
+      if (currentCustomMap.racks) {
+        currentCustomMap.racks.forEach((rack) => {
+          (rack.devices || []).forEach((dev, devIdx) => {
+            const devId = dev.id;
+            const cleanId = dev.id.replace(/^hw-/, '');
+            const existing =
+              (currentCustomMap.devicePositions && (currentCustomMap.devicePositions[devId] || currentCustomMap.devicePositions[cleanId])) ||
+              pos.get(devId) ||
+              pos.get(cleanId);
+            if (existing) {
+              pos.set(devId, existing);
+              pos.set(cleanId, existing);
+            } else {
+              const defaultRackPos = {
+                x: rack.x + 440 + (devIdx % 2) * 260,
+                y: rack.y + devIdx * 140,
+              };
+              pos.set(devId, defaultRackPos);
+              pos.set(cleanId, defaultRackPos);
+            }
+          });
+        });
+      }
+
       // Apply any temporary customPositions while dragging
       Object.entries(customPositions).forEach(([id, customPos]) => {
         const posObj = customPos as { x: number; y: number } | undefined;
@@ -2088,6 +2171,39 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
     return pos;
   }, [topology, customPositions, activeMapId, currentCustomMap]);
+
+  // Navigate to Card View for a rack-mounted device to examine cabling and port connections
+  const handleViewDeviceInCardMode = useCallback(
+    (dev: MountedHardwareDevice, rack: CustomTopologyRack) => {
+      setInspectingRack(null);
+      setGlobalDeviceViewMode('card');
+      setSelectedNodeId(dev.id);
+
+      const cleanId = dev.id.replace(/^hw-/, '');
+      const pos =
+        (currentCustomMap?.devicePositions && (currentCustomMap.devicePositions[dev.id] || currentCustomMap.devicePositions[cleanId])) ||
+        nodePositions.get(dev.id) ||
+        nodePositions.get(cleanId) || {
+          x: rack.x + 440,
+          y: rack.y + 60,
+        };
+
+      const scale = Math.max(0.7, Math.min(1.2, zoom || 1));
+      setZoom(scale);
+      setPan({
+        x: Math.round(window.innerWidth / 2 - pos.x * scale),
+        y: Math.round(window.innerHeight / 2 - pos.y * scale),
+      });
+
+      setFeedbackToast({
+        type: 'success',
+        message: isEn
+          ? `Switched to Card View for "${dev.name}" to view cabling & network connections.`
+          : `انتقال به نمای کارتی برای «${dev.name}» جهت بررسی و مشاهده ارتباطات شبکه و کابل‌ها.`,
+      });
+    },
+    [currentCustomMap?.devicePositions, nodePositions, zoom, isEn]
+  );
 
   // Background Pan Handler
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
@@ -2333,10 +2449,20 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
   // Filter nodes for search and building
   const filteredNodes = useMemo(() => {
-    const allAvailable = topology?.nodes || localNodes || [];
+    const allAvailable = allAvailableDevices;
+    const rackDeviceIds = new Set<string>();
+    if (currentCustomMap?.racks) {
+      currentCustomMap.racks.forEach((r) => {
+        (r.devices || []).forEach((d) => {
+          rackDeviceIds.add(d.id);
+          rackDeviceIds.add(d.id.replace(/^hw-/, ''));
+        });
+      });
+    }
+
     const baseList =
       activeMapId !== 'default' && currentCustomMap
-        ? allAvailable.filter((n) => currentCustomMap.deviceIds.includes(n.id))
+        ? allAvailable.filter((n) => (currentCustomMap.deviceIds || []).includes(n.id) || rackDeviceIds.has(n.id))
         : allAvailable;
 
     return baseList.filter((n) => {
@@ -2353,7 +2479,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       }
       return true;
     });
-  }, [topology, localNodes, activeMapId, currentCustomMap, filterBuilding, searchQuery]);
+  }, [allAvailableDevices, activeMapId, currentCustomMap, filterBuilding, searchQuery]);
 
   // Grouped hierarchy for Physical View
   const physicalHierarchy = useMemo(() => {
@@ -3738,6 +3864,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                         onInspectRack={(r) => setInspectingRack(r)}
                         onEditRack={(r) => setEditingRack(r)}
                         onTransferDevice={(dev, r) => setTransferDeviceTarget({ device: dev, sourceRack: r })}
+                        onViewInCardMode={handleViewDeviceInCardMode}
                         onDeleteRack={handlePromptDeleteRack}
                         onEditDeviceNic={handleEditDeviceNic}
                         onEditSpecs={handleEditDeviceSpecs}
@@ -5863,6 +5990,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
           onOpenAddHardware={handleOpenAddHardware}
           onEditRack={(r) => setEditingRack(r)}
           onTransferDevice={(dev, r) => setTransferDeviceTarget({ device: dev, sourceRack: r })}
+          onViewInCardMode={handleViewDeviceInCardMode}
           onEditDeviceNic={handleEditDeviceNic}
           onEditSpecs={handleEditDeviceSpecs}
           onEditDeviceProperties={handleEditDeviceProperties}
