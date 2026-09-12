@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   CustomTopologyRack,
   HardwareCategory,
@@ -433,9 +434,9 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
     onClose();
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 md:py-8 bg-black/85 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[1100] flex items-center justify-center p-3 sm:p-5 md:py-8 bg-black/85 backdrop-blur-md animate-fade-in"
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       <div
@@ -1219,6 +1220,7 @@ export const AddHardwareModal: React.FC<AddHardwareModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

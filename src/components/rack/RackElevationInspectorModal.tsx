@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CustomTopologyRack, MountedHardwareDevice, RackViewMode } from '../../types';
 import { RackCabinetSvg } from './RackCabinetSvg';
 import { HardwareSvgRenderer } from './HardwareSvgRenderer';
@@ -68,14 +69,24 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
 
   if (!isOpen || !rack) return null;
 
+  const safeRack = {
+    ...rack,
+    id: rack.id || 'rack-default',
+    name: rack.name || 'Rack Cabinet',
+    devices: Array.isArray(rack.devices) ? rack.devices : [],
+    units: Number(rack.units) || 42,
+    depth: Number(rack.depth) || 100,
+    viewMode: (rack.viewMode === 'rear' ? 'rear' : 'front') as RackViewMode,
+  };
+
   // Keep selected device synced with rack state if changed
   const currentSelectedDevice = selectedDevice
-    ? rack.devices.find((d) => d.id === selectedDevice.id) || null
+    ? safeRack.devices.find((d) => d.id === selectedDevice.id) || null
     : null;
 
-  const totalWatts = rack.devices.reduce((acc, d) => acc + (d.powerWatts || 0), 0);
-  const usedUnits = rack.devices.reduce((acc, d) => acc + d.heightU, 0);
-  const freeUnits = rack.units - usedUnits;
+  const totalWatts = safeRack.devices.reduce((acc, d) => acc + (d.powerWatts || 0), 0);
+  const usedUnits = safeRack.devices.reduce((acc, d) => acc + d.heightU, 0);
+  const freeUnits = Math.max(0, safeRack.units - usedUnits);
   const totalKva = totalWatts > 0 ? (totalWatts / 850).toFixed(2) : '0.00';
   const totalKw = (totalWatts / 1000).toFixed(2);
   const totalAmps = totalWatts > 0 ? (totalWatts / (230 * 0.85)).toFixed(1) : '0.0';
@@ -84,8 +95,8 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
   const canMove = (dev: MountedHardwareDevice, step: number) => {
     const candidateU = dev.startU + step;
     const endU = candidateU + dev.heightU - 1;
-    if (candidateU < 1 || endU > rack.units) return false;
-    for (const other of rack.devices) {
+    if (candidateU < 1 || endU > safeRack.units) return false;
+    for (const other of safeRack.devices) {
       if (other.id === dev.id) continue;
       const oStart = other.startU;
       const oEnd = other.startU + other.heightU - 1;
@@ -99,17 +110,17 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
   const handleStepMove = (dev: MountedHardwareDevice, step: number) => {
     if (!onMoveDevice) return;
     if (canMove(dev, step)) {
-      onMoveDevice(rack.id, dev.id, dev.startU + step);
+      onMoveDevice(safeRack.id, dev.id, dev.startU + step);
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-xl animate-fade-in"
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-5 pt-16 sm:pt-16 pb-4 bg-black/90 backdrop-blur-xl animate-fade-in"
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       <div
-        className="w-full max-w-6xl h-[94vh] rounded-3xl bg-slate-950 border border-slate-700/80 shadow-2xl overflow-hidden flex flex-col text-slate-100"
+        className="w-full max-w-6xl h-[88vh] max-h-[88vh] my-auto rounded-3xl bg-slate-950 border border-slate-700/80 shadow-2xl overflow-hidden flex flex-col text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Bar */}
@@ -120,9 +131,9 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-white tracking-wide">{rack.name}</h2>
+                <h2 className="text-lg font-bold text-white tracking-wide">{safeRack.name}</h2>
                 <span className="px-2 py-0.5 rounded-md bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 font-mono text-xs font-bold">
-                  {rack.units}U • {isEn ? `depth ${rack.depth}cm` : `عمق ${rack.depth}cm`}
+                  {safeRack.units}U • {isEn ? `depth ${safeRack.depth}cm` : `عمق ${safeRack.depth}cm`}
                 </span>
               </div>
               <p className="text-xs text-slate-400">
@@ -138,16 +149,16 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
             {/* View Mode Toggle Button */}
             <button
               type="button"
-              onClick={() => onToggleViewMode(rack.id, rack.viewMode === 'front' ? 'rear' : 'front')}
+              onClick={() => onToggleViewMode(safeRack.id, safeRack.viewMode === 'front' ? 'rear' : 'front')}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md ${
-                rack.viewMode === 'front'
+                safeRack.viewMode === 'front'
                   ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500 ring-2 ring-cyan-400/40'
                   : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-500 ring-2 ring-purple-400/40'
               }`}
             >
-              {rack.viewMode === 'front' ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              {safeRack.viewMode === 'front' ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               <span>
-                {rack.viewMode === 'front'
+                {safeRack.viewMode === 'front'
                   ? isEn
                     ? 'Front View'
                     : 'نمای جلو (Front View)'
@@ -160,7 +171,7 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
             {/* Add Hardware Button */}
             <button
               type="button"
-              onClick={() => onOpenAddHardware(rack.id)}
+              onClick={() => onOpenAddHardware(safeRack.id)}
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -202,7 +213,7 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                   : 'تجهیزات را با درگ جابه‌جا کنید یا برای تنظیم کلیک نمایید.'}
               </span>
               <span className="font-mono text-cyan-400">
-                {rack.viewMode === 'front'
+                {safeRack.viewMode === 'front'
                   ? isEn
                     ? 'Current: Front Faceplate'
                     : 'وضعیت فعلی: نمای روبه‌رو (جلو)'
@@ -214,7 +225,7 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
 
             <div className="scale-95 sm:scale-100 origin-top">
               <RackCabinetSvg
-                rack={rack}
+                rack={safeRack}
                 onToggleViewMode={onToggleViewMode}
                 onOpenAddHardware={onOpenAddHardware}
                 onInspectRack={() => {}}
@@ -222,17 +233,17 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                 onTransferDevice={onTransferDevice}
                 onDeleteRack={onDeleteRack}
                 onSelectDevice={(dev) => setSelectedDevice(dev)}
-                onEditDeviceNic={(dev) => onEditDeviceNic(dev, rack)}
-                onEditSpecs={(dev) => onEditSpecs && onEditSpecs(dev, rack)}
+                onEditDeviceNic={(dev) => onEditDeviceNic(dev, safeRack)}
+                onEditSpecs={(dev) => onEditSpecs && onEditSpecs(dev, safeRack)}
                 onEditDeviceProperties={(dev) => {
-                  if (onEditDeviceProperties) onEditDeviceProperties(dev, rack);
-                  else if (onEditSpecs) onEditSpecs(dev, rack);
+                  if (onEditDeviceProperties) onEditDeviceProperties(dev, safeRack);
+                  else if (onEditSpecs) onEditSpecs(dev, safeRack);
                 }}
-                onConnectTerminal={(dev) => onConnectTerminal && onConnectTerminal(dev, rack)}
-                onInspectPorts={(dev) => onInspectPorts && onInspectPorts(dev, rack)}
+                onConnectTerminal={(dev) => onConnectTerminal && onConnectTerminal(dev, safeRack)}
+                onInspectPorts={(dev) => onInspectPorts && onInspectPorts(dev, safeRack)}
                 onPromptRemoveDevice={(dev) => {
                   if (onPromptRemoveDevice) {
-                    onPromptRemoveDevice(dev, rack);
+                    onPromptRemoveDevice(dev, safeRack);
                   } else {
                     setDeviceToRemove(dev);
                   }
@@ -240,7 +251,7 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                 onMoveDevice={onMoveDevice}
                 onViewInCardMode={onViewInCardMode}
                 onRemoveDevice={(rId, dId) => {
-                  const dev = rack.devices.find((d) => d.id === dId);
+                  const dev = safeRack.devices.find((d) => d.id === dId);
                   if (dev) {
                     setDeviceToRemove(dev);
                   } else {
@@ -263,12 +274,12 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                 <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
                   <div className="text-[10px] text-slate-400">{isEn ? 'Total Capacity' : 'کل ظرفیت'}</div>
-                  <div className="text-base font-bold font-mono text-white">{rack.units}U</div>
+                  <div className="text-base font-bold font-mono text-white">{safeRack.units}U</div>
                 </div>
                 <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
                   <div className="text-[10px] text-slate-400">{isEn ? 'Occupied' : 'یونیت اشغال'}</div>
                   <div className="text-base font-bold font-mono text-cyan-400">
-                    {usedUnits}U <span className="text-[10px] text-slate-400 font-normal">({Math.round((usedUnits / rack.units) * 100)}%)</span>
+                    {usedUnits}U <span className="text-[10px] text-slate-400 font-normal">({Math.round((usedUnits / (safeRack.units || 1)) * 100)}%)</span>
                   </div>
                 </div>
                 <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
@@ -465,7 +476,7 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                 <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-center">
                   <HardwareSvgRenderer
                     device={currentSelectedDevice}
-                    viewMode={rack.viewMode}
+                    viewMode={safeRack.viewMode}
                     width={380}
                     height={currentSelectedDevice.heightU * 32}
                   />
@@ -487,12 +498,12 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-slate-300">
                   {isEn
-                    ? `Mounted Hardware Inventory (${rack.devices.length}):`
-                    : `لیست تجهیزات نصب‌شده در رک (${rack.devices.length}):`}
+                    ? `Mounted Hardware Inventory (${safeRack.devices.length}):`
+                    : `لیست تجهیزات نصب‌شده در رک (${safeRack.devices.length}):`}
                 </h3>
                 <button
                   type="button"
-                  onClick={() => onOpenAddHardware(rack.id)}
+                  onClick={() => onOpenAddHardware(safeRack.id)}
                   className="text-xs text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1"
                 >
                   <Plus className="w-3 h-3" />
@@ -500,7 +511,7 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                 </button>
               </div>
 
-              {rack.devices.length === 0 ? (
+              {safeRack.devices.length === 0 ? (
                 <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center text-xs text-slate-500">
                   {isEn
                     ? 'This rack is currently empty. Click above to install servers, switches, or storage.'
@@ -508,7 +519,7 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
                 </div>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                  {rack.devices.map((dev) => {
+                  {safeRack.devices.map((dev) => {
                     const isSelected = currentSelectedDevice?.id === dev.id;
                     const devPorts = dev.networkCards.reduce((acc, c) => acc + c.portCount, 0);
                     return (
@@ -603,8 +614,8 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
             type: 'rack_device',
             id: deviceToRemove.id,
             name: deviceToRemove.name,
-            rackId: rack.id,
-            rackName: rack.name,
+            rackId: safeRack.id,
+            rackName: safeRack.name,
             startU: deviceToRemove.startU,
             heightU: deviceToRemove.heightU,
             model: deviceToRemove.model,
@@ -617,6 +628,7 @@ export const RackElevationInspectorModal: React.FC<RackElevationInspectorModalPr
           }}
         />
       )}
-    </div>
+    </div>,
+    document.body
   );
 };

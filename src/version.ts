@@ -10,9 +10,32 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.29.0';
+export const APP_VERSION = '1.30.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.30.0',
+    releaseDate: '2026-09-12',
+    type: 'minor',
+    title: 'اصلاح باز شدن مودال استودیو رک، لایه‌بندی مودال‌های فرزند، نوار ابزار هاور دیوایس‌ها، افزودن تجهیزات انبار به رک و منوی راست‌کلیک پورت سیسکو',
+    title_en: 'Fix Rack Elevation Studio Modal Layering, Hover Action Bar Overflow, Inventory Device Rack Mounting, and Cisco Port Context Menu',
+    changes: [
+      'اصلاح باز شدن استودیو رک (Inspect Rack Elevation Studio) برای تمامی رک‌ها و همگام‌سازی لحظه‌ای وضعیت رک با استیت نقشه.',
+      'رفع مشکل رفتن مودال استودیو رک به زیر هدر با ایجاد فاصله استاندارد و تنظیم ابعاد ریسپانسیو ویوپورت.',
+      'اصلاح لایه‌بندی (Z-Index و React Portal) برای باز شدن مودال‌های فرزند نظیر Install Hardware، Edit Rack، Transfer Device و Edit Device Properties روی استودیو رک.',
+      'اصلاح کامل نوار ابزار هاور دیوایس‌ها در نمای فیزیکی رک (کاهش اندازه دکمه‌ها، تنظیم چیدمان فشرده و جلوگیری از بیرون‌زدگی دکمه‌های پورت، کانفیگ، ترمینال و...).',
+      'امکان مشاهده و افزودن تجهیزات موجود در بخش Inventory به بوم نقشه فیزیکی و نصب مستقیم آنها درون رک‌ها با توجه به مدل و مشخصات سخت‌افزاری.',
+      'تنظیم دقیق موقعیت باز شدن منوی راست‌کلیک پورت‌های گرافیکی سیسکو بر روی مختصات نشانگر ماوس.'
+    ],
+    changes_en: [
+      'Fixed Rack Elevation Studio modal opening logic for all racks with dynamic state synchronization.',
+      'Resolved header overlap issue by ensuring proper viewport padding and height boundaries for the elevation studio.',
+      'Fixed child modal layering (Install Hardware, Edit Rack, Transfer Device, Device Properties) using React Portals and top-level z-indexing.',
+      'Redesigned the physical device hover toolbar on racks to prevent button overflow and ensure clean, compact action controls.',
+      'Enabled seamless selection of devices from Network Equipment Inventory and direct mounting into server racks in Physical View.',
+      'Fixed Cisco graphical port right-click context menu positioning to precisely match mouse cursor coordinates.'
+    ]
+  },
   {
     version: '1.29.0',
     releaseDate: '2026-09-12',

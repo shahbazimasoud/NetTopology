@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Edit3,
@@ -232,9 +233,9 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 modal-backdrop-blur overflow-y-auto"
+      className="fixed inset-0 z-[1100] flex items-center justify-center p-2 sm:p-4 modal-backdrop-blur overflow-y-auto"
       data-modal-backdrop="true"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -870,6 +871,7 @@ export const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

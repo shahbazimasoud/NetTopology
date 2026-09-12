@@ -48,25 +48,44 @@ export const CiscoPortContextMenu: React.FC<CiscoPortContextMenuProps> = ({
   const isTrunk = port.mode === 'trunk';
   const isPortSec = !!port.port_security_enabled;
 
-  // Accurate mouse position alignment with automatic viewport flip
-  const [coords, setCoords] = useState<{ top: number; left: number }>({ top: y, left: x });
+  // Accurate mouse position alignment with smooth viewport boundary clamping
+  const menuWidth = 280;
+  const menuEstimatedHeight = 440;
+  const screenW = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const screenH = typeof window !== 'undefined' ? window.innerHeight : 800;
+
+  const initialTop = y + menuEstimatedHeight > screenH - 12
+    ? Math.max(12, screenH - menuEstimatedHeight - 12)
+    : Math.max(12, y);
+
+  const initialLeft = x + menuWidth > screenW - 12
+    ? Math.max(12, x - menuWidth)
+    : Math.max(12, x);
+
+  const [coords, setCoords] = useState<{ top: number; left: number }>({ top: initialTop, left: initialLeft });
 
   useLayoutEffect(() => {
     if (!menuRef.current) return;
     const rect = menuRef.current.getBoundingClientRect();
-    const screenW = window.innerWidth;
-    const screenH = window.innerHeight;
+    const actualHeight = rect.height || menuEstimatedHeight;
+    const actualWidth = rect.width || menuWidth;
+    const curScreenW = window.innerWidth;
+    const curScreenH = window.innerHeight;
 
     let targetLeft = x;
     let targetTop = y;
 
-    // Flip horizontally if menu overflows right side of viewport
-    if (targetLeft + rect.width > screenW - 12) {
-      targetLeft = Math.max(12, x - rect.width);
+    if (targetLeft + actualWidth > curScreenW - 12) {
+      targetLeft = Math.max(12, x - actualWidth);
+    } else {
+      targetLeft = Math.max(12, targetLeft);
     }
-    // Flip vertically if menu overflows bottom of viewport
-    if (targetTop + rect.height > screenH - 12) {
-      targetTop = Math.max(12, y - rect.height);
+
+    if (targetTop + actualHeight > curScreenH - 12) {
+      // Gently clamp near the cursor without jumping to screen top
+      targetTop = Math.max(12, curScreenH - actualHeight - 12);
+    } else {
+      targetTop = Math.max(12, targetTop);
     }
 
     setCoords({ top: targetTop, left: targetLeft });

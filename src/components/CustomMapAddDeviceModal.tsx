@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Search,
@@ -11,6 +12,7 @@ import {
   CreditCard,
   Box,
   ChevronDown,
+  Layers,
 } from 'lucide-react';
 import { Device, CustomTopologyRack, DeviceCanvasDisplayMode } from '../types';
 import { useLanguage } from '../i18n';
@@ -23,6 +25,7 @@ interface CustomMapAddDeviceModalProps {
   availableDevices: Device[];
   existingDeviceIds: string[];
   racks?: CustomTopologyRack[];
+  initialDisplayMode?: DeviceCanvasDisplayMode;
   onAddDevice: (device: Device, mode: DeviceCanvasDisplayMode, targetRackId?: string) => void;
 }
 
@@ -32,12 +35,16 @@ export const CustomMapAddDeviceModal: React.FC<CustomMapAddDeviceModalProps> = (
   availableDevices,
   existingDeviceIds,
   racks = [],
+  initialDisplayMode,
   onAddDevice,
 }) => {
   const { isEn, isRtl } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'switch' | 'router' | 'access_point'>('all');
-  const [selectedDisplayMode, setSelectedDisplayMode] = useState<DeviceCanvasDisplayMode>('card');
+  const [selectedDisplayMode, setSelectedDisplayMode] = useState<DeviceCanvasDisplayMode>(
+    initialDisplayMode || 'card'
+  );
+  const [perDeviceTargetRack, setPerDeviceTargetRack] = useState<Record<string, string>>({});
 
   if (!isOpen) return null;
 
@@ -55,7 +62,7 @@ export const CustomMapAddDeviceModal: React.FC<CustomMapAddDeviceModalProps> = (
     return true;
   });
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[100000] flex items-center justify-center p-4 modal-backdrop-blur"
       data-modal-backdrop="true"
@@ -182,20 +189,25 @@ export const CustomMapAddDeviceModal: React.FC<CustomMapAddDeviceModalProps> = (
               {filteredDevices.map((device) => {
                 const isAlreadyOnMap = existingDeviceIds.includes(device.id);
                 const hwPreview = convertNodeToHardwareDevice(device);
+                const mountedRack = racks.find((r) => r.devices?.some((d) => d.id === device.id));
+                const mountedDev = mountedRack?.devices?.find((d) => d.id === device.id);
+                const targetRackId = perDeviceTargetRack[device.id] || racks[0]?.id;
 
                 return (
                   <div
                     key={device.id}
-                    className={`p-3 rounded-xl border transition flex flex-col justify-between gap-2.5 ${
-                      isAlreadyOnMap
-                        ? 'bg-slate-50 dark:bg-slate-850/40 border-slate-200 dark:border-slate-800 opacity-60'
+                    className={`p-3 rounded-2xl border transition flex flex-col justify-between gap-3 ${
+                      mountedRack
+                        ? 'bg-slate-900/90 border-cyan-500/40 shadow-sm'
+                        : isAlreadyOnMap
+                        ? 'bg-slate-50 dark:bg-slate-850/60 border-slate-200 dark:border-slate-800'
                         : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div
-                          className={`p-2 rounded-lg flex-shrink-0 ${
+                          className={`p-2 rounded-xl flex-shrink-0 ${
                             device.type === 'switch'
                               ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400'
                               : device.type === 'router'
@@ -213,11 +225,19 @@ export const CustomMapAddDeviceModal: React.FC<CustomMapAddDeviceModalProps> = (
                         </div>
 
                         <div className="min-w-0">
-                          <div className="text-xs font-bold text-slate-900 dark:text-white truncate font-mono">
-                            {device.name}
+                          <div className="text-xs font-bold text-slate-900 dark:text-white truncate font-mono flex items-center gap-1.5">
+                            <span>{device.name}</span>
+                            {mountedRack && (
+                              <span className="px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40 text-[9px] font-mono">
+                                {mountedRack.name} U{mountedDev?.startU}
+                              </span>
+                            )}
                           </div>
-                          <div className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
-                            {device.ip}
+                          <div className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1.5">
+                            <span>{device.ip}</span>
+                            <span className="text-[10px] text-slate-400 font-normal">
+                              ({hwPreview.brand} {hwPreview.model})
+                            </span>
                           </div>
                           <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5">
                             <MapPin className="w-2.5 h-2.5" />
@@ -235,7 +255,7 @@ export const CustomMapAddDeviceModal: React.FC<CustomMapAddDeviceModalProps> = (
 
                     {/* Mini SVG Faceplate Preview in Physical Mode */}
                     {selectedDisplayMode === 'physical' && (
-                      <div className="p-1.5 rounded-lg bg-slate-950/70 border border-slate-700/60 flex items-center justify-center overflow-hidden">
+                      <div className="p-1.5 rounded-xl bg-slate-950/90 border border-slate-700/60 flex items-center justify-center overflow-hidden shadow-inner">
                         <HardwareSvgRenderer
                           device={hwPreview}
                           viewMode="front"
@@ -246,60 +266,97 @@ export const CustomMapAddDeviceModal: React.FC<CustomMapAddDeviceModalProps> = (
                     )}
 
                     {/* Action Buttons */}
-                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
                       <span className="text-[10px] text-slate-400 font-mono">
-                        {device.total_ports || 24} Ports
+                        {device.total_ports || 24} {isEn ? 'Ports' : 'پورت'}
                       </span>
 
-                      <div className="flex items-center gap-1.5">
-                        {isAlreadyOnMap ? (
-                          <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                            <Check className="w-3 h-3" />
-                            <span>{isEn ? 'On Canvas' : 'در نقشه'}</span>
-                          </span>
-                        ) : (
-                          <>
-                            {/* Direct Rack Mount Button (if racks exist and physical mode is active) */}
-                            {selectedDisplayMode === 'physical' && racks.length > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  onAddDevice(device, 'physical', racks[0].id);
-                                  onClose();
-                                }}
-                                className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-600 dark:text-blue-300 border border-blue-500/30 text-[11px] font-medium transition active:scale-95"
-                                title={isEn ? `Mount into ${racks[0].name}` : `نصب مستقیم در ${racks[0].name}`}
-                              >
-                                <Box className="w-3 h-3" />
-                                <span>{isEn ? 'Mount in Rack' : 'نصب در رک'}</span>
-                              </button>
-                            )}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* Rack selector if physical mode and racks exist and not already in this rack */}
+                        {selectedDisplayMode === 'physical' && racks.length > 1 && !mountedRack && (
+                          <select
+                            value={targetRackId}
+                            onChange={(e) =>
+                              setPerDeviceTargetRack((prev) => ({
+                                ...prev,
+                                [device.id]: e.target.value,
+                              }))
+                            }
+                            className="text-[10px] py-1 px-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-200"
+                          >
+                            {racks.map((r) => (
+                              <option key={r.id} value={r.id}>
+                                {r.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
 
-                            {/* Standard Add to Canvas */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                onAddDevice(device, selectedDisplayMode);
-                                onClose();
-                              }}
-                              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-white text-xs font-medium shadow-xs transition active:scale-95 cursor-pointer ${
-                                selectedDisplayMode === 'card'
-                                  ? 'bg-purple-600 hover:bg-purple-500'
-                                  : 'bg-indigo-600 hover:bg-indigo-500'
-                              }`}
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>
-                                {selectedDisplayMode === 'card'
-                                  ? isEn
-                                    ? 'Add as Card'
-                                    : 'افزودن کارت'
-                                  : isEn
-                                  ? 'Add Physical'
-                                  : 'افزودن فیزیکی'}
-                              </span>
-                            </button>
-                          </>
+                        {/* Mount into rack button */}
+                        {selectedDisplayMode === 'physical' && racks.length > 0 && !mountedRack && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onAddDevice(device, 'physical', targetRackId);
+                              onClose();
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-medium shadow-sm transition active:scale-95 cursor-pointer"
+                            title={
+                              isEn
+                                ? `Mount into ${racks.find((r) => r.id === targetRackId)?.name || 'Rack'}`
+                                : `نصب فیزیکی در ${racks.find((r) => r.id === targetRackId)?.name || 'رک'}`
+                            }
+                          >
+                            <Box className="w-3.5 h-3.5" />
+                            <span>{isEn ? 'Mount in Rack' : 'نصب در رک'}</span>
+                          </button>
+                        )}
+
+                        {/* Already mounted badge */}
+                        {mountedRack && (
+                          <span className="flex items-center gap-1 text-[10px] font-medium text-cyan-400 bg-cyan-950/60 px-2 py-1 rounded-xl border border-cyan-700/50">
+                            <Check className="w-3 h-3" />
+                            <span>
+                              {isEn
+                                ? `Mounted in ${mountedRack.name}`
+                                : `نصب‌شده در ${mountedRack.name}`}
+                            </span>
+                          </span>
+                        )}
+
+                        {/* Already on map badge */}
+                        {isAlreadyOnMap && !mountedRack && (
+                          <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                            <Check className="w-3 h-3" />
+                            <span>{isEn ? 'On Canvas' : 'روی بوم'}</span>
+                          </span>
+                        )}
+
+                        {/* Add to Canvas as standalone node */}
+                        {!isAlreadyOnMap && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onAddDevice(device, selectedDisplayMode);
+                              onClose();
+                            }}
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-white text-xs font-medium shadow-xs transition active:scale-95 cursor-pointer ${
+                              selectedDisplayMode === 'card'
+                                ? 'bg-purple-600 hover:bg-purple-500'
+                                : 'bg-slate-700 hover:bg-slate-600 text-slate-100'
+                            }`}
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>
+                              {selectedDisplayMode === 'card'
+                                ? isEn
+                                  ? 'Add as Card'
+                                  : 'افزودن کارت'
+                                : isEn
+                                ? 'Add to Canvas'
+                                : 'افزودن به بوم'}
+                            </span>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -314,17 +371,18 @@ export const CustomMapAddDeviceModal: React.FC<CustomMapAddDeviceModalProps> = (
         <div className="p-3.5 bg-slate-50 dark:bg-slate-850 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div className="text-[11px] text-slate-500 dark:text-slate-400">
             {isEn
-              ? 'Tip: You can switch between Card and Physical mode anytime for any device.'
-              : 'نکته: در هر لحظه می‌توانید نمای هر تجهیز را بین حالت کارت و شاسی فیزیکی تغییر دهید.'}
+              ? 'Tip: You can install devices directly into racks or drop them onto the canvas.'
+              : 'نکته: تجهیزات را می‌توانید مستقیماً درون رک‌های فعال نصب کرده یا روی بوم قرار دهید.'}
           </div>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs font-medium"
+            className="px-4 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs font-medium cursor-pointer"
           >
             {isEn ? 'Close' : 'بستن'}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -318,6 +318,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
   const [editingHardwareDevice, setEditingHardwareDevice] = useState<MountedHardwareDevice | null>(null);
   const [editingInventoryDevice, setEditingInventoryDevice] = useState<Device | null>(null);
   const [inspectingRack, setInspectingRack] = useState<CustomTopologyRack | null>(null);
+  const [inspectingRackId, setInspectingRackId] = useState<string | null>(null);
+  const activeInspectingRack = inspectingRackId
+    ? (currentCustomMap?.racks || []).find((r) => r.id === inspectingRackId) || inspectingRack
+    : inspectingRack;
   const [draggingRackId, setDraggingRackId] = useState<string | null>(null);
   const dragRackOffset = useRef({ offsetX: 0, offsetY: 0, startClientX: 0, startClientY: 0, moved: false });
 
@@ -1181,17 +1185,22 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     targetRackId?: string
   ) => {
     if (!currentCustomMap) return;
-    if (currentCustomMap.deviceIds.includes(device.id)) return;
+    const isAlreadyOnMap = currentCustomMap.deviceIds.includes(device.id);
+    if (isAlreadyOnMap && !targetRackId) return;
 
     const existingCount = currentCustomMap.deviceIds.length;
     const col = existingCount % 3;
     const row = Math.floor(existingCount / 3);
-    const newPos = {
+    const newPos = currentCustomMap.devicePositions[device.id] || {
       x: 180 + col * 300,
       y: 160 + row * 220,
     };
 
-    let updatedRacks = currentCustomMap.racks || [];
+    let updatedRacks = (currentCustomMap.racks || []).map((r) => ({
+      ...r,
+      devices: r.devices ? r.devices.filter((d) => d.id !== device.id) : [],
+    }));
+
     if (targetRackId && mode === 'physical') {
       const targetRack = updatedRacks.find((r) => r.id === targetRackId);
       if (targetRack) {
@@ -1217,7 +1226,9 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
     const updatedMap: CustomTopologyMap = {
       ...currentCustomMap,
-      deviceIds: [...currentCustomMap.deviceIds, device.id],
+      deviceIds: isAlreadyOnMap
+        ? currentCustomMap.deviceIds
+        : [...currentCustomMap.deviceIds, device.id],
       devicePositions: {
         ...currentCustomMap.devicePositions,
         [device.id]: newPos,
@@ -3861,7 +3872,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                         rack={rack}
                         onToggleViewMode={handleToggleRackViewMode}
                         onOpenAddHardware={handleOpenAddHardware}
-                        onInspectRack={(r) => setInspectingRack(r)}
+                        onInspectRack={(r) => {
+                          setInspectingRack(r);
+                          setInspectingRackId(r.id);
+                        }}
                         onEditRack={(r) => setEditingRack(r)}
                         onTransferDevice={(dev, r) => setTransferDeviceTarget({ device: dev, sourceRack: r })}
                         onViewInCardMode={handleViewDeviceInCardMode}
@@ -3940,7 +3954,10 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                           onToggleToCardView={() => setGlobalDeviceViewMode('card')}
                           onMountToRack={(rackId, startU) => handleMountCanvasNodeToRack(node, rackId, startU)}
                           onUnmountFromRack={handleRemoveDeviceFromRack}
-                          onInspectRack={(rack) => setInspectingRack(rack)}
+                          onInspectRack={(rack) => {
+                            setInspectingRack(rack);
+                            setInspectingRackId(rack.id);
+                          }}
                           onRemoveFromMap={activeMapId !== 'default' ? () => handlePromptDeleteDevice(node) : undefined}
                           onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
                         />
@@ -5918,6 +5935,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
           availableDevices={allAvailableDevices}
           existingDeviceIds={currentCustomMap.deviceIds || []}
           racks={currentCustomMap.racks || []}
+          initialDisplayMode={globalDeviceViewMode}
           onAddDevice={handleAddDeviceToCustomMap}
         />
       )}
@@ -5981,11 +5999,14 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
         />
       )}
 
-      {inspectingRack && (
+      {activeInspectingRack && (
         <RackElevationInspectorModal
-          isOpen={!!inspectingRack}
-          onClose={() => setInspectingRack(null)}
-          rack={inspectingRack}
+          isOpen={!!activeInspectingRack}
+          onClose={() => {
+            setInspectingRack(null);
+            setInspectingRackId(null);
+          }}
+          rack={activeInspectingRack}
           onToggleViewMode={handleToggleRackViewMode}
           onOpenAddHardware={handleOpenAddHardware}
           onEditRack={(r) => setEditingRack(r)}

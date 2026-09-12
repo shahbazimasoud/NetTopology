@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { CustomTopologyRack, MountedHardwareDevice } from '../../types';
 import { ArrowRightLeft, Check, X, AlertTriangle, Server, Box, Layers, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
@@ -118,9 +119,9 @@ export const TransferDeviceModal: React.FC<TransferDeviceModalProps> = ({
     onClose();
   };
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       <div
@@ -306,6 +307,7 @@ export const TransferDeviceModal: React.FC<TransferDeviceModalProps> = ({
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

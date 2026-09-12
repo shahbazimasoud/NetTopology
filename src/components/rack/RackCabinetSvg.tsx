@@ -250,6 +250,7 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                 ? 'Switch to Front View'
                 : 'مشاهده نمای جلو (Front)'
             }
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onToggleViewMode(rack.id, rack.viewMode === 'front' ? 'rear' : 'front');
@@ -276,13 +277,14 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
           <button
             type="button"
             title={isEn ? 'Inspect Rack Elevation Studio' : 'بزرگ‌نمایی و بازرسی کامل رک'}
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onInspectRack(rack);
             }}
-            className="p-1 rounded-lg bg-slate-800 text-slate-300 hover:text-cyan-300 hover:bg-slate-700 transition"
+            className="p-1 rounded-lg bg-slate-800 text-slate-300 hover:text-cyan-300 hover:bg-slate-700 transition cursor-pointer"
           >
-            <Maximize2 className="w-3.5 h-3.5" />
+            <Maximize2 className="w-3.5 h-3.5 pointer-events-none" />
           </button>
 
           {/* Edit Rack Properties & Units */}
@@ -290,6 +292,7 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
             <button
               type="button"
               title={isEn ? 'Edit Rack Properties & Units' : 'ویرایش مشخصات و تعداد یونیت‌های رک'}
+              onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
                 onEditRack(rack);
@@ -304,11 +307,12 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
           <button
             type="button"
             title={isEn ? 'Install Hardware Device' : 'افزودن تجهیز سخت‌افزاری به رک'}
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onOpenAddHardware(rack.id);
             }}
-            className="p-1 rounded-lg bg-emerald-600/80 text-white hover:bg-emerald-500 transition"
+            className="p-1 rounded-lg bg-emerald-600/80 text-white hover:bg-emerald-500 transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
@@ -317,11 +321,12 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
           <button
             type="button"
             title={isEn ? 'Delete Rack' : 'حذف رک'}
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onDeleteRack(rack.id);
             }}
-            className="p-1 rounded-lg bg-red-950/60 text-red-400 hover:bg-red-800 hover:text-white transition"
+            className="p-1 rounded-lg bg-red-950/60 text-red-400 hover:bg-red-800 hover:text-white transition cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -679,12 +684,12 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
             style={{
               position: 'absolute',
               top: `${
-                hoveredMountedDev.dev.heightU === 1 && hoveredMountedDev.uNumber <= 2
-                  ? Math.max(2, hoveredMountedDev.yPos - 32)
-                  : hoveredMountedDev.yPos + 2
+                hoveredMountedDev.yPos <= 65
+                  ? hoveredMountedDev.yPos + hoveredMountedDev.dev.heightU * U_HEIGHT + 4
+                  : hoveredMountedDev.yPos - 66
               }px`,
-              left: `${4 + RAIL_WIDTH - 10}px`,
-              maxWidth: `${RACK_WIDTH - 8 - RAIL_WIDTH * 2 + 20}px`,
+              left: '8px',
+              width: `${RACK_WIDTH - 16}px`,
               zIndex: 50,
             }}
             onMouseEnter={() => {
@@ -698,48 +703,67 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
             }}
             className="pointer-events-auto animate-fade-in"
           >
-            <div className="bg-slate-900/95 border border-cyan-500/70 rounded-lg px-2 py-1 flex items-center gap-1 shadow-2xl backdrop-blur-md ring-1 ring-cyan-500/30 text-xs">
-              {/* In-Rack Drag Handle */}
-              <div
-                onMouseDown={(e) => handleStartDrag(e, hoveredMountedDev.dev)}
-                className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-slate-800 text-cyan-400 hover:text-cyan-200 transition"
-                title={isEn ? 'Drag to move up/down in rack' : 'درگ کنید تا در رک جابه‌جا شود'}
-              >
-                <GripVertical className="w-3 h-3" />
+            <div className="w-full bg-slate-900/98 border border-cyan-500/70 rounded-xl p-1.5 shadow-2xl backdrop-blur-md ring-1 ring-cyan-500/30 text-xs flex flex-col gap-1.5 box-border overflow-hidden">
+              {/* Row 1: U Slot, Device identity, and Quick Move */}
+              <div className="flex items-center justify-between gap-1 border-b border-slate-800/80 pb-1 px-0.5">
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <div
+                    onMouseDown={(e) => handleStartDrag(e, hoveredMountedDev.dev)}
+                    className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-slate-800 text-cyan-400 hover:text-cyan-200 transition shrink-0"
+                    title={isEn ? 'Drag to move in rack' : 'درگ برای جابه‌جایی در رک'}
+                  >
+                    <GripVertical className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 font-mono text-[10px] font-bold border border-cyan-700/50 shrink-0">
+                    U{hoveredMountedDev.dev.startU}
+                    {hoveredMountedDev.dev.heightU > 1
+                      ? `-${hoveredMountedDev.dev.startU + hoveredMountedDev.dev.heightU - 1}`
+                      : ''}
+                  </span>
+                  <span
+                    className="text-[11px] font-bold text-white truncate max-w-[140px]"
+                    title={hoveredMountedDev.dev.name || hoveredMountedDev.dev.model}
+                  >
+                    {hoveredMountedDev.dev.name || hoveredMountedDev.dev.model}
+                  </span>
+                  {hoveredMountedDev.dev.model && hoveredMountedDev.dev.name !== hoveredMountedDev.dev.model && (
+                    <span className="text-[10px] text-slate-400 font-mono truncate max-w-[90px]">
+                      {hoveredMountedDev.dev.model}
+                    </span>
+                  )}
+                </div>
+
+                {/* Move Up/Down 1U */}
+                <div className="flex items-center gap-0.5 shrink-0 bg-slate-950/80 border border-slate-800 rounded-md p-0.5">
+                  <button
+                    type="button"
+                    onClick={(e) => handleQuickMove(e, hoveredMountedDev.dev, 'up')}
+                    disabled={
+                      !checkCollision(hoveredMountedDev.dev, hoveredMountedDev.dev.startU + 1) ||
+                      checkCollision(hoveredMountedDev.dev, hoveredMountedDev.dev.startU + 1).isBlocked
+                    }
+                    className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-cyan-300 disabled:opacity-20 disabled:cursor-not-allowed transition"
+                    title={isEn ? 'Move Up 1U' : 'انتقال ۱ یونیت به بالا'}
+                  >
+                    <ChevronUp className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => handleQuickMove(e, hoveredMountedDev.dev, 'down')}
+                    disabled={
+                      !checkCollision(hoveredMountedDev.dev, hoveredMountedDev.dev.startU - 1) ||
+                      checkCollision(hoveredMountedDev.dev, hoveredMountedDev.dev.startU - 1).isBlocked
+                    }
+                    className="p-1 rounded hover:bg-slate-800 text-slate-300 hover:text-cyan-300 disabled:opacity-20 disabled:cursor-not-allowed transition"
+                    title={isEn ? 'Move Down 1U' : 'انتقال ۱ یونیت به پایین'}
+                  >
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
 
-              {/* Move Up 1U button */}
-              <button
-                type="button"
-                onClick={(e) => handleQuickMove(e, hoveredMountedDev.dev, 'up')}
-                disabled={!checkCollision(hoveredMountedDev.dev, hoveredMountedDev.dev.startU + 1) || checkCollision(hoveredMountedDev.dev, hoveredMountedDev.dev.startU + 1).isBlocked}
-                className="p-0.5 rounded hover:bg-slate-800 text-slate-300 hover:text-cyan-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
-                title={isEn ? 'Move Up 1U' : 'انتقال ۱ یونیت به بالا'}
-              >
-                <ChevronUp className="w-3 h-3" />
-              </button>
-
-              {/* Move Down 1U button */}
-              <button
-                type="button"
-                onClick={(e) => handleQuickMove(e, hoveredMountedDev.dev, 'down')}
-                disabled={!checkCollision(hoveredMountedDev.dev, hoveredMountedDev.dev.startU - 1) || checkCollision(hoveredMountedDev.dev, hoveredMountedDev.dev.startU - 1).isBlocked}
-                className="p-0.5 rounded hover:bg-slate-800 text-slate-300 hover:text-cyan-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
-                title={isEn ? 'Move Down 1U' : 'انتقال ۱ یونیت به پایین'}
-              >
-                <ChevronDown className="w-3 h-3" />
-              </button>
-
-              {/* Model Tag */}
-              <span
-                className="text-[10px] font-bold text-cyan-300 px-1 border-r border-slate-700 truncate max-w-[70px]"
-                title={`${hoveredMountedDev.dev.brand} ${hoveredMountedDev.dev.model}`}
-              >
-                {hoveredMountedDev.dev.model}
-              </span>
-
-              {/* Context Menu Actions: Properties, Config, CLI, Port, Delete */}
-              <div className="flex items-center gap-1">
+              {/* Row 2: Action Buttons - neatly fitted without overflowing! */}
+              <div className="flex items-center justify-between gap-1 px-0.5 w-full">
                 {/* 1. Properties */}
                 {(onEditDeviceProperties || onEditSpecs) && (
                   <button
@@ -753,9 +777,9 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                         onEditSpecs(hoveredMountedDev.dev, rack);
                       }
                     }}
-                    className="px-1.5 py-0.5 rounded hover:bg-cyan-950 text-cyan-300 hover:text-cyan-100 border border-cyan-800/60 flex items-center gap-0.5 text-[9.5px] font-medium transition cursor-pointer"
+                    className="h-6 px-1.5 rounded-md bg-cyan-950/90 hover:bg-cyan-900 text-cyan-300 hover:text-cyan-100 border border-cyan-700/60 flex items-center justify-center gap-1 text-[10px] font-medium transition cursor-pointer shrink-0 whitespace-nowrap leading-none"
                   >
-                    <Edit3 className="w-2.5 h-2.5" />
+                    <Edit3 className="w-3 h-3 shrink-0" />
                     <span>{isEn ? 'Props' : 'مشخصات'}</span>
                   </button>
                 )}
@@ -769,9 +793,9 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                       e.stopPropagation();
                       onEditDeviceNic(hoveredMountedDev.dev, rack);
                     }}
-                    className="px-1.5 py-0.5 rounded hover:bg-emerald-950 text-emerald-300 hover:text-emerald-100 border border-emerald-800/60 flex items-center gap-0.5 text-[9.5px] font-medium transition cursor-pointer"
+                    className="h-6 px-1.5 rounded-md bg-emerald-950/90 hover:bg-emerald-900 text-emerald-300 hover:text-emerald-100 border border-emerald-700/60 flex items-center justify-center gap-1 text-[10px] font-medium transition cursor-pointer shrink-0 whitespace-nowrap leading-none"
                   >
-                    <Network className="w-2.5 h-2.5" />
+                    <Network className="w-3 h-3 shrink-0" />
                     <span>{isEn ? 'Config' : 'کانفیگ'}</span>
                   </button>
                 )}
@@ -785,9 +809,9 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                       e.stopPropagation();
                       onConnectTerminal(hoveredMountedDev.dev, rack);
                     }}
-                    className="px-1.5 py-0.5 rounded hover:bg-purple-950 text-purple-300 hover:text-purple-100 border border-purple-800/60 flex items-center gap-0.5 text-[9.5px] font-medium transition cursor-pointer"
+                    className="h-6 px-1.5 rounded-md bg-purple-950/90 hover:bg-purple-900 text-purple-300 hover:text-purple-100 border border-purple-700/60 flex items-center justify-center gap-1 text-[10px] font-medium transition cursor-pointer shrink-0 whitespace-nowrap leading-none"
                   >
-                    <Terminal className="w-2.5 h-2.5" />
+                    <Terminal className="w-3 h-3 shrink-0" />
                     <span>CLI</span>
                   </button>
                 )}
@@ -801,14 +825,16 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                       e.stopPropagation();
                       onInspectPorts(hoveredMountedDev.dev, rack);
                     }}
-                    className="px-1.5 py-0.5 rounded hover:bg-amber-950 text-amber-300 hover:text-amber-100 border border-amber-800/60 flex items-center gap-0.5 text-[9.5px] font-medium transition cursor-pointer"
+                    className="h-6 px-1.5 rounded-md bg-amber-950/90 hover:bg-amber-900 text-amber-300 hover:text-amber-100 border border-amber-700/60 flex items-center justify-center gap-1 text-[10px] font-medium transition cursor-pointer shrink-0 whitespace-nowrap leading-none"
                   >
-                    <Layers className="w-2.5 h-2.5" />
-                    <span>Port</span>
+                    <Layers className="w-3 h-3 shrink-0" />
+                    <span>{isEn ? 'Port' : 'پورت'}</span>
                   </button>
                 )}
 
-                {/* Card View Switch & Inspection */}
+                <div className="h-4 w-px bg-slate-800 shrink-0 my-auto" />
+
+                {/* Card View Switch */}
                 {onViewInCardMode && (
                   <button
                     type="button"
@@ -817,14 +843,13 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                       e.stopPropagation();
                       onViewInCardMode(hoveredMountedDev.dev, rack);
                     }}
-                    className="px-1.5 py-0.5 rounded hover:bg-blue-950 text-blue-300 hover:text-blue-100 border border-blue-800/60 flex items-center gap-0.5 text-[9.5px] font-medium transition cursor-pointer"
+                    className="w-6 h-6 rounded-md bg-blue-950/80 hover:bg-blue-900 text-blue-300 hover:text-blue-100 border border-blue-700/60 flex items-center justify-center transition cursor-pointer shrink-0"
                   >
-                    <CreditCard className="w-2.5 h-2.5" />
-                    <span>{isEn ? 'Card' : 'کارت'}</span>
+                    <CreditCard className="w-3 h-3" />
                   </button>
                 )}
 
-                {/* 5. Transfer Device to another Rack */}
+                {/* 5. Transfer Device */}
                 {onTransferDevice && (
                   <button
                     type="button"
@@ -833,10 +858,9 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                       e.stopPropagation();
                       onTransferDevice(hoveredMountedDev.dev, rack);
                     }}
-                    className="px-1.5 py-0.5 rounded hover:bg-sky-950 text-sky-300 hover:text-sky-100 border border-sky-800/60 flex items-center gap-0.5 text-[9.5px] font-medium transition cursor-pointer"
+                    className="w-6 h-6 rounded-md bg-sky-950/80 hover:bg-sky-900 text-sky-300 hover:text-sky-100 border border-sky-700/60 flex items-center justify-center transition cursor-pointer shrink-0"
                   >
-                    <ArrowRightLeft className="w-2.5 h-2.5" />
-                    <span>{isEn ? 'Move' : 'انتقال'}</span>
+                    <ArrowRightLeft className="w-3 h-3" />
                   </button>
                 )}
 
@@ -853,7 +877,7 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
                         setLocalConfirmDeleteDev(hoveredMountedDev.dev);
                       }
                     }}
-                    className="p-1 rounded hover:bg-red-900/80 text-red-400 hover:text-red-200 transition cursor-pointer"
+                    className="w-6 h-6 rounded-md bg-rose-950/80 hover:bg-rose-900 text-rose-400 hover:text-rose-100 border border-rose-800/60 flex items-center justify-center transition cursor-pointer shrink-0"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
