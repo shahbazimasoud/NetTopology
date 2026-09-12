@@ -26,7 +26,7 @@ interface PhysicalNodeOnCanvasProps {
   isBeingDragged: boolean;
   isSelected: boolean;
   racks: CustomTopologyRack[];
-  onToggleToCardView: () => void;
+  onToggleToCardView: (nodeId?: string) => void;
   onMountToRack: (rackId: string, startU: number) => void;
   onUnmountFromRack: (rackId: string, deviceId: string) => void;
   onInspectRack?: (rack: CustomTopologyRack) => void;
@@ -202,6 +202,11 @@ export const PhysicalNodeOnCanvas: React.FC<PhysicalNodeOnCanvasProps> = ({
   return (
     <div
       onMouseDown={onMouseDown}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onToggleToCardView(node.id);
+      }}
+      title={isEn ? 'Double-click to switch to Card View' : 'برای انتقال به نمای کارت دوبار کلیک کنید'}
       className={`w-[340px] rounded-xl border transition-shadow select-none text-right backdrop-blur-xl group relative ${
         isBeingDragged
           ? 'spatial-glass border-cyan-400 ring-2 ring-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.6)] cursor-grabbing z-40 scale-102'
@@ -235,19 +240,19 @@ export const PhysicalNodeOnCanvas: React.FC<PhysicalNodeOnCanvasProps> = ({
 
         {/* View Switcher & Actions */}
         <div className="flex items-center gap-1" onMouseDown={(e) => e.stopPropagation()}>
-          {/* Toggle to Card / Cabling View */}
+          {/* Toggle to Card / Cabling View with 3-second Neon Highlight */}
           <button
             type="button"
-            onClick={onToggleToCardView}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 border border-purple-500/30 text-[10px] font-medium transition"
+            onClick={() => onToggleToCardView(node.id)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-600/40 hover:bg-purple-600/70 text-purple-200 hover:text-white border border-purple-500/40 text-[10px] font-semibold transition cursor-pointer shadow-sm active:scale-95 group/btn"
             title={
               isEn
-                ? 'Switch to Card View for Port-to-Port Cabling'
-                : 'تغییر به نمای کارت شماتیک جهت رسم کابل‌کشی'
+                ? 'Switch to Card View & Highlight Device (Neon)'
+                : 'تغییر به نمای کارت و هایلایت نئونی دیوایس'
             }
           >
-            <CreditCard className="w-3 h-3 text-purple-300" />
-            <span className="hidden sm:inline">{isEn ? 'Card' : 'کارت'}</span>
+            <CreditCard className="w-3.5 h-3.5 text-purple-300 group-hover/btn:text-white transition" />
+            <span>{isEn ? 'Card' : 'کارت'}</span>
           </button>
 
           {/* Remove from Map */}

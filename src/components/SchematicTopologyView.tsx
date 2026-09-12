@@ -42,7 +42,8 @@ import {
   CreditCard,
   StickyNote,
   EyeOff,
-  Activity
+  Activity,
+  Sparkles
 } from 'lucide-react';
 import {
   TopologyData,
@@ -333,6 +334,68 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
 
   // Global & Per-Device display modes ('card' | 'physical')
   const [globalDeviceViewMode, setGlobalDeviceViewMode] = useState<DeviceCanvasDisplayMode>('card');
+
+  // Neon highlight state for 3-second animated identification when switching from physical to card mode
+  interface NeonHighlightState {
+    nodeId: string;
+    rawId: string;
+    colorHex: string;
+    colorRgb: string;
+    colorName?: string;
+  }
+  const [neonHighlightedNode, setNeonHighlightedNode] = useState<NeonHighlightState | null>(null);
+  const neonHighlightTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Vibrant neon color palette with high-contrast glowing values
+  const NEON_PALETTE = useMemo(
+    () => [
+      { hex: '#00f3ff', rgb: '0, 243, 255', name: 'Cyan Neon' },
+      { hex: '#39ff14', rgb: '57, 255, 20', name: 'Lime Neon' },
+      { hex: '#ff007f', rgb: '255, 0, 127', name: 'Magenta Neon' },
+      { hex: '#b026ff', rgb: '176, 38, 255', name: 'Electric Violet' },
+      { hex: '#ff9900', rgb: '255, 153, 0', name: 'Amber Neon' },
+      { hex: '#00ffd5', rgb: '0, 255, 213', name: 'Turquoise Neon' },
+      { hex: '#ff1361', rgb: '255, 19, 97', name: 'Hot Rose' },
+      { hex: '#ffee00', rgb: '255, 238, 0', name: 'Vivid Yellow' },
+      { hex: '#0099ff', rgb: '0, 153, 255', name: 'Electric Blue' },
+      { hex: '#ff4d00', rgb: '255, 77, 0', name: 'Plasma Orange' },
+    ],
+    []
+  );
+
+  const triggerCardNeonHighlight = useCallback(
+    (targetDeviceId: string) => {
+      const cleanId = targetDeviceId.replace(/^hw-/, '');
+      const randomColor = NEON_PALETTE[Math.floor(Math.random() * NEON_PALETTE.length)];
+
+      if (neonHighlightTimerRef.current) {
+        clearTimeout(neonHighlightTimerRef.current);
+      }
+
+      setNeonHighlightedNode({
+        nodeId: cleanId,
+        rawId: targetDeviceId,
+        colorHex: randomColor.hex,
+        colorRgb: randomColor.rgb,
+        colorName: randomColor.name,
+      });
+
+      // Exactly 3 seconds (3000ms) highlight duration
+      neonHighlightTimerRef.current = setTimeout(() => {
+        setNeonHighlightedNode(null);
+      }, 3000);
+    },
+    [NEON_PALETTE]
+  );
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (neonHighlightTimerRef.current) {
+        clearTimeout(neonHighlightTimerRef.current);
+      }
+    };
+  }, []);
 
   // Sticky Notes States
   const [showStickyNotes, setShowStickyNotes] = useState<boolean>(() => {
@@ -2183,12 +2246,60 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
     return pos;
   }, [topology, customPositions, activeMapId, currentCustomMap]);
 
+  // Switch to Card View with 3-second random neon border animation for the selected device
+  const handleSwitchToCardWithHighlight = useCallback(
+    (nodeId: string) => {
+      setViewMode('schematic');
+      setGlobalDeviceViewMode('card');
+      setSelectedNodeId(nodeId);
+      setInspectingRack(null);
+      setInspectingRackId(null);
+
+      // Trigger 3s neon highlight with random neon color
+      triggerCardNeonHighlight(nodeId);
+
+      const cleanId = nodeId.replace(/^hw-/, '');
+      const pos =
+        (currentCustomMap?.devicePositions &&
+          (currentCustomMap.devicePositions[nodeId] || currentCustomMap.devicePositions[cleanId])) ||
+        nodePositions.get(nodeId) ||
+        nodePositions.get(cleanId);
+
+      if (pos) {
+        const scale = Math.max(0.7, Math.min(1.2, zoom || 1));
+        setZoom(scale);
+        setPan({
+          x: Math.round(window.innerWidth / 2 - (pos.x + 113) * scale),
+          y: Math.round(window.innerHeight / 2 - (pos.y + 75) * scale),
+        });
+      }
+
+      const targetDev =
+        topology.nodes.find((n) => n.id === nodeId || n.id === cleanId) ||
+        currentCustomMap?.nodes?.find((n) => n.id === nodeId || n.id === cleanId);
+      const devName = targetDev?.name || cleanId;
+
+      setFeedbackToast({
+        type: 'success',
+        message: isEn
+          ? `Switched to Card View for "${devName}" — 3s neon highlight active.`
+          : `انتقال به نمای کارتی برای «${devName}» — هایلایت نئونی ۳ ثانیه‌ای فعال شد.`,
+      });
+    },
+    [currentCustomMap, nodePositions, zoom, isEn, triggerCardNeonHighlight, topology.nodes]
+  );
+
   // Navigate to Card View for a rack-mounted device to examine cabling and port connections
   const handleViewDeviceInCardMode = useCallback(
     (dev: MountedHardwareDevice, rack: CustomTopologyRack) => {
       setInspectingRack(null);
+      setInspectingRackId(null);
+      setViewMode('schematic');
       setGlobalDeviceViewMode('card');
       setSelectedNodeId(dev.id);
+
+      // Trigger 3-second random neon border highlight
+      triggerCardNeonHighlight(dev.id);
 
       const cleanId = dev.id.replace(/^hw-/, '');
       const pos =
@@ -2202,18 +2313,18 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
       const scale = Math.max(0.7, Math.min(1.2, zoom || 1));
       setZoom(scale);
       setPan({
-        x: Math.round(window.innerWidth / 2 - pos.x * scale),
-        y: Math.round(window.innerHeight / 2 - pos.y * scale),
+        x: Math.round(window.innerWidth / 2 - (pos.x + 113) * scale),
+        y: Math.round(window.innerHeight / 2 - (pos.y + 75) * scale),
       });
 
       setFeedbackToast({
         type: 'success',
         message: isEn
-          ? `Switched to Card View for "${dev.name}" to view cabling & network connections.`
-          : `انتقال به نمای کارتی برای «${dev.name}» جهت بررسی و مشاهده ارتباطات شبکه و کابل‌ها.`,
+          ? `Switched to Card View for "${dev.name}" — 3s neon highlight active.`
+          : `انتقال به نمای کارتی برای «${dev.name}» — هایلایت نئونی ۳ ثانیه‌ای فعال شد.`,
       });
     },
-    [currentCustomMap?.devicePositions, nodePositions, zoom, isEn]
+    [currentCustomMap?.devicePositions, nodePositions, zoom, isEn, triggerCardNeonHighlight]
   );
 
   // Background Pan Handler
@@ -2792,8 +2903,8 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
           )}
         </div>
 
-        {/* Action Buttons: Inspect Ports & Manual Relocate */}
-        <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px]">
+        {/* Action Buttons: Inspect Ports, Card View & Manual Relocate */}
+        <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px] gap-1">
           <button
             type="button"
             onClick={(e) => {
@@ -2804,6 +2915,19 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
           >
             <Cable className="w-3 h-3" />
             <span>{t('topology_inspect_ports_btn')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSwitchToCardWithHighlight(device.id);
+            }}
+            className="text-purple-400 hover:text-purple-300 hover:underline flex items-center gap-1 font-medium cursor-pointer"
+            title={isEn ? 'Switch to Card View & Highlight (Neon)' : 'مشاهده در نمای کارت با هایلایت نئونی'}
+          >
+            <CreditCard className="w-3 h-3 text-purple-400" />
+            <span>{isEn ? 'Card' : 'کارت'}</span>
           </button>
 
           <button
@@ -3909,8 +4033,14 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     })
                   : filteredNodes;
 
-                // Sort nodes so hovered, dragged, or selected nodes are rendered LAST (top of SVG stack)
+                // Sort nodes so neon-highlighted, hovered, dragged, or selected nodes are rendered LAST (top of SVG stack)
                 const sortedNodes = [...nodesToRender].sort((a, b) => {
+                  const aClean = a.id.replace(/^hw-/, '');
+                  const bClean = b.id.replace(/^hw-/, '');
+                  const aIsNeon = neonHighlightedNode && (neonHighlightedNode.nodeId === a.id || neonHighlightedNode.nodeId === aClean || neonHighlightedNode.rawId === a.id);
+                  const bIsNeon = neonHighlightedNode && (neonHighlightedNode.nodeId === b.id || neonHighlightedNode.nodeId === bClean || neonHighlightedNode.rawId === b.id);
+                  if (aIsNeon && !bIsNeon) return 1;
+                  if (!aIsNeon && bIsNeon) return -1;
                   if (a.id === hoveredNodeId || a.id === draggingNodeId) return 1;
                   if (b.id === hoveredNodeId || b.id === draggingNodeId) return -1;
                   if (a.id === selectedNodeId) return 1;
@@ -3951,7 +4081,7 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                           isBeingDragged={isBeingDragged}
                           isSelected={isSelected}
                           racks={currentCustomMap?.racks || []}
-                          onToggleToCardView={() => setGlobalDeviceViewMode('card')}
+                          onToggleToCardView={(id) => handleSwitchToCardWithHighlight(id || node.id)}
                           onMountToRack={(rackId, startU) => handleMountCanvasNodeToRack(node, rackId, startU)}
                           onUnmountFromRack={handleRemoveDeviceFromRack}
                           onInspectRack={(rack) => {
@@ -3965,6 +4095,14 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                     );
                   }
 
+                  const cleanNodeId = node.id.replace(/^hw-/, '');
+                  const isNeonHighlighted =
+                    neonHighlightedNode !== null &&
+                    (neonHighlightedNode.nodeId === node.id ||
+                      neonHighlightedNode.nodeId === cleanNodeId ||
+                      neonHighlightedNode.rawId === node.id ||
+                      neonHighlightedNode.rawId === `hw-${node.id}`);
+
                   return (
                     <foreignObject
                       key={node.id}
@@ -3972,18 +4110,20 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                       y={pos.y}
                       width="240"
                       height="150"
-                      className={`overflow-visible interactive-node ${isHovered || isBeingDragged ? 'z-50' : 'z-20'}`}
+                      className={`overflow-visible interactive-node ${isNeonHighlighted ? 'z-[100]' : isHovered || isBeingDragged ? 'z-50' : 'z-20'}`}
                       style={{
                         overflow: 'visible',
-                        zIndex: isHovered || isBeingDragged ? 9999 : isSelected ? 80 : 20,
+                        zIndex: isNeonHighlighted ? 99999 : isHovered || isBeingDragged ? 9999 : isSelected ? 80 : 20,
                       }}
                       onMouseEnter={() => setHoveredNodeId(node.id)}
                       onMouseLeave={() => setHoveredNodeId((curr) => (curr === node.id ? null : curr))}
                     >
                     <div
                       onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
-                      className={`w-[226px] p-3 rounded-xl border transition-shadow select-none text-right backdrop-blur-xl group relative ${
-                        isBeingDragged
+                      className={`w-[226px] p-3 rounded-xl border transition-all duration-300 select-none text-right backdrop-blur-xl group relative ${
+                        isNeonHighlighted
+                          ? 'neon-card-pulse-active ring-4 ring-offset-2 ring-offset-slate-950 scale-105 z-50'
+                          : isBeingDragged
                           ? 'spatial-glass border-cyan-400 ring-2 ring-cyan-500 shadow-[0_0_30px_rgba(6,182,212,0.6)] cursor-grabbing z-40 scale-102'
                           : isCablingSource
                           ? 'spatial-glass border-purple-400 ring-2 ring-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.6)] animate-pulse z-40'
@@ -3995,7 +4135,32 @@ export const SchematicTopologyView: React.FC<SchematicTopologyViewProps> = ({
                           ? 'spatial-glass spatial-glass-hover border-white/10 hover:border-indigo-500/40 cursor-grab hover:shadow-2xl'
                           : 'spatial-glass border-rose-500/40 bg-rose-950/20 cursor-grab'
                       }`}
+                      style={
+                        isNeonHighlighted
+                          ? {
+                              borderColor: neonHighlightedNode.colorHex,
+                              boxShadow: `0 0 0 2px #ffffff, 0 0 25px ${neonHighlightedNode.colorHex}, 0 0 55px rgba(${neonHighlightedNode.colorRgb}, 0.85), inset 0 0 20px rgba(${neonHighlightedNode.colorRgb}, 0.5)`,
+                              ['--neon-color' as any]: neonHighlightedNode.colorHex,
+                              ['--neon-rgb' as any]: neonHighlightedNode.colorRgb,
+                            }
+                          : undefined
+                      }
                     >
+                      {/* Neon Target Badge indicator with 3-second remaining feedback */}
+                      {isNeonHighlighted && (
+                        <div
+                          className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono flex items-center gap-1 shadow-2xl pointer-events-none z-50 animate-bounce whitespace-nowrap border border-white/60"
+                          style={{
+                            backgroundColor: neonHighlightedNode.colorHex,
+                            color: ['#ffff00', '#ffee00', '#39ff14', '#00ffd5'].includes(neonHighlightedNode.colorHex) ? '#020617' : '#ffffff',
+                            boxShadow: `0 0 15px ${neonHighlightedNode.colorHex}, 0 0 30px rgba(${neonHighlightedNode.colorRgb}, 0.8)`,
+                          }}
+                        >
+                          <Sparkles className="w-3 h-3 animate-spin" />
+                          <span>{isEn ? 'Target Device' : 'دیوایس انتخاب‌شده'}</span>
+                          <span className="text-[9px] opacity-85 px-1 py-0.2 rounded bg-black/30 font-mono">3s</span>
+                        </div>
+                      )}
                       {/* Drag Handle Indicator */}
                       <div
                         className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-slate-900/90 border border-white/20 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[9px] font-mono pointer-events-none shadow-md"

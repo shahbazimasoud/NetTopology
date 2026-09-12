@@ -10,9 +10,28 @@ export interface ReleaseNote {
   changes_en?: string[];
 }
 
-export const APP_VERSION = '1.33.0';
+export const APP_VERSION = '1.34.0';
 
 export const RELEASE_HISTORY: ReleaseNote[] = [
+  {
+    version: '1.34.0',
+    releaseDate: '2026-09-12',
+    type: 'minor',
+    title: 'انیمیشن پالس نئونی رنگی ۳ ثانیه‌ای جهت مشخص‌سازی کارت دیوایس هنگام سوییچ از نمای فیزیکال به کارتی',
+    title_en: '3-Second Vibrant Neon Pulse Animation for Instant Device Identification on Switching from Physical to Card View',
+    changes: [
+      'پیاده‌سازی افکت و انیمیشن جذاب نئونی (Neon Border & Glow) با رنگ تصادفی شاد و پرنور به مدت دقیق ۳ ثانیه روی کادر کارت دیوایس هنگام سوییچ از نمای فیزیکی به کارتی.',
+      'افزودن نشان شناور و پالس‌دار بالای کارت هدف (Target Device Badge) همراه با شمارش معکوس ۳ ثانیه‌ای جهت تمایز بلادرنگ دیوایس مدنظر.',
+      'تجهیز دکمه‌های «کارت» در پنل هاور رک، شاسی فیزیکی روی بوم و کارت‌های پنل فیزیکی به قابلیت سوییچ همراه با فوکوس و هایلایت نئونی.',
+      'پشتیبانی از دابل‌کلیک روی شاسی فیزیکی جهت انتقال مستقیم به نمای کارتی و فعال‌سازی هایلایت نئونی.'
+    ],
+    changes_en: [
+      'Implemented a dynamic 3-second neon border & glow pulse animation with randomized luminous colors on device cards when transitioning from physical to card view.',
+      'Added a floating animated target badge over the highlighted card with a 3-second visual indicator for instant device localization.',
+      'Equipped the "Card" action buttons across rack hover bars, canvas physical chassis, and physical hierarchy cards with smart neon-highlight switching.',
+      'Added double-click support on canvas physical chassis to directly trigger the card view switch with the neon highlight animation.'
+    ]
+  },
   {
     version: '1.33.0',
     releaseDate: '2026-09-12',

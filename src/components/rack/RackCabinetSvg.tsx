@@ -834,18 +834,19 @@ export const RackCabinetSvg: React.FC<RackCabinetSvgProps> = ({
 
                 <div className="h-4 w-px bg-slate-800 shrink-0 my-auto" />
 
-                {/* Card View Switch */}
+                {/* Card View Switch with Neon Highlight */}
                 {onViewInCardMode && (
                   <button
                     type="button"
-                    title={isEn ? 'Switch to Card View & Inspect Cabling' : 'مشاهده در نمای کارتی و بررسی اتصالات کابل‌ها'}
+                    title={isEn ? 'Switch to Card View & Highlight Device (Neon)' : 'مشاهده در نمای کارتی و هایلایت نئونی دیوایس'}
                     onClick={(e) => {
                       e.stopPropagation();
                       onViewInCardMode(hoveredMountedDev.dev, rack);
                     }}
-                    className="w-6 h-6 rounded-md bg-blue-950/80 hover:bg-blue-900 text-blue-300 hover:text-blue-100 border border-blue-700/60 flex items-center justify-center transition cursor-pointer shrink-0"
+                    className="h-6 px-1.5 rounded-md bg-purple-950/90 hover:bg-purple-900 text-purple-300 hover:text-purple-100 border border-purple-700/60 flex items-center justify-center gap-1 text-[10px] font-medium transition cursor-pointer shrink-0 whitespace-nowrap leading-none shadow-sm"
                   >
-                    <CreditCard className="w-3 h-3" />
+                    <CreditCard className="w-3 h-3 shrink-0" />
+                    <span>{isEn ? 'Card' : 'کارت'}</span>
                   </button>
                 )}
 
